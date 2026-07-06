@@ -1,0 +1,20 @@
+{
+  "name": "flutter-skills",
+  "description": "Marketplace for OmarAly92's Flutter/Dart skills",
+  "owner": {
+    "name": "Omar Aly",
+    "email": "omarkarim5555@gmail.com"
+  },
+  "plugins": [
+    {
+      "name": "flutter-knowledge",
+      "description": "Full-stack Flutter/Dart conventions plus an add-translation helper.",
+      "version": "1.0.0",
+      "source": "./",
+      "author": {
+        "name": "Omar Aly",
+        "email": "omarkarim5555@gmail.com"
+      }
+    }
+  ]
+}

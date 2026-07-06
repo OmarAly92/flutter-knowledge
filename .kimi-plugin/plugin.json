@@ -1,0 +1,26 @@
+{
+  "name": "flutter-knowledge",
+  "version": "1.0.0",
+  "description": "Full-stack Flutter/Dart conventions plus an add-translation helper.",
+  "author": {
+    "name": "Omar Aly",
+    "email": "omarkarim5555@gmail.com"
+  },
+  "homepage": "https://github.com/OmarAly92/flutter-knowledge",
+  "license": "MIT",
+  "keywords": [
+    "flutter",
+    "dart",
+    "cubit",
+    "skills",
+    "conventions",
+    "localization"
+  ],
+  "skills": "./skills/",
+  "interface": {
+    "displayName": "Flutter Knowledge",
+    "shortDescription": "Flutter/Dart conventions and localization workflows",
+    "developerName": "Omar Aly",
+    "websiteURL": "https://github.com/OmarAly92/flutter-knowledge"
+  }
+}

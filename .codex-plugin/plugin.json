@@ -1,0 +1,23 @@
+{
+  "name": "flutter-knowledge",
+  "version": "1.0.0",
+  "description": "Full-stack Flutter/Dart conventions — feature architecture, data layer, Cubit state management, dependency injection, routing, core UI wrappers, and localization — plus an add-translation helper.",
+  "author": {
+    "name": "Omar Aly",
+    "email": "omarkarim5555@gmail.com",
+    "url": "https://github.com/OmarAly92"
+  },
+  "homepage": "https://github.com/OmarAly92/flutter-knowledge",
+  "repository": "https://github.com/OmarAly92/flutter-knowledge",
+  "license": "MIT",
+  "keywords": [
+    "flutter",
+    "dart",
+    "cubit",
+    "skills",
+    "conventions",
+    "localization"
+  ],
+  "skills": "./skills/",
+  "hooks": {}
+}
