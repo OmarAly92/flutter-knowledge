@@ -28,7 +28,12 @@ Install separately for each harness you use. Every method points at the same
 /plugin install flutter-knowledge@flutter-skills
 ```
 
-Update: `/plugin marketplace update flutter-skills`, then reinstall.
+Update: run both of these — the first refreshes the marketplace metadata, the second actually pulls the new version in.
+
+```bash
+/plugin marketplace update flutter-skills
+/plugin install flutter-knowledge@flutter-skills
+```
 
 ### Gemini CLI
 
