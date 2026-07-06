@@ -81,7 +81,7 @@ This symlinks each skill into `~/.claude/skills/` (override with
 ## Repo structure
 
 `skills/` is the single source of truth. Every harness manifest is a thin
-adapter that points at it — see [`CLAUDE.md`](./CLAUDE.md) for the full map and
+adapter that points at it — see [`CONTRIBUTING.md`](./CONTRIBUTING.md) for the full map and
 how to add a skill or cut a release.
 
 ## License
