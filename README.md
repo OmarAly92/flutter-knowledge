@@ -10,10 +10,12 @@ tests.
 
 `flutter-knowledge` triggers automatically from its `description` — whenever
 Flutter or Dart comes up, the agent loads it. Nothing to invoke by hand. The
-three helpers are lazy-loaded instead: they don't auto-trigger on their own,
-and `flutter-knowledge` explicitly invokes them (or tells you to run
-`/add-translation`, `/drift-local-database`, or `/flutter-testing`) only when
-the task actually needs them — this keeps `flutter-knowledge` itself smaller
+three helpers are lazy-loaded instead: they stay out of `flutter-knowledge`
+and only enter context on demand, either because the agent recognizes the
+task needs one from its own scoped `description` (local storage, tests, a
+missing translation key), because `flutter-knowledge` explicitly invokes it,
+or because you run `/add-translation`, `/drift-local-database`, or
+`/flutter-testing` directly — this keeps `flutter-knowledge` itself smaller
 and avoids loading drift/localization/testing conventions into every session.
 
 On Claude Code, Codex, OpenCode, and Pi, `flutter-knowledge` is also

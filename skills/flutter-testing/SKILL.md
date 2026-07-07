@@ -1,7 +1,6 @@
 ---
 name: flutter-testing
 description: Unit test conventions for a Flutter feature — mocktail mocks, bloc_test cubit tests, data source/repository/cubit test layout and coverage. Use when the user explicitly asks to write, add, or update tests for a Flutter feature.
-disable-model-invocation: true
 ---
 
 # Unit tests

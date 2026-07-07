@@ -17,15 +17,20 @@ All skill content lives in `skills/`:
 - `skills/add-translation/SKILL.md` — add localization keys to `en.json` /
   `ar.json` in sync.
 
-`drift-local-database`, `flutter-testing`, and `add-translation` all set
-`disable-model-invocation: true` and stay out of `flutter-knowledge` entirely
-— `flutter-knowledge` just has a short pointer telling the agent to invoke
+`drift-local-database`, `flutter-testing`, and `add-translation` stay out of
+`flutter-knowledge` entirely and load on demand instead — each has its own
+scoped `description` so the agent can trigger it directly, and
+`flutter-knowledge` also carries a short pointer telling the agent to invoke
 them (via the Skill tool, or `/drift-local-database` / `/flutter-testing` /
 `/add-translation`) when the task actually needs local storage, tests, or a
 new translation key. This keeps `flutter-knowledge` itself small; the
 detailed conventions only enter context when they're relevant. When adding a
 new on-demand helper skill, follow this same pattern rather than inlining it
-into `flutter-knowledge`.
+into `flutter-knowledge` — give it its own scoped `description` and do NOT
+set `disable-model-invocation: true`, since that flag removes a skill from
+the model's invocable-skill list entirely (blocking even the Skill-tool call
+that `flutter-knowledge`'s own pointer relies on), leaving only explicit
+slash-command invocation as a path in.
 
 Never duplicate skill text elsewhere. Every harness manifest just points at
 `./skills/`. Edit the `SKILL.md` files; the manifests do not change.

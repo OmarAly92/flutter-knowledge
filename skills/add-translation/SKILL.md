@@ -1,7 +1,6 @@
 ---
 name: add-translation
 description: Add one or more localization keys to both assets/translations/en.json and assets/translations/ar.json in sync, then regenerate lib/core/helpers/localization/locale_keys.g.dart. Use when the user asks to add a translation, add a string, add a new key, or wire up a new label/error message in the UI.
-disable-model-invocation: true
 ---
 
 # Add translation key(s)
