@@ -16,6 +16,7 @@ Features live under `lib/feature/<feature>/` (snake_case — singular `feature`,
 ```
 data/
   data_source/<feature>_remote_data_source.dart
+  data_source/<feature>_local_data_source.dart   # only for local-only / hybrid features
   model/                                  # add models as needed
   model/params/                           # request params classes
   repository/<feature>_repository.dart
@@ -29,7 +30,7 @@ presentation/
       widgets/
 ```
 
-Omit `data/` entirely for UI-only features.
+Omit `data/` entirely for UI-only features. A local-only or hybrid feature also needs local persistence — invoke the `drift-local-database` skill for that (see "Local database (drift)" below) before writing any table/DAO/local data source code.
 
 Before writing each file, read the equivalent file from an existing feature in the current codebase and mirror its style and import order. Do not invent a different shape:
 - Cubit: pick an existing `*_cubit.dart` — note it kicks off the initial fetch from inside the constructor body, NOT from the screen's lifecycle.
@@ -40,6 +41,7 @@ Before writing each file, read the equivalent file from an existing feature in t
 ## Data layer
 
 - **Naming suffixes**: models → `XModel` in `data/model/` (extend `Equatable`, `fromJson`/`toJson` as needed); params → `XParams` in `data/model/params/` (extend `Equatable`, implement `toJson()`). **Model fields are always nullable** (`String? name`, `int? total`, ...) — API responses can omit or null out any field, so never declare a model field as required/non-null.
+- **One params class per method**: every data source / repository method that takes parameters gets its own dedicated `XParams` class — never share one params class across two methods, even if their fields happen to overlap. If two methods need overlapping fields, that's two separate params classes with duplicated fields, not one shared class.
 - **Model member order**: fields first, then the constructor, then `fromJson`, then `toJson` (`props` last, for the `Equatable` override). Keep this order in every model file so they all read the same way.
 - **Data source**: abstract class + `*Imp` implementation using `ApiConsumer`. Pass `params.toJson()` as `body`/`queryParameters`. Parse with `GlobalResponse.fromJson(response.data, fromJsonT: XModel.fromJson)` and return `Future<GlobalResponse<XModel>>`. For untyped responses call `GlobalResponse.fromJson(response.data)` without `fromJsonT`; for payloads not wrapped under a `data` key pass `withDataKey: false`. Do NOT catch — let `Failure` bubble to the repository.
 - **Repository**: abstract class + `*Imp` implementation returning `FutureResult<GlobalResponse<T>>`, gated on `NetworkStatus`. Check connectivity first; offline → `Result.failure(ServerFailure.noNetwork())`. Wrap the data-source call in `try`/`on Failure catch (error)` → `Result.failure(error)`; success → `Result.success(result)`. Don't unwrap models here.
@@ -61,6 +63,10 @@ FutureResult<GlobalResponse<XModel>> getX(XParams params) async {
 
 - **Failure type**: the `Failure` hierarchy from `lib/core/error_handling/`.
 - **Endpoints**: for any URL that takes a runtime parameter, add a static method on `EndPoints` (in `lib/core/api/api_request_helpers/end_points.dart`) returning the formatted path — `static String getTripById(String tripId) => '$passengers/trips/$tripId';` — and call it as `_apiConsumer.get(EndPoints.getTripById(tripId))`. NEVER interpolate at the call site: `'${EndPoints.trip}/$tripId'` is forbidden. For URLs with no params, keep using `static const String x = '...';`. `EndPoints` is a `sealed class` holding only static members — do NOT add a private constructor (`EndPoints._()`) to block instantiation; `sealed` already does that.
+
+## Local database (drift)
+
+When a feature needs local persistence — offline storage, caching a remote response locally, or a local-only (no API) feature — invoke the `drift-local-database` skill (via the Skill tool, or tell the user to run `/drift-local-database`) before writing any table, DAO, or local data source code. It holds the full DAO → LocalDataSource → Repository layering, `Entity`/`Companion` naming, migrations, and the local-only/hybrid repository patterns. Do not invent this layer from memory — it is a distinct, validated set of conventions, not something to reconstruct from the general Data layer rules above.
 
 ## State management (Cubit)
 
@@ -256,11 +262,17 @@ Splitting into a file is for genuine sections — a form, a card, a list item, a
 
 **Navigation**: `context.pushNamed(...)`, `context.pushReplacementNamed(...)`, `context.pushNamedAndRemoveUntil(name, (_) => false)`, `context.pop()` — never raw `Navigator.of(context)` calls.
 
+## Unit tests
+
+Only when the user explicitly asks for tests, invoke the `flutter-testing` skill (via the Skill tool, or tell the user to run `/flutter-testing`) before writing any test file — it holds the full mocktail/bloc_test conventions, test layout, and coverage expectations. Do not generate test files as a side effect of scaffolding a feature, and do not invent test structure from memory.
+
 ## What NOT to do
 
 - Do not introduce `flutter_bloc`'s full `Bloc` / event classes — always `Cubit`.
 - Do not add `freezed`, `json_serializable`, or `build_runner` unless they are already in `pubspec.yaml`.
+- Do not implement local persistence (drift/SQLite tables, DAOs, offline caching, local-only or hybrid repositories) without invoking the `drift-local-database` skill first — do not invent that layer from memory.
 - Do not create model classes the user did not ask for.
+- Do not reuse one params class across two data source/repository methods, and do not have a parameterized method share another method's params class. Every method gets its own `XParams`, even when the fields would overlap.
 - Do not declare model fields as non-nullable. Assume any API field can be missing or null.
 - Do not mix up model member order. Fields, then constructor, then `fromJson`, then `toJson` — every model file in the same order.
 - Do not put screens in `StatefulWidget` just to call `context.read<XCubit>().fetch()` in `initState`. The fetch belongs in the cubit constructor.
@@ -282,4 +294,5 @@ Splitting into a file is for genuine sections — a form, a card, a list item, a
 - Do not inline raw string literals into widgets shown to the user. Every user-facing string is `LocaleKeys.xxx.tr()`.
 - Do not write raw `TextStyle(fontSize: …, fontWeight: …, …)` in presentation widgets. Use `AppTextStyle.styleNN<Weight>` (with `.copyWith(...)` for tweaks).
 - Do not use `flutter_screenutil` extensions (`.h`, `.w`, `.r`, `.sp`, `.spMin`, `.dm`) in feature presentation code. Spacing/padding/radius take raw ints; fonts go through `AppTextStyle`. (Existing code that did this is legacy; do not copy it.)
+- Do not write unit tests unprompted, and do not invent test structure from memory — invoke the `flutter-testing` skill first when the user does ask for tests.
 - After changes, verify with `flutter analyze` (clean) and run `flutter test` when tests cover the touched code. Do not run the app or any build step.

@@ -10,24 +10,50 @@ All skill content lives in `skills/`:
 
 - `skills/flutter-knowledge/SKILL.md` — full-stack conventions (architecture,
   data layer, Cubit state management, DI, routing, UI wrappers, localization).
+- `skills/drift-local-database/SKILL.md` — local persistence (drift/SQLite):
+  tables, DAOs, entities, migrations, local-only and hybrid repositories.
+- `skills/flutter-testing/SKILL.md` — unit test conventions: mocktail mocks,
+  bloc_test cubit tests, data source/repository/cubit coverage.
 - `skills/add-translation/SKILL.md` — add localization keys to `en.json` /
   `ar.json` in sync.
+
+`drift-local-database`, `flutter-testing`, and `add-translation` all set
+`disable-model-invocation: true` and stay out of `flutter-knowledge` entirely
+— `flutter-knowledge` just has a short pointer telling the agent to invoke
+them (via the Skill tool, or `/drift-local-database` / `/flutter-testing` /
+`/add-translation`) when the task actually needs local storage, tests, or a
+new translation key. This keeps `flutter-knowledge` itself small; the
+detailed conventions only enter context when they're relevant. When adding a
+new on-demand helper skill, follow this same pattern rather than inlining it
+into `flutter-knowledge`.
 
 Never duplicate skill text elsewhere. Every harness manifest just points at
 `./skills/`. Edit the `SKILL.md` files; the manifests do not change.
 
 ## How each harness finds the skills
 
-| Harness | Entry point |
-| --- | --- |
-| Claude Code | `.claude-plugin/plugin.json` + `.claude-plugin/marketplace.json` (skills auto-discovered) |
-| Codex | `.codex-plugin/plugin.json` (`"skills": "./skills/"`) |
-| Cursor | `.cursor-plugin/plugin.json` (`"skills": "./skills/"`) |
-| Kimi | `.kimi-plugin/plugin.json` (`"skills": "./skills/"`) |
-| OpenCode | `.opencode/plugins/flutter-knowledge.js` (registers `skills/`) |
-| Pi | `.pi/extensions/flutter-knowledge.ts` + `package.json` `pi` field |
-| Gemini | `gemini-extension.json` → `GEMINI.md` (includes both skills) |
-| Any other agent | `install.sh` symlinks `skills/*` into `~/.claude/skills/` |
+| Harness | Entry point | Forced? |
+| --- | --- | --- |
+| Claude Code | `.claude-plugin/plugin.json` + `.claude-plugin/marketplace.json` (skills auto-discovered) | Yes — `hooks/hooks.json` runs a `SessionStart` hook |
+| Codex | `.codex-plugin/plugin.json` (`"skills": "./skills/"`) | Yes — inline `"hooks"` field runs a `SessionStart` hook |
+| Cursor | `.cursor-plugin/plugin.json` (`"skills": "./skills/"`) | No — description-based only |
+| Kimi | `.kimi-plugin/plugin.json` (`"skills": "./skills/"`) | No — description-based only |
+| OpenCode | `.opencode/plugins/flutter-knowledge.js` (registers `skills/`) | Yes — `experimental.chat.system.transform` hook |
+| Pi | `.pi/extensions/flutter-knowledge.ts` + `package.json` `pi` field | Yes — `session_start` + `before_agent_start` hooks |
+| Gemini | `gemini-extension.json` → `GEMINI.md` (includes all four skills) | Yes, implicitly — `GEMINI.md` always loads (Gemini has no on-demand mechanism, so `drift-local-database`/`flutter-testing`/`add-translation` are always included there too, unlike every other harness) |
+| Any other agent | `install.sh` symlinks `skills/*` into `~/.claude/skills/` | No — description-based only |
+
+"Forced" means the `flutter-knowledge` conventions (not `drift-local-database`,
+`flutter-testing`, or `add-translation`, which stay on-demand) get injected
+whenever the project has a `pubspec.yaml`,
+regardless of whether the model would have decided to trigger the skill from
+its description. The detection logic and injected content is duplicated
+across `hooks/force-flutter-knowledge.mjs` (Claude Code + Codex),
+`.opencode/plugins/flutter-knowledge.js`, and
+`.pi/extensions/flutter-knowledge.ts` because each harness's hook API is
+shaped differently — but all three read the live
+`skills/flutter-knowledge/SKILL.md` at runtime, so there's nothing to keep in
+sync by hand when the skill content changes.
 
 ## Adding a skill
 
