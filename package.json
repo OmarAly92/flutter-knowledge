@@ -1,6 +1,6 @@
 {
   "name": "flutter-knowledge",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Full-stack Flutter/Dart conventions plus an add-translation helper, packaged as skills for coding agents.",
   "type": "module",
   "main": ".opencode/plugins/flutter-knowledge.js",
