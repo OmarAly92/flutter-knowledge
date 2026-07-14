@@ -30,7 +30,7 @@ presentation/
       widgets/
 ```
 
-Omit `data/` entirely for UI-only features. A local-only or hybrid feature also needs local persistence — invoke the `drift-local-database` skill for that (see "Local database (drift)" below) before writing any table/DAO/local data source code.
+Omit `data/` entirely for UI-only features. A local-only or hybrid feature also needs local persistence — invoke the matching local-database skill for that (see "Local database" below) before writing any local data source or storage code: `drift-local-database` if the project uses drift, `hive-local-database` if it uses Hive.
 
 Before writing each file, read the equivalent file from an existing feature in the current codebase and mirror its style and import order. Do not invent a different shape:
 - Cubit: pick an existing `*_cubit.dart` — note it kicks off the initial fetch from inside the constructor body, NOT from the screen's lifecycle.
@@ -64,9 +64,14 @@ FutureResult<GlobalResponse<XModel>> getX(XParams params) async {
 - **Failure type**: the `Failure` hierarchy from `lib/core/error_handling/`.
 - **Endpoints**: for any URL that takes a runtime parameter, add a static method on `EndPoints` (in `lib/core/api/api_request_helpers/end_points.dart`) returning the formatted path — `static String getTripById(String tripId) => '$passengers/trips/$tripId';` — and call it as `_apiConsumer.get(EndPoints.getTripById(tripId))`. NEVER interpolate at the call site: `'${EndPoints.trip}/$tripId'` is forbidden. For URLs with no params, keep using `static const String x = '...';`. `EndPoints` is a `sealed class` holding only static members — do NOT add a private constructor (`EndPoints._()`) to block instantiation; `sealed` already does that.
 
-## Local database (drift)
+## Local database
 
-When a feature needs local persistence — offline storage, caching a remote response locally, or a local-only (no API) feature — invoke the `drift-local-database` skill (via the Skill tool, or tell the user to run `/drift-local-database`) before writing any table, DAO, or local data source code. It holds the full DAO → LocalDataSource → Repository layering, `Entity`/`Companion` naming, migrations, and the local-only/hybrid repository patterns. Do not invent this layer from memory — it is a distinct, validated set of conventions, not something to reconstruct from the general Data layer rules above.
+When a feature needs local persistence — offline storage, caching a remote response locally, or a local-only (no API) feature — invoke the local-database skill that matches the project's storage engine before writing any local data source or storage code. Check `pubspec.yaml`:
+
+- **drift** in the project → invoke `drift-local-database` (via the Skill tool, or `/drift-local-database`). It holds the DAO → LocalDataSource → Repository layering, `Entity`/`Companion` naming, migrations, and the local-only/hybrid repository patterns.
+- **hive / hive_ce** in the project → invoke `hive-local-database` (via the Skill tool, or `/hive-local-database`). It holds the Box → LocalDataSource → Repository layering, storage↔model mapping, and the local-only/hybrid repository patterns.
+
+If neither is present yet, pick the one the feature calls for (or ask the user) and follow that skill. Either way, do not invent the persistence layer from memory — each is a distinct, validated set of conventions, not something to reconstruct from the general Data layer rules above.
 
 ## State management (Cubit)
 
@@ -270,7 +275,7 @@ Only when the user explicitly asks for tests, invoke the `flutter-testing` skill
 
 - Do not introduce `flutter_bloc`'s full `Bloc` / event classes — always `Cubit`.
 - Do not add `freezed`, `json_serializable`, or `build_runner` unless they are already in `pubspec.yaml`.
-- Do not implement local persistence (drift/SQLite tables, DAOs, offline caching, local-only or hybrid repositories) without invoking the `drift-local-database` skill first — do not invent that layer from memory.
+- Do not implement local persistence (drift/SQLite tables + DAOs, or Hive boxes, offline caching, local-only or hybrid repositories) without invoking the matching local-database skill first — `drift-local-database` for drift, `hive-local-database` for Hive. Do not invent that layer from memory.
 - Do not create model classes the user did not ask for.
 - Do not reuse one params class across two data source/repository methods, and do not have a parameterized method share another method's params class. Every method gets its own `XParams`, even when the fields would overlap.
 - Do not declare model fields as non-nullable. Assume any API field can be missing or null.

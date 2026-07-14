@@ -3,20 +3,21 @@
 Flutter/Dart skills for coding agents. Install once and your agent follows a
 consistent set of full-stack Flutter conventions — feature architecture, the
 data layer, Cubit state management, dependency injection, routing, the core UI
-wrappers, and localization — plus three on-demand helpers: `add-translation`
-for keeping `en.json` / `ar.json` in sync, `drift-local-database` for local
-persistence (drift/SQLite), and `flutter-testing` for mocktail/bloc_test unit
-tests.
+wrappers, and localization — plus four on-demand helpers: `add-translation`
+for keeping `en.json` / `ar.json` in sync, `drift-local-database` and
+`hive-local-database` for local persistence (drift/SQLite or Hive), and
+`flutter-testing` for mocktail/bloc_test unit tests.
 
 `flutter-knowledge` triggers automatically from its `description` — whenever
 Flutter or Dart comes up, the agent loads it. Nothing to invoke by hand. The
-three helpers are lazy-loaded instead: they stay out of `flutter-knowledge`
+helpers are lazy-loaded instead: they stay out of `flutter-knowledge`
 and only enter context on demand, either because the agent recognizes the
 task needs one from its own scoped `description` (local storage, tests, a
 missing translation key), because `flutter-knowledge` explicitly invokes it,
-or because you run `/add-translation`, `/drift-local-database`, or
-`/flutter-testing` directly — this keeps `flutter-knowledge` itself smaller
-and avoids loading drift/localization/testing conventions into every session.
+or because you run `/add-translation`, `/drift-local-database`,
+`/hive-local-database`, or `/flutter-testing` directly — this keeps
+`flutter-knowledge` itself smaller and avoids loading
+storage/localization/testing conventions into every session.
 
 On Claude Code, Codex, OpenCode, and Pi, `flutter-knowledge` is also
 force-loaded: a hook/plugin checks for `pubspec.yaml` and injects the
@@ -37,6 +38,7 @@ description-based triggering only (see `CONTRIBUTING.md`).
 | --- | --- | --- |
 | **flutter-knowledge** | Full-stack conventions: architecture, data layer, Cubit, DI, routing, UI, styling, localization. | Automatically |
 | **drift-local-database** | Drift/SQLite local persistence: tables, DAOs, entities, migrations, local-only and hybrid repositories. | On demand, via `flutter-knowledge` or `/drift-local-database` |
+| **hive-local-database** | Hive (hive_ce) local persistence: boxes, storage↔model mapping, local-only and hybrid repositories. | On demand, via `flutter-knowledge` or `/hive-local-database` |
 | **flutter-testing** | Unit test conventions: mocktail mocks, bloc_test cubit tests, data source/repository/cubit coverage. | On demand, via `flutter-knowledge` or `/flutter-testing` |
 | **add-translation** | Add localization key(s) to `en.json` and `ar.json` in sync, then regenerate `locale_keys.g.dart`. | On demand, via `flutter-knowledge` or `/add-translation` |
 

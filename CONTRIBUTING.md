@@ -12,18 +12,22 @@ All skill content lives in `skills/`:
   data layer, Cubit state management, DI, routing, UI wrappers, localization).
 - `skills/drift-local-database/SKILL.md` — local persistence (drift/SQLite):
   tables, DAOs, entities, migrations, local-only and hybrid repositories.
+- `skills/hive-local-database/SKILL.md` — local persistence (Hive/hive_ce):
+  boxes, storage↔model mapping, local-only and hybrid repositories.
 - `skills/flutter-testing/SKILL.md` — unit test conventions: mocktail mocks,
   bloc_test cubit tests, data source/repository/cubit coverage.
 - `skills/add-translation/SKILL.md` — add localization keys to `en.json` /
   `ar.json` in sync.
 
-`drift-local-database`, `flutter-testing`, and `add-translation` stay out of
-`flutter-knowledge` entirely and load on demand instead — each has its own
-scoped `description` so the agent can trigger it directly, and
-`flutter-knowledge` also carries a short pointer telling the agent to invoke
-them (via the Skill tool, or `/drift-local-database` / `/flutter-testing` /
-`/add-translation`) when the task actually needs local storage, tests, or a
-new translation key. This keeps `flutter-knowledge` itself small; the
+`drift-local-database`, `hive-local-database`, `flutter-testing`, and
+`add-translation` stay out of `flutter-knowledge` entirely and load on demand
+instead — each has its own scoped `description` so the agent can trigger it
+directly, and `flutter-knowledge` also carries a short pointer telling the
+agent to invoke them (via the Skill tool, or `/drift-local-database` /
+`/hive-local-database` / `/flutter-testing` / `/add-translation`) when the task
+actually needs local storage, tests, or a new translation key. The two
+local-database skills are mutually exclusive per project — `flutter-knowledge`
+picks between them by checking `pubspec.yaml` for drift vs hive/hive_ce. This keeps `flutter-knowledge` itself small; the
 detailed conventions only enter context when they're relevant. When adding a
 new on-demand helper skill, follow this same pattern rather than inlining it
 into `flutter-knowledge` — give it its own scoped `description` and do NOT
@@ -45,11 +49,12 @@ Never duplicate skill text elsewhere. Every harness manifest just points at
 | Kimi | `.kimi-plugin/plugin.json` (`"skills": "./skills/"`) | No — description-based only |
 | OpenCode | `.opencode/plugins/flutter-knowledge.js` (registers `skills/`) | Yes — `experimental.chat.system.transform` hook |
 | Pi | `.pi/extensions/flutter-knowledge.ts` + `package.json` `pi` field | Yes — `session_start` + `before_agent_start` hooks |
-| Gemini | `gemini-extension.json` → `GEMINI.md` (includes all four skills) | Yes, implicitly — `GEMINI.md` always loads (Gemini has no on-demand mechanism, so `drift-local-database`/`flutter-testing`/`add-translation` are always included there too, unlike every other harness) |
+| Gemini | `gemini-extension.json` → `GEMINI.md` (includes all five skills) | Yes, implicitly — `GEMINI.md` always loads (Gemini has no on-demand mechanism, so `drift-local-database`/`hive-local-database`/`flutter-testing`/`add-translation` are always included there too, unlike every other harness) |
 | Any other agent | `install.sh` symlinks `skills/*` into `~/.claude/skills/` | No — description-based only |
 
 "Forced" means the `flutter-knowledge` conventions (not `drift-local-database`,
-`flutter-testing`, or `add-translation`, which stay on-demand) get injected
+`hive-local-database`, `flutter-testing`, or `add-translation`, which stay
+on-demand) get injected
 whenever the project has a `pubspec.yaml`,
 regardless of whether the model would have decided to trigger the skill from
 its description. The detection logic and injected content is duplicated

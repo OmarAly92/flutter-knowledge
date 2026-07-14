@@ -1,7 +1,7 @@
 {
   "name": "flutter-knowledge",
   "description": "Full-stack Flutter/Dart conventions — feature architecture, data layer, Cubit state management, dependency injection, routing, core UI wrappers, and localization — plus an add-translation helper.",
-  "version": "1.0.2",
+  "version": "1.1.0",
   "author": {
     "name": "Omar Aly",
     "email": "omarkarim5555@gmail.com",
