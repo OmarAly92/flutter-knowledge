@@ -267,6 +267,10 @@ Splitting into a file is for genuine sections — a form, a card, a list item, a
 
 **Navigation**: `context.pushNamed(...)`, `context.pushReplacementNamed(...)`, `context.pushNamedAndRemoveUntil(name, (_) => false)`, `context.pop()` — never raw `Navigator.of(context)` calls.
 
+## Design from an HTML prototype
+
+When the user points at an HTML design prototype (a standalone HTML file, an exported mockup, or a URL) and wants the app to match it — setting the skin/theme colors, fonts and text styles, motion constants, core widgets, or generating per-screen design docs — invoke the `design-from-html-flutter` skill (via the Skill tool, or `/design-from-html-flutter`) before touching the theme layer or any widget. It holds the browser-driven extraction workflow, the phase order, and the doc/prompt templates. Do not eyeball colors, sizes, or durations off a screenshot.
+
 ## Unit tests
 
 Only when the user explicitly asks for tests, invoke the `flutter-testing` skill (via the Skill tool, or tell the user to run `/flutter-testing`) before writing any test file — it holds the full mocktail/bloc_test conventions, test layout, and coverage expectations. Do not generate test files as a side effect of scaffolding a feature, and do not invent test structure from memory.
@@ -299,5 +303,6 @@ Only when the user explicitly asks for tests, invoke the `flutter-testing` skill
 - Do not inline raw string literals into widgets shown to the user. Every user-facing string is `LocaleKeys.xxx.tr()`.
 - Do not write raw `TextStyle(fontSize: …, fontWeight: …, …)` in presentation widgets. Use `AppTextStyle.styleNN<Weight>` (with `.copyWith(...)` for tweaks).
 - Do not use `flutter_screenutil` extensions (`.h`, `.w`, `.r`, `.sp`, `.spMin`, `.dm`) in feature presentation code. Spacing/padding/radius take raw ints; fonts go through `AppTextStyle`. (Existing code that did this is legacy; do not copy it.)
+- Do not transcribe a design from an HTML prototype by eye, and do not set skin/text-style/motion tokens from a screenshot — invoke the `design-from-html-flutter` skill first and extract the values from the prototype's computed CSS.
 - Do not write unit tests unprompted, and do not invent test structure from memory — invoke the `flutter-testing` skill first when the user does ask for tests.
 - After changes, verify with `flutter analyze` (clean) and run `flutter test` when tests cover the touched code. Do not run the app or any build step.

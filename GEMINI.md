@@ -7,3 +7,6 @@ them as the source of truth over legacy patterns in the codebase.
 @./skills/hive-local-database/SKILL.md
 @./skills/flutter-testing/SKILL.md
 @./skills/add-translation/SKILL.md
+@./skills/design-from-html-flutter/SKILL.md
+@./skills/design-from-html-flutter/playbook.md
+@./skills/design-from-html-flutter/templates.md

@@ -18,9 +18,15 @@ All skill content lives in `skills/`:
   bloc_test cubit tests, data source/repository/cubit coverage.
 - `skills/add-translation/SKILL.md` — add localization keys to `en.json` /
   `ar.json` in sync.
+- `skills/design-from-html-flutter/` — turn an HTML design prototype into skin
+  colors, text styles, motion constants, core widgets, and per-screen design
+  docs + implementation prompts. The only multi-file skill: `SKILL.md` is the
+  phase index, `playbook.md` holds the extraction code per phase, and
+  `templates.md` the doc structures.
 
-`drift-local-database`, `hive-local-database`, `flutter-testing`, and
-`add-translation` stay out of `flutter-knowledge` entirely and load on demand
+`drift-local-database`, `hive-local-database`, `flutter-testing`,
+`add-translation`, and `design-from-html-flutter` stay out of
+`flutter-knowledge` entirely and load on demand
 instead — each has its own scoped `description` so the agent can trigger it
 directly, and `flutter-knowledge` also carries a short pointer telling the
 agent to invoke them (via the Skill tool, or `/drift-local-database` /
@@ -49,12 +55,12 @@ Never duplicate skill text elsewhere. Every harness manifest just points at
 | Kimi | `.kimi-plugin/plugin.json` (`"skills": "./skills/"`) | No — description-based only |
 | OpenCode | `.opencode/plugins/flutter-knowledge.js` (registers `skills/`) | Yes — `experimental.chat.system.transform` hook |
 | Pi | `.pi/extensions/flutter-knowledge.ts` + `package.json` `pi` field | Yes — `session_start` + `before_agent_start` hooks |
-| Gemini | `gemini-extension.json` → `GEMINI.md` (includes all five skills) | Yes, implicitly — `GEMINI.md` always loads (Gemini has no on-demand mechanism, so `drift-local-database`/`hive-local-database`/`flutter-testing`/`add-translation` are always included there too, unlike every other harness) |
+| Gemini | `gemini-extension.json` → `GEMINI.md` (includes all six skills) | Yes, implicitly — `GEMINI.md` always loads (Gemini has no on-demand mechanism, so `drift-local-database`/`hive-local-database`/`flutter-testing`/`add-translation`/`design-from-html-flutter` are always included there too, unlike every other harness; `design-from-html-flutter` is multi-file, so its `playbook.md` and `templates.md` get their own `@` includes) |
 | Any other agent | `install.sh` symlinks `skills/*` into `~/.claude/skills/` | No — description-based only |
 
 "Forced" means the `flutter-knowledge` conventions (not `drift-local-database`,
-`hive-local-database`, `flutter-testing`, or `add-translation`, which stay
-on-demand) get injected
+`hive-local-database`, `flutter-testing`, `add-translation`, or
+`design-from-html-flutter`, which stay on-demand) get injected
 whenever the project has a `pubspec.yaml`,
 regardless of whether the model would have decided to trigger the skill from
 its description. The detection logic and injected content is duplicated
