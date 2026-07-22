@@ -95,9 +95,25 @@ pi package add github:OmarAly92/flutter-knowledge
 
 ### Codex
 
-Add this repo through Codex's plugin manager; it reads `.codex-plugin/plugin.json`,
-which registers `./skills/` and — like Claude Code — wires up the `SessionStart`
-hook that force-loads `flutter-knowledge` for Flutter projects.
+Run these in your OS terminal/shell — not inside an active Codex chat session
+(that's where `/plugins` lives, for browsing what's already installed):
+
+```bash
+codex plugin marketplace add OmarAly92/flutter-knowledge
+codex plugin add flutter-knowledge@flutter-skills
+```
+
+Then start a new Codex session to pick up the plugin. It reads
+`.codex-plugin/plugin.json`, which registers `./skills/` and — like Claude
+Code — wires up the `SessionStart` hook that force-loads `flutter-knowledge`
+for Flutter projects.
+
+Update: run both of these — the first refreshes the marketplace metadata, the second reinstalls the latest version.
+
+```bash
+codex plugin marketplace add OmarAly92/flutter-knowledge
+codex plugin add flutter-knowledge@flutter-skills
+```
 
 ### Cursor / Kimi
 

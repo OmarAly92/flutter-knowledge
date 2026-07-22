@@ -50,7 +50,7 @@ Never duplicate skill text elsewhere. Every harness manifest just points at
 | Harness | Entry point | Forced? |
 | --- | --- | --- |
 | Claude Code | `.claude-plugin/plugin.json` + `.claude-plugin/marketplace.json` (skills auto-discovered) | Yes — `hooks/hooks.json` runs a `SessionStart` hook |
-| Codex | `.codex-plugin/plugin.json` (`"skills": "./skills/"`) | Yes — inline `"hooks"` field runs a `SessionStart` hook |
+| Codex | `.codex-plugin/plugin.json` (`"skills": "./skills/"`) + `.agents/plugins/marketplace.json` | Yes — inline `"hooks"` field runs a `SessionStart` hook |
 | Cursor | `.cursor-plugin/plugin.json` (`"skills": "./skills/"`) | No — description-based only |
 | Kimi | `.kimi-plugin/plugin.json` (`"skills": "./skills/"`) | No — description-based only |
 | OpenCode | `.opencode/plugins/flutter-knowledge.js` (registers `skills/`) | Yes — `experimental.chat.system.transform` hook |
