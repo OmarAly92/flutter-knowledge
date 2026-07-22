@@ -93,11 +93,18 @@ Install the package (its `package.json` exposes the Pi extension and skills):
 pi package add github:OmarAly92/flutter-knowledge
 ```
 
-### Codex / Cursor / Kimi
+### Codex
+
+Add this repo through Codex's plugin manager; it reads `.codex-plugin/plugin.json`,
+which registers `./skills/` and — like Claude Code — wires up the `SessionStart`
+hook that force-loads `flutter-knowledge` for Flutter projects.
+
+### Cursor / Kimi
 
 Add this repo through the harness's plugin/extension manager. Each reads its own
-manifest — `.codex-plugin/plugin.json`, `.cursor-plugin/plugin.json`,
-`.kimi-plugin/plugin.json` — all of which register `./skills/`.
+manifest — `.cursor-plugin/plugin.json`, `.kimi-plugin/plugin.json` — which
+registers `./skills/`. Unlike Codex, these two are description-based triggering
+only; no hook is wired up.
 
 ### Any other agent (universal fallback)
 
