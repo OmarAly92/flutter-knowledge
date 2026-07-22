@@ -31,8 +31,8 @@ in this shape rather than inventing another:
   add keys via the `add-translation` skill when present. RTL must work.
 - **Gate**: `flutter analyze` clean after every phase; no new warnings.
 
-The per-screen `prompt.md` files must state these conventions explicitly (cleared sessions in
-another project may not have the skills auto-loaded).
+Each screen's `<screen>.md` implementation brief must state these conventions explicitly (cleared
+sessions in another project may not have the skills auto-loaded).
 
 ## §1 Explore the prototype
 
@@ -150,10 +150,15 @@ Structure (see templates.md for file contents):
 docs/design/
   README.md  colors.md  typography.md  motion.md  components.md
   <screen>/          # one dir per screen incl. the navigation shell
-    <screen>.md      # full spec
-    prompt.md        # self-contained implementation brief
-    *.png            # headless screenshots (dark default; every step/sheet/state)
+    <screen>.md      # full spec + self-contained implementation brief — ONE file
+    *.png            # headless screenshots (dark default; every step/sheet/dialog/state)
 ```
+**One file, one dir per screen — sheets/dialogs merge in.** Never emit a separate `prompt.md`
+and never give a bottom sheet or dialog its own dir. A sheet/dialog that a screen opens is
+documented as a subsection inside that screen's `<screen>.md` (its screenshots go in the same
+dir), so the agent that builds the screen builds its sheets and dialogs in the same pass — split
+files/dirs cause two agents to collide or one to miss the piece entirely. Promote a sheet/dialog
+to a shared core widget in `components.md` ONLY if it is genuinely opened from many screens.
 Screenshots — headless Chrome via puppeteer-core (no browser download):
 ```js
 puppeteer.launch({executablePath: '<system Chrome>', headless: 'new'});
@@ -164,7 +169,16 @@ Script the same JS walk from §1 (click by text, fill inputs), `waitUntil: netwo
 screen, wizard step, sheet (close sheets by clicking the veil), and special shell states
 (drawer open). Verify a couple of PNGs by reading them.
 
+Before writing any screen brief, build the **screen → feature map** in `README.md` from the
+project's real feature tree (consult the `flutter-knowledge` skill) — the canonical owning-feature
+path for every screen. Each brief copies its own row verbatim and orders the builder to read
+`docs/design/README.md` and invoke `flutter-knowledge` before any Dart, so no screen's UI lands in
+the wrong feature. Note the launcher-vs-owner trap: a screen opened from another feature's screen
+still belongs to its OWN feature.
+
 Write the shared docs from the extracted tokens (tables mapping design token → hex per theme →
-skin getter), then each screen md, then each prompt.md. Finish by updating the project's
+skin getter), then each screen's single `<screen>.md` (spec + brief + any owned sheets/dialogs).
+Finish by updating the project's
 CLAUDE.md: design phase status, "design system complete — reuse, don't recreate" inventory,
-and pointers to `docs/design/` + the prompt.md convention.
+and pointers to `docs/design/` + the one-`<screen>.md`-per-screen convention (spec + brief in a
+single file; sheets/dialogs merged into their owning screen).

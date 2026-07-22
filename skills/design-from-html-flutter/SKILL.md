@@ -26,8 +26,13 @@ agents build every screen pixel-accurately. The prototype is the single source o
 5. **Core widgets** — dump every component CSS rule; restyle existing shared widgets and create
    the design's primitives, all consuming ONLY the skin/type/motion tokens. See playbook §5.
 6. **Docs + prompts** — `docs/design/`: shared foundation docs + one dir per screen containing
-   the full spec md, headless screenshots, and a self-contained `prompt.md` brief.
-   See playbook §6 and templates.md.
+   ONE self-contained `<screen>.md` (full spec **and** implementation brief in a single file)
+   plus headless screenshots. Every bottom sheet or dialog a screen opens lives INSIDE that
+   screen's dir/md — never its own dir — because one agent builds the whole screen, sheets and
+   dialogs included, in a single pass. `docs/design/README.md` carries the canonical
+   **screen → feature map**; every screen brief copies its owning-feature path from it and orders
+   the builder to read that README and invoke `flutter-knowledge` before any Dart, so no UI lands
+   in the wrong feature. See playbook §6 and templates.md.
 
 **REQUIRED:** read [playbook.md](playbook.md) for the phase you are executing — it has the
 extraction code and the traps. Doc structures live in [templates.md](templates.md).
@@ -54,4 +59,7 @@ user-facing string is added.
 | Telling the user to download proprietary fonts | Check for base64/asset-map embedded fonts first and extract them |
 | Screenshotting right after navigation | Entrance animations start at opacity 0 — wait ~1s, re-shoot |
 | Restyling widgets from screenshots | Screenshots lie about borders/alpha — use the component CSS rules |
-| Docs that only a warm session can use | Every screen dir gets a `prompt.md` that stands alone (see templates.md) |
+| Docs that only a warm session can use | Each screen's single `<screen>.md` embeds a stand-alone implementation brief (see templates.md) |
+| Giving a bottom sheet/dialog its own screen dir, or a screen its own `prompt.md` | Merge each sheet/dialog into the dir/md of the screen that opens it; keep spec + brief in one file — one agent builds the screen and all its sheets/dialogs together |
+| Building a screen's UI in the wrong feature (e.g. under the launcher's feature) | Pin the owning-feature path from the README screen→feature map in every brief; a screen opened from another feature still belongs to ITS feature |
+| Brief that lets the builder skip project conventions | Every brief's first step: read `docs/design/README.md`, then invoke `flutter-knowledge`, before any Dart |

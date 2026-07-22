@@ -9,7 +9,7 @@
     {
       "name": "flutter-knowledge",
       "description": "Full-stack Flutter/Dart conventions plus an add-translation helper.",
-      "version": "1.2.0",
+      "version": "1.2.1",
       "source": "./",
       "author": {
         "name": "Omar Aly",
