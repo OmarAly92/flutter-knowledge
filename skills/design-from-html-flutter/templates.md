@@ -7,7 +7,7 @@
 - **Screen → feature map** (dir → screen → owning feature path, e.g.
   `lib/feature/<feature>/presentation/<screen>_screen/`). This is the SINGLE source of truth for
   where each screen's UI is built; every screen brief cites its row. Derive it from the project's
-  actual feature tree (via the `flutter-knowledge` skill) — a screen may launch from another
+  actual feature tree (via the `flutter-knowledge` and `flutter-feature-structure` skills) — a screen may launch from another
   feature's screen yet belong to its own feature; the map records the OWNER, not the launcher.
 - "Already implemented in this repo (do not re-invent)" — skin/type/motion/font/core-widget
   inventory with file paths.
@@ -69,8 +69,9 @@ sheets/dialogs exactly:
 1. `# TASK:` one-liner + phase scope ("UI-only — dummy data, no backend").
 2. **Do this FIRST, before any Dart** (state it as a hard requirement): (a) read
    `docs/design/README.md` — the screen→feature map, repo inventory, and global conventions;
-   (b) invoke the `flutter-knowledge` skill — it is the authority on the feature tree, screen/body
-   split, cubit, routing and DI. Only then read the spec sections above, the PNGs, the shared
+   (b) invoke the `flutter-knowledge` skill, then the mini skills it maps —
+   `flutter-feature-structure` (feature tree), `flutter-screen-ui` (screen/body split, UI rules),
+   `flutter-cubit` (cubit), `flutter-routing-di` (routing and DI) — they are the authority. Only then read the spec sections above, the PNGs, the shared
    docs, and the actual repo files (skin, motion, core widgets, validators).
 3. **Target feature — exact path (non-negotiable).** Name the owning feature and the full screen
    dir this UI belongs in (e.g. `lib/feature/<feature>/presentation/<screen>_screen/`), copied

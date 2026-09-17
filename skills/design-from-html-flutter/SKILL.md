@@ -38,9 +38,11 @@ agents build every screen pixel-accurately. The prototype is the single source o
 extraction code and the traps. Doc structures live in [templates.md](templates.md).
 
 **REQUIRED SUB-SKILL:** invoke `/flutter-knowledge` (the flutter-knowledge skill) before
-writing any Dart — it is the authority on the project architecture (feature tree, Cubit
-conventions, screen/body split, DI, routing, UI rules). Use `/add-translation` whenever a
-user-facing string is added.
+writing any Dart — it is the authority on the project architecture and maps each kind of code to
+the mini skill that holds its conventions. Before writing that code, also invoke
+`/flutter-feature-structure` (feature tree), `/flutter-cubit` (Cubit conventions),
+`/flutter-screen-ui` (screen/body split, core widgets, colors, text styles, UI rules), and
+`/flutter-routing-di` (DI, routing). Use `/add-translation` whenever a user-facing string is added.
 
 ## Non-negotiables
 
@@ -62,4 +64,4 @@ user-facing string is added.
 | Docs that only a warm session can use | Each screen's single `<screen>.md` embeds a stand-alone implementation brief (see templates.md) |
 | Giving a bottom sheet/dialog its own screen dir, or a screen its own `prompt.md` | Merge each sheet/dialog into the dir/md of the screen that opens it; keep spec + brief in one file — one agent builds the screen and all its sheets/dialogs together |
 | Building a screen's UI in the wrong feature (e.g. under the launcher's feature) | Pin the owning-feature path from the README screen→feature map in every brief; a screen opened from another feature still belongs to ITS feature |
-| Brief that lets the builder skip project conventions | Every brief's first step: read `docs/design/README.md`, then invoke `flutter-knowledge`, before any Dart |
+| Brief that lets the builder skip project conventions | Every brief's first step: read `docs/design/README.md`, then invoke `flutter-knowledge` and the mini skills it maps (`flutter-feature-structure`, `flutter-cubit`, `flutter-screen-ui`, `flutter-routing-di`), before any Dart |

@@ -3,6 +3,11 @@ scaffold code in a Flutter project (any `.dart` file or `pubspec.yaml`). Treat
 them as the source of truth over legacy patterns in the codebase.
 
 @./skills/flutter-knowledge/SKILL.md
+@./skills/flutter-feature-structure/SKILL.md
+@./skills/flutter-data-layer/SKILL.md
+@./skills/flutter-cubit/SKILL.md
+@./skills/flutter-screen-ui/SKILL.md
+@./skills/flutter-routing-di/SKILL.md
 @./skills/drift-local-database/SKILL.md
 @./skills/hive-local-database/SKILL.md
 @./skills/flutter-testing/SKILL.md

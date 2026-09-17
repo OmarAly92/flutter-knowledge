@@ -15,7 +15,7 @@ Add the plugin to the `plugin` array in your `opencode.json` (global or project-
 ```
 
 Restart OpenCode. The plugin registers the `skills/` directory, so OpenCode's
-native `skill` tool can discover `flutter-knowledge` and `add-translation`.
+native `skill` tool can discover `flutter-knowledge` and every skill it maps to.
 
 Verify by asking OpenCode to list its skills.
 

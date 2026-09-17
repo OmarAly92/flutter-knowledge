@@ -3,7 +3,11 @@
 Flutter/Dart skills for coding agents. Install once and your agent follows a
 consistent set of full-stack Flutter conventions — feature architecture, the
 data layer, Cubit state management, dependency injection, routing, the core UI
-wrappers, and localization — plus five on-demand helpers: `add-translation`
+wrappers, and localization. `flutter-knowledge` is a small map of hard rules
+that routes the agent to five core mini skills (`flutter-feature-structure`,
+`flutter-data-layer`, `flutter-cubit`, `flutter-screen-ui`,
+`flutter-routing-di`) before it writes each kind of code — plus five on-demand
+helpers: `add-translation`
 for keeping `en.json` / `ar.json` in sync, `drift-local-database` and
 `hive-local-database` for local persistence (drift/SQLite or Hive),
 `flutter-testing` for mocktail/bloc_test unit tests, and
@@ -12,19 +16,18 @@ prototype.
 
 `flutter-knowledge` triggers automatically from its `description` — whenever
 Flutter or Dart comes up, the agent loads it. Nothing to invoke by hand. The
-helpers are lazy-loaded instead: they stay out of `flutter-knowledge`
-and only enter context on demand, either because the agent recognizes the
-task needs one from its own scoped `description` (local storage, tests, a
-missing translation key, an HTML design prototype), because
-`flutter-knowledge` explicitly invokes it,
-or because you run `/add-translation`, `/drift-local-database`,
-`/hive-local-database`, `/flutter-testing`, or `/design-from-html-flutter`
-directly — this keeps `flutter-knowledge` itself smaller and avoids loading
-storage/localization/testing/design conventions into every session.
+mini skills and helpers are lazy-loaded instead: they stay out of
+`flutter-knowledge` and only enter context on demand, either because the agent
+recognizes the task needs one from its own scoped `description` (a cubit, a
+screen, a repository, local storage, tests, a missing translation key, an HTML
+design prototype), because the `flutter-knowledge` map tells it to invoke one
+before writing that code, or because you run `/<skill-name>` directly — this
+keeps `flutter-knowledge` itself small and avoids loading every detailed
+convention into every session.
 
 On Claude Code, Codex, OpenCode, and Pi, `flutter-knowledge` is also
 force-loaded: a hook/plugin checks for `pubspec.yaml` and injects the
-conventions directly, so they apply even if the model doesn't decide to
+map and hard rules directly, so they apply even if the model doesn't decide to
 trigger the skill on its own. The timing differs by harness, though — Claude
 Code and Codex inject it once, at session start (a `SessionStart` hook); on
 OpenCode and Pi it's re-applied to the system prompt on every turn instead,
@@ -39,7 +42,12 @@ description-based triggering only (see `CONTRIBUTING.md`).
 
 | Skill | Purpose | Loads |
 | --- | --- | --- |
-| **flutter-knowledge** | Full-stack conventions: architecture, data layer, Cubit, DI, routing, UI, styling, localization. | Automatically |
+| **flutter-knowledge** | The map: always-on hard rules plus which skill to invoke before writing each kind of code. | Automatically |
+| **flutter-feature-structure** | Feature folder tree, `_screen` suffix, mirroring an existing equivalent file. | On demand, via `flutter-knowledge` or `/flutter-feature-structure` |
+| **flutter-data-layer** | Models, params, remote data sources, repositories, `EndPoints`, `Failure`. | On demand, via `flutter-knowledge` or `/flutter-data-layer` |
+| **flutter-cubit** | Cubit + state classes, per-method state naming, data and controller lifecycle. | On demand, via `flutter-knowledge` or `/flutter-cubit` |
+| **flutter-screen-ui** | Screen/Body split, widget structure, core wrappers, colors, text styles, spacing, localization, navigation. | On demand, via `flutter-knowledge` or `/flutter-screen-ui` |
+| **flutter-routing-di** | Routes, `BlocProvider` wiring, `get_it` service-locator setup. | On demand, via `flutter-knowledge` or `/flutter-routing-di` |
 | **drift-local-database** | Drift/SQLite local persistence: tables, DAOs, entities, migrations, local-only and hybrid repositories. | On demand, via `flutter-knowledge` or `/drift-local-database` |
 | **hive-local-database** | Hive (hive_ce) local persistence: boxes, storage↔model mapping, local-only and hybrid repositories. | On demand, via `flutter-knowledge` or `/hive-local-database` |
 | **flutter-testing** | Unit test conventions: mocktail mocks, bloc_test cubit tests, data source/repository/cubit coverage. | On demand, via `flutter-knowledge` or `/flutter-testing` |
