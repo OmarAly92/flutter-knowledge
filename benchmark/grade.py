@@ -462,6 +462,12 @@ def new_task_checks(v, task, run_dir, new, touched, full, code, dart, ui, cubits
         of = lambda kind: [t for r, t in tests.items() if kind in os.path.basename(r)]
         if of('cubit') and not any(re.search(r'\bblocTest\b', t) for t in of('cubit')):
             v['cubit_test_without_blocTest'] += 1
+        # The constructor's initial fetch emits its loading state inside build(), before blocTest listens.
+        for t in of('cubit'):
+            for case in re.split(r'\bblocTest\s*<', t)[1:]:
+                if 'act:' not in case and re.search(
+                        r'expect:\s*\(\)\s*=>\s*(?:<[^>]*>)?\s*\[\s*(?:const\s+)?(?:isA<)?\w*LoadingState', case):
+                    v['cubit_test_expects_ctor_loading_state'] += 1
         v['mocktail_any_without_fallback'] += sum(1 for t in tests.values()
                                                   if re.search(r'getTrips\(\s*any\(\)', t) and 'registerFallbackValue' not in t)
         if of('repository') and not any(re.search(r'=>\s*false', t) and 'verifyNever' in t for t in of('repository')):
