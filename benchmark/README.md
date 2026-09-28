@@ -30,6 +30,10 @@ Each task ran 3 times in forced mode and once in description-only mode, 16 runs 
 
 Master broke no rule on these tasks either. Every g1 run ignored the decoy color, pulled the real values from the rendered CSS, and extracted both embedded fonts. In description-only mode the agents still found `flutter-testing` for t1 and `design-from-html-flutter` with its playbook for g1. These tasks are a regression baseline: a skill change should keep them at 0.
 
+### 1.3.1: flutter-testing cubit example fix (2026-09-28)
+
+The skill's cubit example expected the constructor fetch's loading state, which `blocTest` never records because it subscribes after `build()` returns. Every master t1 run noticed and wrote around it. On 1.3.1, t1 again broke no rule in 4 runs (forced ×3, desc ×1), the agents used the example's `act:` and `skip:` pattern directly, and mean tokens fell from 85.8k to 73.7k. The grader now flags a `blocTest` that expects that loading state (`cubit_test_expects_ctor_loading_state`).
+
 ## Files
 
 | File | What it is |
