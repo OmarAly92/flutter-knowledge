@@ -37,7 +37,7 @@ DESIGN_DURATIONS = [120, 220, 360]
 DESIGN_CURVES = [(0.2, 0, 0, 1), (0.34, 1.56, 0.64, 1)]
 LEGACY_TEXT_GETTERS = ['style12Regular', 'style14Regular', 'style14Medium', 'style16Medium', 'style18Bold']
 RAW_TO_WRAPPER = {'Text': 'app_text', 'Scaffold': 'app_scaffold', 'AppBar': 'global_appbar', 'SizedBox': 'vertical_space',
-                  'ElevatedButton': 'primary_button', 'TextButton': 'primary_button', 'OutlinedButton': 'primary_button',
+                  'ElevatedButton': 'primary_button', 'TextButton': 'secondary_button', 'OutlinedButton': 'secondary_button',
                   'TextFormField': 'app_text_field', 'TextField': 'app_text_field', 'CircularProgressIndicator': 'app_loader'}
 WRAPPER_CLASSES = {'AppText': 'app_text', 'AppScaffold': 'app_scaffold', 'GlobalAppbar': 'global_appbar',
                    'VerticalSpace': 'vertical_space', 'HorizontalSpace': 'horizontal_space', 'AppContainer': 'app_container',
