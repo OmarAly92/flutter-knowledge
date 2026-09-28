@@ -92,6 +92,14 @@ sync by hand when the skill content changes.
 4. No manifest changes needed — every harness points at the whole `skills/` dir.
 5. Bump the version (see below) and push.
 
+## Benchmarking a skill change
+
+Before merging a change to any `SKILL.md`, run the benchmark in `benchmark/`
+against `master` (see `benchmark/README.md`, which has a paste-in prompt). It
+spawns Sonnet 5.5 agents on a fixture project with legacy traps, grades the
+code they write, and compares rule breaks, translations and tokens per version.
+Its output goes to `benchmark/out/`, which is not committed.
+
 ## Releasing a new version
 
 Run `./bump-version.sh <x.y.z>` — it rewrites the version string in every

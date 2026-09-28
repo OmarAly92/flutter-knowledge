@@ -5,3 +5,5 @@ node_modules/
 .vscode/
 skills/flutter-knowledge-workspace/
 /skill-eval/
+/benchmark/out/
+__pycache__/
