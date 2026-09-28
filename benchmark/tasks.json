@@ -1,0 +1,24 @@
+{
+  "prompts": {
+    "forced": "You are a Flutter developer working in the project at RUN={run} (no Flutter SDK; just write the Dart files, do not run anything or generate code). Project conventions are injected into your session as a skill. Your conventions skill is the file {version}/skills/flutter-knowledge/SKILL.md - read it fully first and follow it. Other helper skills live as skills/<name>/SKILL.md under {version}/ ; read one (as if invoking it with the Skill tool) only when the conventions tell you to invoke it. Do not read any other files in that directory or in any other version directory. Look at RUN's existing files (pubspec.yaml, lib/core, lib/feature) before writing. Task: {task} Write all files inside RUN (edit existing files where needed). At the end, write RUN/SKILLS_READ.txt listing the full path of every skill file you read, then reply with a 3-line summary.",
+    "desc": "You are a Flutter developer working in the project at RUN={run} (no Flutter SDK; just write the Dart files, do not run anything or generate code). Your harness offers skills by description only: nothing is injected into your session up front. The available skills and their descriptions are listed in {skill_index}; read that file first. To invoke a skill, read {version}/skills/<name>/SKILL.md in full. Invoke a skill only when its description says it applies to what you are doing, or when a skill you already invoked tells you to invoke another one. Do not read any other files in that version directory or in any other version directory. Look at RUN's existing files (pubspec.yaml, lib/core, lib/feature) before writing. Task: {task} Write all files inside RUN (edit existing files where needed). At the end, write RUN/SKILLS_READ.txt listing the full path of every skill file you read, then reply with a 3-line summary."
+  },
+  "modes": {
+    "forced": {"prompt": "forced", "fixture": "", "about": "Claude Code, Codex, OpenCode, Pi: the flutter-knowledge map is injected up front."},
+    "desc": {"prompt": "desc", "fixture": "", "about": "Cursor, Kimi, install.sh: the agent only sees skill descriptions and decides what to read."},
+    "nowrap": {"prompt": "forced", "fixture": "-nowrap", "about": "Forced mode on a project missing PrimaryButton, AppTextField, AppLoader and AppErrorWidget."}
+  },
+  "tasks": {
+    "d1": {"engine": "drift", "text": "Add a local-only \"notes\" feature (no API): notes have a title and body, stored on the device; a screen lists notes and lets the user add one. Wire it into routing and DI."},
+    "d2": {"engine": "drift", "text": "Add a \"products\" feature that loads GET /products, shows name and price in a list, and keeps working offline: the last fetched products are saved on the device and shown when there is no network. Wire it into routing and DI."},
+    "d3": {"engine": "drift", "text": "Add a \"tasks\" feature that works offline: creating a task (title) always saves it locally first, marked as pending; a sync job pushes all pending tasks to POST /tasks when the device is online (run on demand from a \"Sync now\" button and automatically when the screen opens) and marks them synced with the server id; the list screen shows all local tasks with their sync status. Wire everything into routing and DI."},
+    "d4": {"engine": "drift", "text": "The existing budget feature (already shipped to users) needs an optional description on each budget. Add it end to end on the data side: the stored column, a safe upgrade for users who already have the database, the model, the add params, and the local data source (including adding a budget with a description). Do not build UI."},
+    "h1": {"engine": "hive", "text": "Add a \"products\" feature that loads GET /products, shows name and price in a list, and keeps working offline: the last fetched products are saved on the device and shown when there is no network. Wire it into routing and DI."},
+    "h2": {"engine": "hive", "text": "Add a \"tasks\" feature that works offline: creating a task (title) always saves it locally first, marked as pending; a sync job pushes all pending tasks to POST /tasks when the device is online (run on demand from a \"Sync now\" button and automatically when the screen opens) and marks them synced with the server id; the list screen shows all local tasks with their sync status. Wire everything into routing and DI."}
+  },
+  "default_plan": [
+    {"mode": "forced", "tasks": ["d1", "d2", "d3", "d4", "h1", "h2"], "reps": 3},
+    {"mode": "desc", "tasks": ["d1", "d2", "d3", "d4", "h1", "h2"], "reps": 1},
+    {"mode": "nowrap", "tasks": ["d1", "h1"], "reps": 2}
+  ]
+}
