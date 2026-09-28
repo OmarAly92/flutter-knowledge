@@ -17,6 +17,19 @@ These are the same 20 runs per version: 5 screen tasks, with 3 forced runs and 1
 | Runs with real Arabic for new keys | 0 | 1 | 20 |
 | Mean tokens per run | 117.7k | 124.0k | 123.5k |
 
+### Newer tasks, master baseline (1.3.0, 2026-09-28)
+
+Each task ran 3 times in forced mode and once in description-only mode, 16 runs in all.
+
+| Task | Runs | Rule breaks | Mean skill files read | Mean tokens |
+|---|---|---|---|---|
+| f1 trip details + delete sheet | 4 | 0 | 7.0 | 108.4k |
+| f2 edit form | 4 | 0 | 7.0 | 100.7k |
+| t1 unit tests | 4 | 0 | 2.8 | 85.8k |
+| g1 design prototype | 4 | 0 | 4.0 | 133.7k |
+
+Master broke no rule on these tasks either. Every g1 run ignored the decoy color, pulled the real values from the rendered CSS, and extracted both embedded fonts. In description-only mode the agents still found `flutter-testing` for t1 and `design-from-html-flutter` with its playbook for g1. These tasks are a regression baseline: a skill change should keep them at 0.
+
 ## Files
 
 | File | What it is |

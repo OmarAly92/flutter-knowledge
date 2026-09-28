@@ -152,8 +152,11 @@ def grade(run_dir, fixture_dir, task):
     if task != 't1' and any(r.startswith('test/') for r in new):
         v['tests_unprompted'] += 1
     # raw widget where the project has a wrapper (only wrappers present in the fixture count)
-    raw_ok = [w for w, f in RAW_TO_WRAPPER.items() if f'lib/core/widgets/{f}.dart' in fx]
+    # SizedBox counts only as a bare gap (no child); SizedBox(width: double.infinity, child: ...) is sizing
+    raw_ok = [w for w, f in RAW_TO_WRAPPER.items() if f'lib/core/widgets/{f}.dart' in fx and w != 'SizedBox']
     raw_re = r'(?<![\w.])(?:%s)\(' % '|'.join(raw_ok) if raw_ok else r'(?!x)x'
+    if 'lib/core/widgets/vertical_space.dart' in fx:
+        raw_re += r'|(?<![\w.])SizedBox\((?:\s*(?:height|width):\s*[\w.]+\s*,?)+\s*\)'
     for r, t in ui.items():
         v['raw_widget_with_wrapper'] += count(raw_re, t)
     # missing-wrapper fallback: never import or use a wrapper the project lacks, never invent one
@@ -165,7 +168,7 @@ def grade(run_dir, fixture_dir, task):
             if f'lib/core/widgets/{f}.dart' not in rn and re.search(r'(?<![\w.])%s\(' % cls, t):
                 v['uses_missing_wrapper'] += 1
     for r in new:
-        if r.startswith('lib/core/widgets/'):
+        if r.startswith('lib/core/widgets/') and task != 'g1':  # g1: the design skill adds the design's primitives
             v['created_new_wrapper'] += 1
     for r, t in ui.items():
         v['raw_color_or_textstyle'] += count(r'Color\(0x|TextStyle\(|\bColors\.(?!transparent)', t)
@@ -502,12 +505,10 @@ def new_task_checks(v, task, run_dir, new, touched, full, code, dart, ui, cubits
                   re.findall(r'Cubic\(\s*([-\d.]+)\s*,\s*([-\d.]+)\s*,\s*([-\d.]+)\s*,\s*([-\d.]+)\s*,?\s*\)', core)]
         v['design_motion_missing'] += sum(1 for d in DESIGN_DURATIONS if d not in durs) + sum(
             1 for c in DESIGN_CURVES if not any(all(abs(a - b) < 1e-6 for a, b in zip(c, k)) for k in curves))
-        for f, size in (('primary_button', 52), ('app_text_field', 48)):
-            rel = f'lib/core/widgets/{f}.dart'
-            if rel not in touched:
+        # sizes are not checked: 48 px can come from padding plus line height, with no literal 48
+        for f in ('primary_button', 'app_text_field'):
+            if f'lib/core/widgets/{f}.dart' not in touched:
                 v['design_widget_not_restyled'] += 1
-            elif not re.search(r'(?<![\d.])%d(?:\.0)?\b' % size, full[rel] + core):
-                v['design_widget_size_wrong'] += 1
         for r in code:
             if r.startswith('lib/core/widgets/') and r.endswith('.dart'):
                 v['design_raw_value_in_widget'] += count(
