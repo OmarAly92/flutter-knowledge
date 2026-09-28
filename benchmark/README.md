@@ -4,6 +4,8 @@ Measures whether agents follow the skills in this repo, so a skill change can be
 
 Each run gives one agent a realistic Flutter project and one task. A static grader then counts which conventions the agent broke. The project has a real core layer (`ApiConsumer`, `GlobalResponse`, `NetworkStatus`, `Failure`/`Result`, `AppColors`, `AppTextStyle`, `LocaleKeys`, core widgets). It also contains legacy code that breaks the rules on purpose: `RoutesStrings._()`, an `orders` feature on Bloc with inline DI, and a `budget` feature whose params return a drift `Companion`. An agent that copies the code around it instead of following the skills gets caught.
 
+The newer tasks (f1, f2, t1, g1) run on a third project, `app`: the drift project plus a `trips` feature written the way the skills ask, shared email and phone validators, a legacy flat `test/` file that uses mockito, and a design prototype at `design/prototype.html`. The prototype is built like a standalone design export: its real CSS sits escaped inside a JS string, the page's own `<style>` holds a decoy `--primary`, and its font is embedded as compressed base64. Reading the file by eye gives the wrong values, so it tests whether an agent follows the design skill's extraction steps.
+
 ## Results so far (Sonnet 5.5, 2026-09-28)
 
 These are the same 20 runs per version: 5 screen tasks, with 3 forced runs and 1 description-only run each.
@@ -19,8 +21,10 @@ These are the same 20 runs per version: 5 screen tasks, with 3 forced runs and 1
 
 | File | What it is |
 |---|---|
-| `build_fixtures.py` | Writes the drift and Hive fixture projects, plus a `-nowrap` copy of each with `PrimaryButton`, `AppTextField`, `AppLoader` and `AppErrorWidget` removed. |
-| `tasks.json` | The two agent prompt templates, the three modes, the six tasks, and the default plan. |
+| `build_fixtures.py` | Writes the drift, Hive and `app` fixture projects, plus a `-nowrap` copy of each with `PrimaryButton`, `AppTextField`, `AppLoader` and `AppErrorWidget` removed. |
+| `fixture_files/design/prototype.html` | The design prototype copied into the `app` fixture for task g1. |
+| `make_prototype.py` | Regenerates that prototype and its embedded font. It needs `fonttools`, and you only run it to change the prototype. |
+| `tasks.json` | The two agent prompt templates, the three modes, the ten tasks, and the default plan. |
 | `prepare.py` | Builds the fixtures, makes one project copy per run, writes a skill index per version, and writes one prompt per run to `out/agents.jsonl`. |
 | `grade.py` | The grader. It runs regex checks on the code each agent wrote and writes `out/grades.json`. |
 | `compare.py` | Compares versions on the tasks they all ran. It prints rule breaks, translation outcomes, tokens and skill files read, and runs a permutation test. |
@@ -37,6 +41,12 @@ Generated output goes to `benchmark/out/`, which git ignores.
 | d4 | drift | An optional column on the shipped `budget` table, with a migration (data side only) |
 | h1 | Hive | Same as d2 |
 | h2 | Hive | Same as d3 |
+| f1 | app | A trip details screen loaded by id, with a delete confirmation in a bottom sheet |
+| f2 | app | An edit trip screen with a prefilled, validated form that saves by id |
+| t1 | app | Unit tests for the existing trips data source, repository and cubit |
+| g1 | app | Colors, font, text styles, motion and two core widgets taken from the HTML prototype |
+
+f1 and f2 cover what the first six tasks never reach: `EndPoints` methods that take an id, `registerFactoryParam` with `param1`, a bottom sheet given the cubit through `BlocProvider.value`, controllers and the form key on the cubit, prefilling through the initializer list, `dispose` in `close()`, and the shared validators. t1 checks the `flutter-testing` skill and g1 the `design-from-html-flutter` skill, including whether an agent in description-only mode reads them at all.
 
 ### Modes
 
@@ -46,7 +56,7 @@ Generated output goes to `benchmark/out/`, which git ignores.
 | `desc` | Cursor, Kimi and `install.sh`, where the agent sees only skill descriptions |
 | `nowrap` | Forced mode on the project with four core widgets missing |
 
-The default plan is forced ×3 and desc ×1 on all six tasks, plus nowrap ×2 on d1 and h1. That is 28 runs per version.
+The default plan is forced ×3 and desc ×1 on all ten tasks, plus nowrap ×2 on d1 and h1. That is 44 runs per version. To run only the newer tasks, use `--only forced:f1,f2,t1,g1:3 --only desc:f1,f2,t1,g1:1`.
 
 ## Running it
 

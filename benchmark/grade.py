@@ -2,7 +2,7 @@
 """Static grader for the flutter-knowledge benchmark.
 
 Usage: grade.py <out_dir>
-  <out_dir>/fixture-{drift,hive}[-nowrap]           (from build_fixtures.py)
+  <out_dir>/fixture-{drift,hive,app}[-nowrap]       (from build_fixtures.py)
   <out_dir>/runs/<version>-<mode>-<task>-<rep>/      (one agent run each, from prepare.py)
   <out_dir>/tokens.txt  (optional: "<run name> <tokens>" per line)
 Writes <out_dir>/grades.json and prints markdown tables. Runs without SKILLS_READ.txt
@@ -17,6 +17,8 @@ The checks are regexes: spot-check every rule hit by reading the flagged code.
 import difflib, json, os, re, sys
 from collections import defaultdict
 
+HERE = os.path.dirname(os.path.abspath(__file__))
+TASKS = json.load(open(os.path.join(HERE, 'tasks.json'), encoding='utf-8'))['tasks']
 B = sys.argv[1]
 RUNS = os.path.join(B, 'runs')
 TOKENS = {}
@@ -25,7 +27,15 @@ if os.path.exists(os.path.join(B, 'tokens.txt')):
         if line.split():
             TOKENS[line.split()[0]] = int(line.split()[1])
 ARABIC = re.compile(r'[؀-ۿ]')
-SCREEN_TASKS = {'d1', 'd2', 'd3', 'h1', 'h2'}
+SCREEN_TASKS = {'d1', 'd2', 'd3', 'h1', 'h2'}   # a new feature with its own screen
+TRIP_SCREEN_TASKS = {'f1', 'f2'}                # a new screen inside the existing trips feature
+TASK_SKILL = {'t1': 'flutter-testing', 'g1': 'design-from-html-flutter'}
+# design/prototype.html (task g1): the values its injected CSS resolves to
+DESIGN_COLORS = ['F4F6F5', 'FFFFFF', 'EDF1EF', '0E1A17', '4A5A55', '83928D', 'D6DEDA', '0F766E', '15803D', 'B45309', 'B91C1C']
+DESIGN_TYPE = [(28, 34, -0.56), (20, 26, -0.2), (15, 22, 0.0), (12, 16, 0.24)]   # font size, line height, tracking (px)
+DESIGN_DURATIONS = [120, 220, 360]
+DESIGN_CURVES = [(0.2, 0, 0, 1), (0.34, 1.56, 0.64, 1)]
+LEGACY_TEXT_GETTERS = ['style12Regular', 'style14Regular', 'style14Medium', 'style16Medium', 'style18Bold']
 RAW_TO_WRAPPER = {'Text': 'app_text', 'Scaffold': 'app_scaffold', 'AppBar': 'global_appbar', 'SizedBox': 'vertical_space',
                   'ElevatedButton': 'primary_button', 'TextButton': 'primary_button', 'OutlinedButton': 'primary_button',
                   'TextFormField': 'app_text_field', 'TextField': 'app_text_field', 'CircularProgressIndicator': 'app_loader'}
@@ -48,7 +58,7 @@ def files(root):
         for f in fs:
             p = os.path.join(d, f)
             rel = os.path.relpath(p, root)
-            if rel.startswith(('lib/', 'assets/')) or rel == 'pubspec.yaml':
+            if rel.startswith(('lib/', 'assets/', 'test/')) or rel == 'pubspec.yaml':
                 out[rel] = p
     return out
 
@@ -58,6 +68,8 @@ def added_lines(old, new):
 
 
 def role(rel):
+    if rel.startswith('test/'):
+        return 'test'
     if rel.startswith('lib/feature/orders/'):
         return 'legacy'
     if '/presentation/' in rel and '/logic/' in rel:
@@ -110,7 +122,7 @@ def grade(run_dir, fixture_dir, task):
     code = {**new, **touched}
     dart = {r: t for r, t in code.items() if r.endswith('.dart') and 'locale_keys' not in r}
 
-    if any(r.startswith('lib/feature/orders/') for r in code):
+    if any(r.startswith('lib/feature/orders/') or r == 'test/orders_repository_test.dart' for r in code):
         v['touched_legacy_orders'] += 1
     if 'lib/core/helpers/localization/locale_keys.g.dart' in touched:
         v['edited_generated_locale_keys'] += 1
@@ -118,7 +130,7 @@ def grade(run_dir, fixture_dir, task):
     by_role = defaultdict(dict)
     for r, t in dart.items():
         by_role[role(r)][r] = t
-    feat = {r: t for r, t in dart.items() if role(r) not in ('legacy', 'core', 'db')}
+    feat = {r: t for r, t in dart.items() if role(r) not in ('legacy', 'core', 'db', 'test')}
     ui = by_role['ui']
 
     # ---------------- general / UI ----------------
@@ -131,6 +143,14 @@ def grade(run_dir, fixture_dir, task):
         v['endpoint_interpolation'] += count(r"'\$\{EndPoints\.|EndPoints\.\w+\s*\+", t)
         v['print_call'] += count(r'(?<![\w.])print\(', t)
         v['private_ctor_static_class'] += count(r'\b[A-Z]\w*\._\(\)\s*;', t)
+        v['raw_navigator'] += count(r'\bNavigator\.(?:of|push\w*|pop\w*|maybePop)\b', t)
+        if role(r) in ('ui', 'cubit'):
+            v['service_locator_in_ui_or_cubit'] += count(r'\bsl<|GetIt\.instance', t)
+    for r, t in new.items():
+        if r.endswith('.dart') and role(r) == 'core':
+            v['private_ctor_static_class'] += count(r'\b[A-Z]\w*\._\(\)\s*;', t)
+    if task != 't1' and any(r.startswith('test/') for r in new):
+        v['tests_unprompted'] += 1
     # raw widget where the project has a wrapper (only wrappers present in the fixture count)
     raw_ok = [w for w, f in RAW_TO_WRAPPER.items() if f'lib/core/widgets/{f}.dart' in fx]
     raw_re = r'(?<![\w.])(?:%s)\(' % '|'.join(raw_ok) if raw_ok else r'(?!x)x'
@@ -147,6 +167,7 @@ def grade(run_dir, fixture_dir, task):
     for r in new:
         if r.startswith('lib/core/widgets/'):
             v['created_new_wrapper'] += 1
+    for r, t in ui.items():
         v['raw_color_or_textstyle'] += count(r'Color\(0x|TextStyle\(|\bColors\.(?!transparent)', t)
         v['blocprovider_in_feature'] += count(r'(?<!\.)\bBlocProvider(?:<[^>]*>)?\(|MultiBlocProvider\(', t)
         bb, bw = count(r'BlocBuilder<', t), count(r'buildWhen', t)
@@ -155,7 +176,9 @@ def grade(run_dir, fixture_dir, task):
             1 for line in t.splitlines()
             if 'LocaleKeys' not in line and re.search(
                 r"(?:AppText|Text)\(\s*'\s*[A-Za-z]|(?:titleText|hintText|text|labelText|message|title|label|tooltip):\s*'\s*[A-Za-z]", line))
-        v['inline_validator'] += count(r'validator:\s*\(', t)
+        # a closure that only delegates to the shared AppFormValidations is fine
+        v['inline_validator'] += sum(1 for m in re.finditer(r'validator:\s*\(', t)
+                                     if 'AppFormValidations' not in ''.join(t[m.end():].splitlines(True)[:3]))
     for r, t in new.items():
         if role(r) in ('ui', 'cubit', 'feature_other') and r.endswith('.dart'):
             n = count(r'class\s+\w+\s+extends\s+(?:StatelessWidget|StatefulWidget|State<)', t)
@@ -169,7 +192,7 @@ def grade(run_dir, fixture_dir, task):
     for r, t in new.items():
         if r.endswith('_body.dart') and re.search(r'AppScaffold|Scaffold\(|GlobalAppbar|BlocListener', t):
             v['screen_body_split'] += 1
-    if task in SCREEN_TASKS and not screens:
+    if task in SCREEN_TASKS | TRIP_SCREEN_TASKS and not screens:
         v['no_screen_file'] += 1
     # Threading data to widgets: leaf widgets take primitives, intermediates read the cubit
     for r, t in new.items():
@@ -197,7 +220,7 @@ def grade(run_dir, fixture_dir, task):
         v['try_catch_in_cubit'] += count(r'\}\s*(?:on\s+\w+\s*)?catch\s*\(|\}\s*on\s+\w+\s*\{', t)  # try/finally alone is fine
         if re.search(r'RemoteDataSource|LocalDataSource|NetworkStatus', t):
             v['cubit_bypasses_repository'] += 1
-    if task in SCREEN_TASKS and cubits:
+    if task in SCREEN_TASKS | {'f1'} and cubits:
         ctor = ''.join(re.findall(r'super\([^;]*?\)\s*\{(.*?)\}', ' '.join(cubits.values()), re.S))
         if not re.search(r'\w+\(', ctor):
             v['initial_fetch_not_in_cubit_ctor'] += 1
@@ -248,9 +271,9 @@ def grade(run_dir, fixture_dir, task):
     # DI and routing
     sl_path = 'lib/core/utils/service_locator.dart'
     sl_add = touched.get(sl_path, '')
-    if task in SCREEN_TASKS:
-        if not re.search(r'static\s+void\s+_\w+FeatureSetup', sl_add):
-            v['di_no_feature_setup_method'] += 1
+    if task in SCREEN_TASKS and not re.search(r'static\s+void\s+_\w+FeatureSetup', sl_add):
+        v['di_no_feature_setup_method'] += 1
+    if task in SCREEN_TASKS | TRIP_SCREEN_TASKS:
         init_body = re.search(r'static Future<void> init\(\) async \{(.*?)\n  \}', full.get(sl_path, ''), re.S)
         if init_body:
             fixture_init = re.search(r'static Future<void> init\(\) async \{(.*?)\n  \}', read(fx[sl_path]), re.S).group(1)
@@ -277,7 +300,7 @@ def grade(run_dir, fixture_dir, task):
     info['ar_real'] = sum(1 for k in new_keys if ARABIC.search(str(ar[k])))
     info['ar_placeholder'] = len(new_keys) - info['ar_real']
     # ---------------- storage engine ----------------
-    engine = 'drift' if task.startswith('d') else 'hive'
+    engine = TASKS[task]['engine']
     if engine == 'drift':
         for r, t in feat.items():
             v['drift_table_or_dao_in_feature'] += count(r'extends Table\b|@DriftAccessor', t)
@@ -357,7 +380,138 @@ def grade(run_dir, fixture_dir, task):
         if 'description' not in full.get('lib/feature/budget/data/data_source/local/budget_local_data_source.dart', '') \
                 and 'description' not in full.get('lib/feature/budget/domain/params/add_budget_params.dart', ''):
             v['d4_description_not_written'] += 1
+    new_task_checks(v, task, run_dir, new, touched, full, code, dart, ui, cubits, sl_add)
     return {k: n for k, n in v.items() if n}, info
+
+
+def num(expr):
+    """Value of a literal arithmetic expression like '34 / 28' or '-0.02 * 28.sp', else None."""
+    expr = re.sub(r'\.(?:spMin|sp|h|w|r)\b', '', expr).strip()
+    if not expr or not re.fullmatch(r'[-+*/(). \d]+', expr):
+        return None
+    try:
+        return float(eval(expr, {'__builtins__': {}}))
+    except Exception:
+        return None
+
+
+def type_scale_hits(text):
+    """For each DESIGN_TYPE entry: (size and line height found, tracking found)."""
+    chunks = [c for c in re.split(r';', text) if re.search(r'\d', c)]
+    out = []
+    for size, lh, tr in DESIGN_TYPE:
+        scale = track = False
+        for c in chunks:
+            fields = {k: num(e) for k, e in re.findall(r'(fontSize|height|letterSpacing):\s*([^,)\n]+)', c)}
+            nums = [float(x) for x in re.findall(r'(?<![\w.])-?\d+(?:\.\d+)?', c)]
+            has_size = fields.get('fontSize') == size or (fields.get('fontSize') is None and size in nums)
+            if not has_size:
+                continue
+            h = fields.get('height')
+            if (h is not None and abs(h - lh / size) < 0.01) or lh in nums or any(abs(n - lh / size) < 0.006 for n in nums):
+                scale = True
+                ls = fields.get('letterSpacing')
+                if tr == 0 or (ls is not None and abs(ls - tr) < 0.02) or any(abs(n - tr) < 0.02 for n in nums if n) \
+                        or any(abs(n * size - tr) < 0.02 for n in nums if n and abs(n) < 0.1):
+                    track = True
+        out.append((scale, track))
+    return out
+
+
+def new_task_checks(v, task, run_dir, new, touched, full, code, dart, ui, cubits, sl_add):
+    ui_all = ' '.join(ui.values())
+    if task in TRIP_SCREEN_TASKS:
+        if not re.search(r'static\s+String\s+\w+\s*\(', touched.get('lib/core/api/api_request_helpers/end_points.dart', '')):
+            v['endpoint_with_id_not_static_method'] += 1
+        if 'registerFactoryParam' not in sl_add:
+            v['route_arg_cubit_not_registerFactoryParam'] += 1
+        if 'param1' not in touched.get('lib/core/app_routes/app_router.dart', ''):
+            v['route_arg_not_passed_as_param1'] += 1
+    if task == 'f1':
+        if not re.search(r'showModalBottomSheet|showBottomSheet|showDialog', ui_all):
+            v['f1_no_bottom_sheet'] += 1
+        else:
+            if 'BlocProvider.value' not in ui_all:
+                v['sheet_not_wrapped_in_BlocProvider_value'] += 1
+            sheets = [t for r, t in new.items() if role(r) == 'ui'
+                      and re.search(r'class\s+\w*(?:Sheet|Dialog|Confirm)\w*\s+extends\s+StatelessWidget', t)]
+            if not any(re.search(r'final\s+\w+Cubit\s+\w+\s*;', t) for t in sheets):
+                v['sheet_not_given_cubit'] += 1
+    if task == 'f2':
+        for r, t in ui.items():
+            v['controller_or_form_key_in_widget'] += count(r'TextEditingController\(|GlobalKey<FormState>', t)
+        cub = ' '.join(cubits.values())
+        if re.search(r'\.text\s*=[^=]|late\s+(?:final\s+)?TextEditingController', cub):
+            v['controller_not_prefilled_in_initializer_list'] += 1
+        if count(r'TextEditingController\(', cub) > count(r'\.dispose\(\)', cub):
+            v['controller_not_disposed'] += 1
+        if not any('/params/' in r for r in new):
+            v['update_without_params_class'] += 1
+        if not re.search(r'\.validate\(\)', ' '.join(t for r, t in dart.items() if role(r) in ('ui', 'cubit'))):
+            v['form_not_validated'] += 1
+    if task == 't1':
+        tests = {r: t for r, t in new.items() if r.startswith('test/') and r.endswith('_test.dart')}
+        mirrored = ['test/feature/trips/data/data_source/trips_remote_data_source_test.dart',
+                    'test/feature/trips/data/repository/trips_repository_test.dart',
+                    'test/feature/trips/presentation/trips_screen/logic/trips_cubit_test.dart']
+        v['tests_not_mirroring_lib'] += sum(1 for m in mirrored if m not in tests)
+        v['tests_use_mockito'] += sum(1 for t in tests.values() if re.search(r'package:mockito|@GenerateMocks', t))
+        of = lambda kind: [t for r, t in tests.items() if kind in os.path.basename(r)]
+        if of('cubit') and not any(re.search(r'\bblocTest\b', t) for t in of('cubit')):
+            v['cubit_test_without_blocTest'] += 1
+        v['mocktail_any_without_fallback'] += sum(1 for t in tests.values()
+                                                  if re.search(r'getTrips\(\s*any\(\)', t) and 'registerFallbackValue' not in t)
+        if of('repository') and not any(re.search(r'=>\s*false', t) and 'verifyNever' in t for t in of('repository')):
+            v['repo_test_no_offline_branch'] += 1
+        if of('data_source') and not any('queryParameters' in t for t in of('data_source')):
+            v['ds_test_params_not_verified'] += 1
+        dev = re.search(r'^dev_dependencies:\n(.*?)(?=^\S|\Z)', full.get('pubspec.yaml', ''), re.M | re.S)
+        v['test_deps_missing'] += sum(1 for pkg in ('mocktail', 'bloc_test')
+                                      if not (dev and re.search(r'^\s+%s:' % pkg, dev.group(1), re.M)))
+    if task == 'g1':
+        core = ' '.join(full[r] for r in code if r.startswith('lib/core/') and r.endswith('.dart'))
+        hexes = {h.upper() for h in re.findall(r'0x([0-9A-Fa-f]{8})', core)}
+        soft = '1F0F766E' in hexes or re.search(r'withValues\(alpha:\s*0?\.12\b|withOpacity\(0?\.12\b|withAlpha\(31\)', core)
+        v['design_color_missing'] += sum(1 for c in DESIGN_COLORS if 'FF' + c not in hexes) + (0 if soft else 1)
+        if 'FF3366FF' in hexes:
+            v['design_decoy_color_used'] += 1
+        if re.search(r'\bprimary\s*=\s*Color\(0xFF1E6FD9', full.get('lib/core/app_themes/colors/app_colors.dart', '')):
+            v['design_old_primary_kept'] += 1
+        fonts = []
+        for d, _, fs in os.walk(run_dir):
+            for f in fs:
+                if f.lower().endswith(('.ttf', '.otf')):
+                    with open(os.path.join(d, f), 'rb') as fh:
+                        if fh.read(4) in (b'\x00\x01\x00\x00', b'OTTO', b'true'):
+                            fonts.append(f)
+        if len(fonts) < 2:
+            v['design_font_not_extracted'] += 1
+        pub = full.get('pubspec.yaml', '')
+        if not re.search(r'family:\s*[\'"]?Nordvik Sans', pub) or not re.search(r'weight:\s*700', pub):
+            v['design_font_not_declared'] += 1
+        if 'fontFamily' not in core:
+            v['design_font_family_not_applied'] += 1
+        styles = ' ;'.join(full[r] for r in code if r.startswith('lib/core/app_themes/') and r.endswith('.dart'))
+        hits = type_scale_hits(styles)
+        v['design_type_scale_wrong'] += sum(1 for scale, _ in hits if not scale)
+        v['design_tracking_wrong'] += sum(1 for scale, track in hits if scale and not track)
+        legacy = full.get('lib/core/app_themes/text_style/app_text_style.dart', '')
+        v['design_legacy_text_getters_removed'] += sum(1 for g in LEGACY_TEXT_GETTERS if not re.search(r'\b%s\b' % g, legacy))
+        durs = {int(x) for x in re.findall(r'Duration\(\s*milliseconds:\s*(\d+)', core)}
+        curves = [tuple(float(x) for x in m) for m in
+                  re.findall(r'Cubic\(\s*([-\d.]+)\s*,\s*([-\d.]+)\s*,\s*([-\d.]+)\s*,\s*([-\d.]+)\s*,?\s*\)', core)]
+        v['design_motion_missing'] += sum(1 for d in DESIGN_DURATIONS if d not in durs) + sum(
+            1 for c in DESIGN_CURVES if not any(all(abs(a - b) < 1e-6 for a, b in zip(c, k)) for k in curves))
+        for f, size in (('primary_button', 52), ('app_text_field', 48)):
+            rel = f'lib/core/widgets/{f}.dart'
+            if rel not in touched:
+                v['design_widget_not_restyled'] += 1
+            elif not re.search(r'(?<![\d.])%d(?:\.0)?\b' % size, full[rel] + core):
+                v['design_widget_size_wrong'] += 1
+        for r in code:
+            if r.startswith('lib/core/widgets/') and r.endswith('.dart'):
+                v['design_raw_value_in_widget'] += count(
+                    r'Color\(0x|\bColors\.(?!transparent)|Duration\(|Cubic\(|\bCurves\.|(?<![\w.])TextStyle\(', code[r])
 
 
 def main():
@@ -366,9 +520,14 @@ def main():
         if not os.path.exists(os.path.join(RUNS, name, 'SKILLS_READ.txt')):
             continue  # run not finished
         version, mode, task, rep = name.split('-')
-        fixture = os.path.join(B, ('fixture-drift' if task.startswith('d') else 'fixture-hive') + ('-nowrap' if mode == 'nowrap' else ''))
+        t = TASKS[task]
+        fixture = os.path.join(B, 'fixture-' + t.get('fixture', t['engine']) + ('-nowrap' if mode == 'nowrap' else ''))
         v, info = grade(os.path.join(RUNS, name), fixture, task)
         sr = read(os.path.join(RUNS, name, 'SKILLS_READ.txt'))
+        if task in TASK_SKILL and f'skills/{TASK_SKILL[task]}/SKILL.md' not in sr:
+            v['task_skill_not_read'] = 1
+        if task == 'g1' and 'design-from-html-flutter/playbook.md' not in sr:
+            v['design_playbook_not_read'] = 1
         info['skills_read'] = len(set(re.findall(r'skills/([\w-]+)/', sr)))
         info['tokens'] = TOKENS.get(name)
         results[name] = {'version': version, 'mode': mode, 'task': task, 'rep': rep, 'violations': v, 'info': info}

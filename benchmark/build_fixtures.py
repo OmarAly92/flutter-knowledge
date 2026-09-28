@@ -7,6 +7,10 @@ Usage: build_fixtures.py <out_dir>
   -> <out_dir>/fixture-drift, <out_dir>/fixture-hive, and the same two projects with
      four core widgets removed (<out_dir>/fixture-drift-nowrap, fixture-hive-nowrap),
      used by the "nowrap" mode to test the missing-wrapper fallback.
+  -> <out_dir>/fixture-app (+ -nowrap): the drift project plus a `trips` feature that
+     follows the skills, email/phone validators, a legacy mockito test, and the design
+     prototype in design/prototype.html (from make_prototype.py). Tasks f1, f2, t1, g1.
+The drift and hive fixtures must stay byte-identical, or old results stop being comparable.
 """
 import os, shutil, sys, textwrap
 
@@ -995,6 +999,469 @@ def hive(root):
         ''')
 
 
+# ---------- app fixture: the drift project plus a clean `trips` feature, for tasks f1, f2, t1, g1 ----------
+APP_EN = '''{
+  "orders": "Orders",
+  "trips": "Trips",
+  "retry": "Retry",
+  "save": "Save",
+  "somethingWentWrong": "Something went wrong",
+  "fieldIsRequired": "This field is required",
+  "enterValidEmail": "Enter a valid email address",
+  "enterValidPhone": "Enter a valid phone number",
+  "noInternetConnection": "No internet connection"
+}
+'''
+APP_AR = '''{
+  "orders": "الطلبات",
+  "trips": "الرحلات",
+  "retry": "إعادة المحاولة",
+  "save": "حفظ",
+  "somethingWentWrong": "حدث خطأ ما",
+  "fieldIsRequired": "هذا الحقل مطلوب",
+  "enterValidEmail": "أدخل بريدًا إلكترونيًا صحيحًا",
+  "enterValidPhone": "أدخل رقم هاتف صحيحًا",
+  "noInternetConnection": "لا يوجد اتصال بالإنترنت"
+}
+'''
+TRIPS = 'lib/feature/trips/'
+TRIPS_SCREEN = TRIPS + 'presentation/trips_screen/'
+APP = {
+    'lib/core/api/api_request_helpers/end_points.dart': '''
+        sealed class EndPoints {
+          static const String baseUrl = 'https://api.example.com';
+
+          static const String orders = '/orders';
+          static const String trips = '/trips';
+        }
+        ''',
+    'lib/core/app_routes/routes_strings.dart': '''
+        class RoutesStrings {
+          RoutesStrings._();
+
+          static const String orders = '/orders';
+          static const String trips = '/trips';
+        }
+        ''',
+    'lib/core/app_routes/app_router.dart': '''
+        import 'package:flutter/material.dart';
+        import 'package:flutter_bloc/flutter_bloc.dart';
+        import 'package:app/core/app_routes/routes_strings.dart';
+        import 'package:app/core/utils/service_locator.dart';
+        import 'package:app/feature/orders/presentation/orders_screen/ui/orders_screen.dart';
+        import 'package:app/feature/trips/presentation/trips_screen/logic/trips_cubit.dart';
+        import 'package:app/feature/trips/presentation/trips_screen/ui/trips_screen.dart';
+
+        class AppRouter {
+          static Route<dynamic>? onGenerateRoute(RouteSettings settings) {
+            switch (settings.name) {
+              case RoutesStrings.orders:
+                return MaterialPageRoute(builder: (_) => const OrdersScreen());
+              case RoutesStrings.trips:
+                return MaterialPageRoute(
+                  builder: (context) {
+                    return BlocProvider(
+                      create: (context) => sl<TripsCubit>(),
+                      child: const TripsScreen(),
+                    );
+                  },
+                );
+              default:
+                return null;
+            }
+          }
+        }
+        ''',
+    'lib/core/helpers/localization/locale_keys.g.dart': '''
+        // DO NOT EDIT. This is code generated via package:easy_localization/generate.dart
+
+        abstract class LocaleKeys {
+          static const orders = 'orders';
+          static const trips = 'trips';
+          static const retry = 'retry';
+          static const save = 'save';
+          static const somethingWentWrong = 'somethingWentWrong';
+          static const fieldIsRequired = 'fieldIsRequired';
+          static const enterValidEmail = 'enterValidEmail';
+          static const enterValidPhone = 'enterValidPhone';
+          static const noInternetConnection = 'noInternetConnection';
+        }
+        ''',
+    'lib/core/helpers/validations/app_form_validations.dart': r'''
+        import 'package:easy_localization/easy_localization.dart';
+        import 'package:app/core/helpers/localization/locale_keys.g.dart';
+
+        sealed class AppFormValidations {
+          static String? requiredField(String? value) =>
+              (value == null || value.trim().isEmpty) ? LocaleKeys.fieldIsRequired.tr() : null;
+
+          static String? email(String? value) =>
+              (value == null || !RegExp(r'^[^@\s]+@[^@\s]+\.[^@\s]+$').hasMatch(value.trim()))
+                  ? LocaleKeys.enterValidEmail.tr()
+                  : null;
+
+          static String? phone(String? value) =>
+              (value == null || !RegExp(r'^\+?[0-9]{8,15}$').hasMatch(value.trim()))
+                  ? LocaleKeys.enterValidPhone.tr()
+                  : null;
+        }
+        ''',
+    TRIPS + 'data/model/trip_model.dart': '''
+        import 'package:equatable/equatable.dart';
+
+        class TripModel extends Equatable {
+          final String? id;
+          final String? title;
+          final String? destination;
+          final String? startDate;
+          final double? price;
+          final String? contactEmail;
+          final String? contactPhone;
+
+          const TripModel({
+            this.id,
+            this.title,
+            this.destination,
+            this.startDate,
+            this.price,
+            this.contactEmail,
+            this.contactPhone,
+          });
+
+          factory TripModel.fromJson(Map<String, dynamic> json) => TripModel(
+                id: json['id'] as String?,
+                title: json['title'] as String?,
+                destination: json['destination'] as String?,
+                startDate: json['start_date'] as String?,
+                price: (json['price'] as num?)?.toDouble(),
+                contactEmail: json['contact_email'] as String?,
+                contactPhone: json['contact_phone'] as String?,
+              );
+
+          Map<String, dynamic> toJson() => {
+                'id': id,
+                'title': title,
+                'destination': destination,
+                'start_date': startDate,
+                'price': price,
+                'contact_email': contactEmail,
+                'contact_phone': contactPhone,
+              };
+
+          @override
+          List<Object?> get props => [id, title, destination, startDate, price, contactEmail, contactPhone];
+        }
+        ''',
+    TRIPS + 'data/model/params/get_trips_params.dart': '''
+        import 'package:equatable/equatable.dart';
+
+        class GetTripsParams extends Equatable {
+          final int page;
+
+          const GetTripsParams({required this.page});
+
+          Map<String, dynamic> toJson() => {'page': page};
+
+          @override
+          List<Object?> get props => [page];
+        }
+        ''',
+    TRIPS + 'data/data_source/trips_remote_data_source.dart': '''
+        import 'package:app/core/api/api_consumer.dart';
+        import 'package:app/core/api/api_request_helpers/end_points.dart';
+        import 'package:app/core/api/global_response.dart';
+        import 'package:app/feature/trips/data/model/params/get_trips_params.dart';
+        import 'package:app/feature/trips/data/model/trip_model.dart';
+
+        abstract class TripsRemoteDataSource {
+          Future<GlobalResponse<List<TripModel>>> getTrips(GetTripsParams params);
+        }
+
+        class TripsRemoteDataSourceImp implements TripsRemoteDataSource {
+          TripsRemoteDataSourceImp(this._apiConsumer);
+
+          final ApiConsumer _apiConsumer;
+
+          @override
+          Future<GlobalResponse<List<TripModel>>> getTrips(GetTripsParams params) async {
+            final response = await _apiConsumer.get(EndPoints.trips, queryParameters: params.toJson());
+            return GlobalResponse.fromJson(
+              response.data,
+              fromJsonT: (json) => (json as List).map((trip) => TripModel.fromJson(trip)).toList(),
+            );
+          }
+        }
+        ''',
+    TRIPS + 'data/repository/trips_repository.dart': '''
+        import 'package:app/core/api/global_response.dart';
+        import 'package:app/core/error_handling/failure.dart';
+        import 'package:app/core/error_handling/result.dart';
+        import 'package:app/core/network/network_status.dart';
+        import 'package:app/feature/trips/data/data_source/trips_remote_data_source.dart';
+        import 'package:app/feature/trips/data/model/params/get_trips_params.dart';
+        import 'package:app/feature/trips/data/model/trip_model.dart';
+
+        abstract class TripsRepository {
+          FutureResult<GlobalResponse<List<TripModel>>> getTrips(GetTripsParams params);
+        }
+
+        class TripsRepositoryImp implements TripsRepository {
+          TripsRepositoryImp(this._remoteDataSource, this._network);
+
+          final TripsRemoteDataSource _remoteDataSource;
+          final NetworkStatus _network;
+
+          @override
+          FutureResult<GlobalResponse<List<TripModel>>> getTrips(GetTripsParams params) async {
+            if (await _network.isConnected) {
+              try {
+                final result = await _remoteDataSource.getTrips(params);
+                return Result.success(result);
+              } on Failure catch (error) {
+                return Result.failure(error);
+              }
+            }
+            return Result.failure(ServerFailure.noNetwork());
+          }
+        }
+        ''',
+    TRIPS_SCREEN + 'logic/trips_cubit.dart': '''
+        import 'package:equatable/equatable.dart';
+        import 'package:flutter_bloc/flutter_bloc.dart';
+        import 'package:app/core/error_handling/failure.dart';
+        import 'package:app/feature/trips/data/model/params/get_trips_params.dart';
+        import 'package:app/feature/trips/data/model/trip_model.dart';
+        import 'package:app/feature/trips/data/repository/trips_repository.dart';
+
+        part 'trips_state.dart';
+
+        class TripsCubit extends Cubit<TripsState> {
+          TripsCubit(this._repository) : super(const TripsInitialState()) {
+            getTrips();
+          }
+
+          final TripsRepository _repository;
+
+          List<TripModel>? trips;
+
+          Future<void> getTrips() async {
+            emit(const GetTripsLoadingState());
+            final result = await _repository.getTrips(const GetTripsParams(page: 1));
+            result.when(
+              onSuccess: (response) {
+                trips = response.data;
+                emit(const GetTripsSuccessState());
+              },
+              onFailure: (failure) => emit(GetTripsFailureState(failure: failure)),
+            );
+          }
+        }
+        ''',
+    TRIPS_SCREEN + 'logic/trips_state.dart': '''
+        part of 'trips_cubit.dart';
+
+        sealed class TripsState extends Equatable {
+          const TripsState();
+
+          @override
+          List<Object?> get props => [];
+        }
+
+        final class TripsInitialState extends TripsState {
+          const TripsInitialState();
+        }
+
+        final class GetTripsLoadingState extends TripsState {
+          const GetTripsLoadingState();
+        }
+
+        final class GetTripsSuccessState extends TripsState {
+          const GetTripsSuccessState();
+        }
+
+        final class GetTripsFailureState extends TripsState {
+          const GetTripsFailureState({required this.failure});
+
+          final Failure failure;
+
+          @override
+          List<Object?> get props => [failure];
+        }
+        ''',
+    TRIPS_SCREEN + 'ui/trips_screen.dart': '''
+        import 'package:easy_localization/easy_localization.dart';
+        import 'package:flutter/material.dart';
+        import 'package:flutter_bloc/flutter_bloc.dart';
+        import 'package:app/core/helpers/extensions/context_extensions.dart';
+        import 'package:app/core/helpers/localization/locale_keys.g.dart';
+        import 'package:app/core/widgets/app_scaffold.dart';
+        import 'package:app/core/widgets/global_appbar.dart';
+        import 'package:app/feature/trips/presentation/trips_screen/logic/trips_cubit.dart';
+        import 'package:app/feature/trips/presentation/trips_screen/ui/widgets/trips_body.dart';
+
+        class TripsScreen extends StatelessWidget {
+          const TripsScreen({super.key});
+
+          @override
+          Widget build(BuildContext context) => BlocListener<TripsCubit, TripsState>(
+                listener: (context, state) {
+                  if (state is GetTripsFailureState) {
+                    context.showSnackBar(state.failure.message);
+                  }
+                },
+                child: AppScaffold(
+                  appBar: GlobalAppbar.main(titleText: LocaleKeys.trips.tr()),
+                  body: const TripsBody(),
+                ),
+              );
+        }
+        ''',
+    TRIPS_SCREEN + 'ui/widgets/trips_body.dart': '''
+        import 'package:flutter/material.dart';
+        import 'package:flutter_bloc/flutter_bloc.dart';
+        import 'package:app/core/widgets/app_error_widget.dart';
+        import 'package:app/core/widgets/app_loader.dart';
+        import 'package:app/core/widgets/vertical_space.dart';
+        import 'package:app/feature/trips/presentation/trips_screen/logic/trips_cubit.dart';
+        import 'package:app/feature/trips/presentation/trips_screen/ui/widgets/trip_item.dart';
+
+        class TripsBody extends StatelessWidget {
+          const TripsBody({super.key});
+
+          @override
+          Widget build(BuildContext context) => BlocBuilder<TripsCubit, TripsState>(
+                buildWhen: (previous, current) =>
+                    current is GetTripsLoadingState ||
+                    current is GetTripsSuccessState ||
+                    current is GetTripsFailureState,
+                builder: (context, state) {
+                  final cubit = context.read<TripsCubit>();
+                  return switch (state) {
+                    GetTripsFailureState(:final failure) =>
+                      AppErrorWidget(message: failure.message, onRetry: cubit.getTrips),
+                    GetTripsSuccessState() => ListView.separated(
+                        padding: const EdgeInsets.all(16),
+                        itemCount: cubit.trips?.length ?? 0,
+                        separatorBuilder: (context, index) => const VerticalSpace(12),
+                        itemBuilder: (context, index) => TripItem(
+                          title: cubit.trips![index].title ?? '',
+                          destination: cubit.trips![index].destination ?? '',
+                          price: cubit.trips![index].price ?? 0,
+                        ),
+                      ),
+                    _ => const AppLoader(),
+                  };
+                },
+              );
+        }
+        ''',
+    TRIPS_SCREEN + 'ui/widgets/trip_item.dart': '''
+        import 'package:flutter/material.dart';
+        import 'package:app/core/app_themes/colors/app_colors.dart';
+        import 'package:app/core/app_themes/text_style/app_text_style.dart';
+        import 'package:app/core/widgets/app_container.dart';
+        import 'package:app/core/widgets/app_text.dart';
+        import 'package:app/core/widgets/horizontal_space.dart';
+
+        class TripItem extends StatelessWidget {
+          const TripItem({super.key, required this.title, required this.destination, required this.price});
+
+          final String title;
+          final String destination;
+          final double price;
+
+          @override
+          Widget build(BuildContext context) => AppContainer(
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          AppText(title, style: AppTextStyle.style16Medium),
+                          AppText(destination, style: AppTextStyle.style12Regular),
+                        ],
+                      ),
+                    ),
+                    const HorizontalSpace(12),
+                    AppText(
+                      '\\$${price.toStringAsFixed(2)}',
+                      style: AppTextStyle.style14Medium.copyWith(color: AppColors.primary),
+                    ),
+                  ],
+                ),
+              );
+        }
+        ''',
+    # legacy test for the legacy orders feature: flat test/ dir, mockito + codegen
+    'test/orders_repository_test.dart': '''
+        import 'package:flutter_test/flutter_test.dart';
+        import 'package:mockito/annotations.dart';
+        import 'package:mockito/mockito.dart';
+        import 'package:app/feature/orders/data/data_source/orders_remote_data_source.dart';
+        import 'package:app/feature/orders/data/model/order_model.dart';
+        import 'package:app/feature/orders/data/repository/orders_repository.dart';
+
+        import 'orders_repository_test.mocks.dart';
+
+        @GenerateMocks([OrdersRemoteDataSource])
+        void main() {
+          test('getOrders returns the orders from the data source', () async {
+            final remote = MockOrdersRemoteDataSource();
+            when(remote.getOrders()).thenAnswer((_) async => [OrderModel(id: '1', title: 'Order', total: 10)]);
+
+            final orders = await OrdersRepository(remote).getOrders();
+
+            expect(orders.length, 1);
+          });
+        }
+        ''',
+}
+TRIPS_DI_CALL = '''
+    _tripsFeatureSetup();'''
+TRIPS_DI = '''
+
+  static void _tripsFeatureSetup() {
+    /// Blocs
+    sl.registerFactory<TripsCubit>(() => TripsCubit(sl<TripsRepository>()));
+
+    /// Repository
+    sl.registerLazySingleton<TripsRepository>(
+      () => TripsRepositoryImp(sl<TripsRemoteDataSource>(), sl<NetworkStatus>()),
+    );
+
+    /// Data Sources
+    sl.registerLazySingleton<TripsRemoteDataSource>(
+      () => TripsRemoteDataSourceImp(sl<ApiConsumer>()),
+    );
+  }'''
+TRIPS_DI_IMPORTS = '''import 'package:app/feature/orders/presentation/orders_screen/logic/orders_bloc.dart';
+import 'package:app/feature/trips/data/data_source/trips_remote_data_source.dart';
+import 'package:app/feature/trips/data/repository/trips_repository.dart';
+import 'package:app/feature/trips/presentation/trips_screen/logic/trips_cubit.dart';'''
+
+
+def app(root):
+    drift(root)
+    for path, text in APP.items():
+        w(root, path, text)
+    w(root, 'assets/translations/en.json', APP_EN)
+    w(root, 'assets/translations/ar.json', APP_AR)
+    w(root, 'pubspec.yaml', PUBSPEC.format(
+        extra_deps='  drift: ^2.20.0\n  drift_flutter: ^0.2.0',
+        extra_dev='  drift_dev: ^2.20.0\n  build_runner: ^2.4.0\n  mockito: ^5.4.4'))
+    sl_path = os.path.join(root, 'lib/core/utils/service_locator.dart')
+    sl = open(sl_path).read()
+    sl = sl.replace("import 'package:app/feature/orders/presentation/orders_screen/logic/orders_bloc.dart';", TRIPS_DI_IMPORTS)
+    sl = sl.replace('    _coreSetup();', '    _coreSetup();' + TRIPS_DI_CALL)
+    sl = sl.replace('  static void _coreSetup() {', TRIPS_DI.lstrip('\n') + '\n\n  static void _coreSetup() {')
+    with open(sl_path, 'w') as f:
+        f.write(sl)
+    design = os.path.join(root, 'design')
+    os.makedirs(design, exist_ok=True)
+    shutil.copy(os.path.join(os.path.dirname(os.path.abspath(__file__)), 'fixture_files', 'design', 'prototype.html'), design)
+
+
 def nowrap(src, dst):
     shutil.copytree(src, dst)
     for name in NOWRAP_REMOVED:
@@ -1002,7 +1469,7 @@ def nowrap(src, dst):
 
 
 if __name__ == '__main__':
-    for engine, build in (('drift', drift), ('hive', hive)):
+    for engine, build in (('drift', drift), ('hive', hive), ('app', app)):
         root = os.path.join(OUT, 'fixture-' + engine)
         for d in (root, root + '-nowrap'):
             shutil.rmtree(d, ignore_errors=True)
