@@ -16,7 +16,7 @@ Map of the Flutter conventions: the always-on hard rules below, plus the skill y
 - **Screen/Body split**: the `<Screen>` file is a thin `BlocListener` wrapping `AppScaffold` (+ `GlobalAppbar`) whose `body:` is a separate `<Screen>Body` widget. The Body holds the `BlocBuilder` and layout, returns bare content, and never builds its own scaffold or app bar.
 - **Every `BlocBuilder` declares `buildWhen`** naming the exact state types it rebuilds on.
 - **No `Widget _buildX()` methods** — every extracted widget is a `StatelessWidget` class in its own file; one widget class per file.
-- **Core wrappers over raw widgets**: `AppText`, `AppScaffold`, `GlobalAppbar`, `VerticalSpace`/`HorizontalSpace`, `PrimaryButton`, `AppTextField`, `AppLoader`, `AppErrorWidget`, … instead of `Text`, `Scaffold`, `AppBar`, `SizedBox`.
+- **Core wrappers over raw widgets**: `AppText`, `AppScaffold`, `GlobalAppbar`, `VerticalSpace`/`HorizontalSpace`, `PrimaryButton`, `AppTextField`, `AppLoader`, `AppErrorWidget`, … instead of `Text`, `Scaffold`, `AppBar`, `SizedBox` — when the wrapper exists in the project's `lib/core/widgets/`. If it does not, fall back to the raw Flutter widget; never import or invent a missing wrapper.
 - **`AppColors` and `AppTextStyle` only** — never inline `Color(0x...)` or raw `TextStyle(...)` in presentation code.
 - **Every user-facing string is `LocaleKeys.xxx.tr()`** — never a raw `'...'` literal in a widget shown to the user.
 - **No `flutter_screenutil` in feature code** — no `.h`/`.w`/`.r`/`.sp`, no import; spacing/padding/radius take raw ints.

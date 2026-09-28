@@ -66,7 +66,7 @@ Splitting into a file is for genuine sections — a form, a card, a list item, a
 
 **Form validation**: check for an existing shared validators helper (e.g. `AppFormValidations` in `lib/core/helpers/validations/`) before writing a field's `validator:`. If one exists, use its static validators (email, phone, password, username, ...) instead of an inline validation closure — this keeps validation rules (and their `LocaleKeys` messages) consistent across every form in the app. Only write an inline validator when the field doesn't match any case the shared helper already covers.
 
-**Localization**: every user-facing string (in `AppText`, `PrimaryButton.text`, `GlobalAppbar.titleText`, dialog messages, snackbars, validator messages, etc.) MUST be `LocaleKeys.xxx.tr()` from `easy_localization`. NEVER inline a raw `'...'` literal into a widget shown to the user. If a needed key doesn't exist, invoke the `add-translation` skill (via the Skill tool, or tell the user to run `/add-translation`) which adds the key to both `assets/translations/ar.json` and `en.json` in sync — or list the keys (with English wording) and ask the user for the Arabic. Exceptions: debug-only strings (`talker` logs), asset paths, hex colors, route names, regex patterns — anything not shown to the user.
+**Localization**: every user-facing string (in `AppText`, `PrimaryButton.text`, `GlobalAppbar.titleText`, dialog messages, snackbars, validator messages, etc.) MUST be `LocaleKeys.xxx.tr()` from `easy_localization`. NEVER inline a raw `'...'` literal into a widget shown to the user. If a needed key doesn't exist, invoke the `add-translation` skill (via the Skill tool, or tell the user to run `/add-translation`) which adds the key to both `assets/translations/ar.json` and `en.json` in sync, writing the English and the Arabic itself. Exceptions: debug-only strings (`talker` logs), asset paths, hex colors, route names, regex patterns — anything not shown to the user.
 
 **Widgets — use the core wrappers from `lib/core/widgets/` instead of raw Flutter widgets**:
 - `AppText(...)` instead of `Text(...)`
@@ -78,7 +78,7 @@ Splitting into a file is for genuine sections — a form, a card, a list item, a
 - `AppNetworkImage(...)`, `AppSvgImage(...)`, `AppAssetsImage(...)` for images
 - `AppContainer(...)`, `AppDivider(...)`, `AppShimmer(...)`, `AppListTile(...)`, `AppDropDown(...)`, `AppInkWell(...)`, `AppRefreshIndicator(...)`, `AppDialog(...)`, `LabeledContainer(...)`, `HorizontalPadding(...)` as needed
 - Also check `animation/` (`AppAnimate`, `TapBounceEffect`) and the root-level widgets (`PaginationWidget`, `CustomCalendar`, `BottomSheetContainer`, …) before writing a new widget.
-- Reach for raw Flutter widgets ONLY when no core wrapper covers what you need, and call that gap out.
+- **Fallback when a wrapper is missing**: before using a wrapper, check that it exists in the project's `lib/core/widgets/`. If the project has no wrapper for what you need (or has no `lib/core/widgets/` at all), use the raw Flutter widget (`Text`, `Scaffold`, `AppBar`, `SizedBox`, ...). Do not import a wrapper that is not in the project, and do not create a new wrapper unless the user asks for one.
 
 **Colors — ALWAYS use `AppColors` constants from `lib/core/app_themes/colors/app_colors.dart`. NEVER inline a `Color(0x...)` in presentation code.** If a needed color doesn't exist, add it to `AppColors` first with a descriptive name, then reference the constant.
 
@@ -107,7 +107,7 @@ Splitting into a file is for genuine sections — a form, a card, a list item, a
 - Do not call `ScaffoldMessenger.of(context).showSnackBar(...)` directly in feature code. Use the project's `BuildContext` snackbar extension.
 - Do not write an inline validator closure for a field that a shared validators helper (e.g. `AppFormValidations`) already covers — use the shared one.
 - Do not add a private constructor (`X._()`) to a static-only constants class (`EndPoints`, `RoutesStrings`, `AppColors`, ...) to block instantiation — declare it `sealed class X` instead.
-- Do not reach for raw `Text(...)` / `Scaffold(...)` / `SizedBox(height: ...)` / `AppBar(...)` when the corresponding core widget exists. Call out genuine wrapper gaps instead of papering over them.
+- Do not reach for raw `Text(...)` / `Scaffold(...)` / `SizedBox(height: ...)` / `AppBar(...)` when the corresponding core widget exists in `lib/core/widgets/`. When it does not exist, fall back to the raw widget instead of importing or inventing a wrapper.
 - Do not inline raw string literals into widgets shown to the user. Every user-facing string is `LocaleKeys.xxx.tr()`.
 - Do not write raw `TextStyle(fontSize: …, fontWeight: …, …)` in presentation widgets. Use `AppTextStyle.styleNN<Weight>` (with `.copyWith(...)` for tweaks).
 - Do not use `flutter_screenutil` extensions (`.h`, `.w`, `.r`, `.sp`, `.spMin`, `.dm`) in feature presentation code. Spacing/padding/radius take raw ints; fonts go through `AppTextStyle`. (Existing code that did this is legacy; do not copy it.)
