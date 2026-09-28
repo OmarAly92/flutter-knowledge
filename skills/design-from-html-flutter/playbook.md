@@ -23,7 +23,9 @@ in this shape rather than inventing another:
 - **Core widgets**: `lib/core/widgets/` (AppText, AppScaffold, PrimaryButton, SecondaryButton,
   AppTextField, spacing widgets, …) — restyle these, add design primitives beside them.
 - **Architecture**: invoke the `/flutter-knowledge` skill (REQUIRED when available) — it is
-  the authority; follow it exactly. Summary of its shape — features in
+  the authority; follow it exactly, including invoking the mini skills it maps
+  (`/flutter-feature-structure`, `/flutter-cubit`, `/flutter-screen-ui`, `/flutter-routing-di`)
+  before writing that code. Summary of its shape — features in
   `lib/feature/<feature>/presentation/<screen>_screen/` (`logic/` cubit+state part files,
   `ui/` + `ui/widgets/`), Cubit-only, screen/body split, BlocProvider in `app_router.dart`,
   DI via `ServiceLocator._<feature>FeatureSetup()`.
@@ -170,7 +172,7 @@ screen, wizard step, sheet (close sheets by clicking the veil), and special shel
 (drawer open). Verify a couple of PNGs by reading them.
 
 Before writing any screen brief, build the **screen → feature map** in `README.md` from the
-project's real feature tree (consult the `flutter-knowledge` skill) — the canonical owning-feature
+project's real feature tree (consult the `flutter-knowledge` and `flutter-feature-structure` skills) — the canonical owning-feature
 path for every screen. Each brief copies its own row verbatim and orders the builder to read
 `docs/design/README.md` and invoke `flutter-knowledge` before any Dart, so no screen's UI lands in
 the wrong feature. Note the launcher-vs-owner trap: a screen opened from another feature's screen
