@@ -7,8 +7,8 @@ description: Add one or more localization keys to both assets/translations/en.js
 
 Argument: `$ARGUMENTS` = key + value, free-form. Examples:
 - `welcomeBack "Welcome back" "مرحبا بعودتك"` — single key with both translations.
-- `welcomeBack "Welcome back"` — English only; ask the user for the Arabic.
-- empty — ask the user for keys to add.
+- `welcomeBack "Welcome back"` — English only; write the Arabic yourself.
+- empty — derive the keys from the strings the current task needs.
 
 ## Critical rule
 
@@ -20,7 +20,7 @@ Argument: `$ARGUMENTS` = key + value, free-form. Examples:
 
 2. **Check for collisions.** Read both `assets/translations/en.json` and `assets/translations/ar.json` and verify the key does not already exist in either. If it does, ask the user whether to overwrite or pick a new key.
 
-3. **Ask for any missing Arabic translation.** If the user only supplied English, ask them for the Arabic — do not auto-translate.
+3. **Write the English and Arabic yourself.** Do not ask the user for translations. If the user supplied a value, use it as given. Otherwise write the English wording, then write a natural Arabic translation of it (Modern Standard Arabic, the same meaning and tone as the English, matching the style of the existing `ar.json` entries). Never put English text in `ar.json` as a placeholder.
 
 4. **Edit both files.** Add the new entry in the same logical location in each file (group related keys together — e.g., put a new validation message near other `*IsRequired` keys). Preserve JSON formatting (2-space indent, trailing comma rules matching the existing file). Both files must remain in the same key order.
 
@@ -40,7 +40,8 @@ Argument: `$ARGUMENTS` = key + value, free-form. Examples:
 
 ## What NOT to do
 
-- Do not auto-translate Arabic from English. Ask the user.
+- Do not stop to ask the user for the Arabic, and do not leave English placeholders in `ar.json` — translate it yourself.
+- Do not reference a `LocaleKeys.xxx` entry in code without adding `xxx` to both JSON files in the same change.
 - Do not edit `lib/core/helpers/localization/locale_keys.g.dart` by hand — it is generated.
 - Do not add keys to only one of the two JSON files.
 - Do not reorder or reformat unrelated entries in the JSON files.
