@@ -32,7 +32,7 @@ TRIP_SCREEN_TASKS = {'f1', 'f2'}                # a new screen inside the existi
 TASK_SKILL = {'t1': 'flutter-testing', 'g1': 'design-from-html-flutter'}
 SKIN_DIR = 'lib/core/app_themes/colors/'
 SKIN_GOLD = {'light_skin.dart': 'C8A24A', 'dark_skin.dart': 'E3C77A'}   # task s2
-MOTION_FILE = 'lib/core/app_themes/app_motion.dart'
+MOTION_FILE_DEFAULT = 'lib/core/app_themes/app_motion.dart'
 # design/prototype.html (task g1): the values its injected CSS resolves to
 DESIGN_COLORS = ['F4F6F5', 'FFFFFF', 'EDF1EF', '0E1A17', '4A5A55', '83928D', 'D6DEDA', '0F766E', '15803D', 'B45309', 'B91C1C']
 DESIGN_TYPE = [(28, 34, -0.56), (20, 26, -0.2), (15, 22, 0.0), (12, 16, 0.24)]   # font size, line height, tracking (px)
@@ -141,7 +141,7 @@ def grade(run_dir, fixture_dir, task):
         v['bloc_or_events'] += count(r'extends Bloc<|\bon<\w+>\(', t)
         v['build_x_method'] += count(r'Widget\s+_build\w*\(', t)
         v['screenutil'] += count(r'flutter_screenutil|\d\.(?:h|w|r|sp)\b', t)
-        if task != 'm1' or r.endswith(('_screen.dart', '_body.dart')):   # m1's animated leaf widgets may hold state
+        if task not in ('m1', 'm2') or r.endswith(('_screen.dart', '_body.dart')):   # animated leaf widgets may hold state
             v['stateful_or_initState'] += count(r'StatefulWidget|initState\(', t)
         v['scaffold_messenger'] += count(r'ScaffoldMessenger', t)
         v['endpoint_interpolation'] += count(r"'\$\{EndPoints\.|EndPoints\.\w+\s*\+", t)
@@ -581,6 +581,9 @@ def skin_checks(v, task, new, touched, full, code, dart, ui):
 
 def motion_checks(v, task, new, touched, full, dart):
     """Skin fixture (it has AppMotion) and m2: animation timing comes from AppMotion tokens."""
+    # the skin fixture's file, or wherever an agent created one under app_themes/ (m2)
+    MOTION_FILE = next((r for r in list(touched) + list(new)
+                        if r.startswith('lib/core/app_themes/') and r.endswith('app_motion.dart')), MOTION_FILE_DEFAULT)
     not_animation = re.compile(r'Future\.delayed|\bTimer\b|timeout|debounce|Stream\.periodic|displayDuration|snack', re.I)
     for r, t in dart.items():
         if r.startswith('lib/core/app_themes/') or role(r) == 'test':
@@ -614,6 +617,10 @@ def motion_checks(v, task, new, touched, full, dart):
             v['m2_no_app_motion_created'] += 1
         if re.search(r'^\s*motor\s*:', touched.get('pubspec.yaml', ''), re.M):
             v['m2_added_motor_dependency'] += 1
+        # the project ships design/prototype.html, so a new AppMotion should carry its durations (post hoc)
+        made = {int(x) for x in re.findall(r'milliseconds:\s*(\d+)', new.get(MOTION_FILE, ''))}
+        if MOTION_FILE in new and sum(d in made for d in DESIGN_DURATIONS) < 2:
+            v['m2_motion_not_from_design'] += 1
 
 
 def main():

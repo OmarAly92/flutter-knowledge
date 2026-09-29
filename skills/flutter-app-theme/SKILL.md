@@ -337,7 +337,7 @@ The app-wide default family and its fallback are set once, in `AppThemes.fromSki
 
 `AppMotion` (`lib/core/app_themes/app_motion.dart`) is a `sealed class` of motion tokens. Every animation picks its timing from it: **no `Duration(milliseconds: …)`, `Curves.x` or `Cubic(…)` for an animation outside `lib/core/app_themes/`.** A value that is not there is a missing token.
 
-The tokens, by kind (mirror the project's names; these are the reference set):
+The tokens, by kind. This is the shape and naming to mirror; the numbers are one app's design, not defaults to copy (see "Adding a token" for where values come from):
 
 ```dart
 sealed class AppMotion {
@@ -430,7 +430,7 @@ AnimatedContainer(
 - Durations that are not animations — timeouts, debounce, polling, `Future.delayed`, how long a snackbar stays up — are not motion tokens; they belong in `AppConstants` or at the call site.
 - Route transitions are set once, in `ThemeData.pageTransitionsTheme` (for example `FadeForwardsPageTransitionsBuilder` on Android, while iOS keeps its platform back-swipe) — not per route. A `PageView` uses `physics: const SpringPagePhysics()` when the project has it.
 
-**Adding a token:** reuse a role token (`fast`, `base`, `slow`, `emphasis`, the curves, the stagger helpers) whenever it fits; add a new one only for a genuinely new timing, curve or distance. Name it for what it is for (`typingLoop`, `slideUpOffset`), not after one screen, and give it a `///` comment saying what it is for, what it pairs with, and `Example:` naming the real place. If the project has no `app_motion.dart` yet, create it — `sealed class AppMotion` in `lib/core/app_themes/` — with only the tokens this change needs, and do not sweep existing inline durations into it unless the user asks. If the project has a test over the motion or shape tokens, update it in the same change.
+**Adding a token:** reuse a role token (`fast`, `base`, `slow`, `emphasis`, the curves, the stagger helpers) whenever it fits; add a new one only for a genuinely new timing, curve or distance. Name it for what it is for (`typingLoop`, `slideUpOffset`), not after one screen, and give it a `///` comment saying what it is for, what it pairs with, and `Example:` naming the real place. Values come from the project's design: an HTML prototype's CSS motion tokens and `@keyframes` (extract them the way `design-from-html-flutter` describes), a motion doc such as `docs/design/motion.md`, or the user. Only when the project has no design source, use the numbers in the reference set above. If the project has no `app_motion.dart` yet, create it — `sealed class AppMotion` in `lib/core/app_themes/` — with only the tokens this change needs, each documented, and do not sweep existing inline durations into it unless the user asks. If the project has a test over the motion or shape tokens, update it in the same change.
 
 ## Shapes and radii
 
