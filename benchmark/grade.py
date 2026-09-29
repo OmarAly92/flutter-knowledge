@@ -160,7 +160,7 @@ def grade(run_dir, fixture_dir, task):
     raw_ok = [w for w, f in RAW_TO_WRAPPER.items() if f'lib/core/widgets/{f}.dart' in fx and w != 'SizedBox']
     raw_re = r'(?<![\w.])(?:%s)\(' % '|'.join(raw_ok) if raw_ok else r'(?!x)x'
     if 'lib/core/widgets/vertical_space.dart' in fx:
-        raw_re += r'|(?<![\w.])SizedBox\((?:\s*(?:height|width):\s*[\w.]+\s*,?)+\s*\)'
+        raw_re += r'|(?<![\w.])SizedBox\(\s*(?:height|width):\s*[\w.]+\s*,?\s*\)'
     for r, t in ui.items():
         v['raw_widget_with_wrapper'] += count(raw_re, t)
     # missing-wrapper fallback: never import or use a wrapper the project lacks, never invent one

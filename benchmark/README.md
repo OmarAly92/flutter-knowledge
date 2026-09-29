@@ -4,7 +4,7 @@ Measures whether agents follow the skills in this repo, so a skill change can be
 
 Each run gives one agent a realistic Flutter project and one task. A static grader then counts which conventions the agent broke. The project has a real core layer (`ApiConsumer`, `GlobalResponse`, `NetworkStatus`, `Failure`/`Result`, `AppColors`, `AppTextStyle`, `LocaleKeys`, core widgets). It also contains legacy code that breaks the rules on purpose: `RoutesStrings._()`, an `orders` feature on Bloc with inline DI, and a `budget` feature whose params return a drift `Companion`. An agent that copies the code around it instead of following the skills gets caught.
 
-The newer tasks (f1, f2, t1, g1) run on a third project, `app`: the drift project plus a `trips` feature written the way the skills ask, shared email and phone validators, a legacy flat `test/` file that uses mockito, and a design prototype at `design/prototype.html`. The prototype is built like a standalone design export: its real CSS sits escaped inside a JS string, the page's own `<style>` holds a decoy `--primary`, and its font is embedded as compressed base64. Reading the file by eye gives the wrong values, so it tests whether an agent follows the design skill's extraction steps.
+The newer tasks (f1, f2, t1, g1) run on a third project, `app`: the drift project plus a `trips` feature written the way the skills ask, shared email and phone validators, a legacy flat `test/` file that uses mockito, and a design prototype at `design/prototype.html`. The prototype is built like a standalone design export: its real CSS sits escaped inside a JS string, the page's own `<style>` holds a decoy `--primary`, and its font is embedded as compressed base64. Reading the file by eye gives the wrong values, so it tests whether an agent follows the design skill's extraction steps. Task m2 also runs here: `app` has no `AppMotion`, but the prototype defines motion tokens, so it checks that an agent creates one with documented tokens whose values come from the prototype.
 
 Tasks s1, s2 and m1 run on a fourth project, `skin`: the `app` project with `AppColors` replaced by an `AppSkin` layer (`LightSkin`/`DarkSkin`, `SkinScope` and `context.skin`, `SkinCubit` persisted through `CacheHelper`, `AppThemes.fromSkin`), plus an `AppMotion` token file with durations, curves, stagger helpers and `motor` springs. s1 and s2 check the skin part of the `flutter-app-theme` skill (called `flutter-app-skin` in 1.4.0): colors come from `context.skin`, a new color becomes a documented slot implemented in both skins, and the mode switch goes through `SkinCubit`. m1 checks its motion part: animation durations, curves, springs and stagger delays come from `AppMotion`, and a new timing becomes a documented token there. The legacy `orders` feature still uses raw colors, as a trap.
 
@@ -50,6 +50,25 @@ New tasks s1 and s2 on the `skin` project, forced ×3 and desc ×1 each, plus f1
 
 Permutation test p = 0.03. Master agents already used `context.skin`, never `AppColors`, and switched the mode through `SkinCubit`, because the fixture's own code shows the pattern. The difference is in how they add colors: on 1.4.0 every run made the gold's soft tint a derived slot (`premium.withValues(alpha: 0.16)`), while every master run added a second abstract slot and invented a light-mode value for it. `s2_tint_not_derived` was added after reading these runs, so treat it as a finding to confirm on the next round, not a pre-registered test. f1 broke no rule on either version, and its agents did not read the skin skill.
 
+### 1.5.0: flutter-app-theme (2026-09-29)
+
+`flutter-app-skin` became `flutter-app-theme`, which keeps the skin rules and adds text styles, motion, shapes and `ThemeData`. Round 1 ran m1 (forced ×3, desc ×1), s1, s2 ×2 and f1 in forced mode, 8 runs per version. Round 2 ran m2 (forced ×3, desc ×1) per version.
+
+| | master (1.4.0) | 1.5.0 |
+|---|---|---|
+| m2 rule breaks (4 runs each) | 6 | 0 |
+| m2 runs creating `AppMotion` tokens without doc comments | 4/4 | 0/4 |
+| m2 runs whose motion values are not the prototype's | 1/4 | 0/4 |
+| m1, s1, s2, f1 rule breaks (8 runs each) | 1 | 0 |
+| Mean tokens, m2 | 112.5k | 133.2k |
+| Mean tokens, m1, s1, s2, f1 | 116.5k | 115.5k |
+
+Permutation test on m2: p = 0.03. Every master m2 run created an `app_motion.dart` of 13 to 15 tokens with no doc comments, while every 1.5.0 run documented each token. The first 1.5.0 m2 round copied the skill's reference numbers instead of the prototype's in 2 of 3 forced runs, so the skill now says motion values come from the project's design and uses the reference set only when there is none. The 4 m2 runs above are the rerun after that fix, and all of them used the prototype's 120 and 360 ms, both cubic-beziers, the 12 px offset, the 0.97 press scale and the 60 ms stagger. `m2_motion_not_from_design` was added after reading the first round, so treat it as a finding to confirm on the next round, not a pre-registered test.
+
+m1 is saturated. The fixture's documented `AppMotion` guides master agents too, so neither version broke a motion rule there; it is a regression check, like f1. Every 1.5.0 run on m1, s1 and s2 read `flutter-app-theme` (desc mode too), and f1 did not. On m2, 1.5.0 used 18% more tokens: its agents read more skill files (5.5 vs 3.8) and the theme skill is about 70% larger than the skin skill (31 KB vs 18 KB).
+
+Grader fixes from reading these runs: `created_new_wrapper` ignores effect widgets in `lib/core/widgets/animation/`, `multiple_widgets_per_file` no longer counts `State` classes, an animated leaf widget may be stateful on m1 and m2, and a `SizedBox` with both a width and a height is a size, not a spacer.
+
 ## Files
 
 | File | What it is |
@@ -81,6 +100,7 @@ Generated output goes to `benchmark/out/`, which git ignores.
 | s1 | skin | A status pill on each trip that works in light and dark mode, plus an app bar button that switches the mode |
 | s2 | skin | A "Premium" label in a new gold color that differs between light and dark mode |
 | m1 | skin | A staggered entrance for the trips list, a press that shrinks each card and springs back, and a slowly pulsing dot on upcoming trips |
+| m2 | app | The same as m1, on a project with no `AppMotion` yet |
 
 f1 and f2 cover what the first six tasks never reach: `EndPoints` methods that take an id, `registerFactoryParam` with `param1`, a bottom sheet given the cubit through `BlocProvider.value`, controllers and the form key on the cubit, prefilling through the initializer list, `dispose` in `close()`, and the shared validators. t1 checks the `flutter-testing` skill and g1 the `design-from-html-flutter` skill, including whether an agent in description-only mode reads them at all.
 
