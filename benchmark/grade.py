@@ -172,7 +172,8 @@ def grade(run_dir, fixture_dir, task):
             if f'lib/core/widgets/{f}.dart' not in rn and re.search(r'(?<![\w.])%s\(' % cls, t):
                 v['uses_missing_wrapper'] += 1
     for r in new:
-        if r.startswith('lib/core/widgets/') and task != 'g1':  # g1: the design skill adds the design's primitives
+        # g1: the design skill adds the design's primitives; animation/ holds reusable effects, not wrappers
+        if r.startswith('lib/core/widgets/') and not r.startswith('lib/core/widgets/animation/') and task != 'g1':
             v['created_new_wrapper'] += 1
     for r, t in ui.items():
         v['raw_color_or_textstyle'] += count(r'Color\(0x|TextStyle\(|\bColors\.(?!transparent)', t)
@@ -188,7 +189,7 @@ def grade(run_dir, fixture_dir, task):
                                      if 'AppFormValidations' not in ''.join(t[m.end():].splitlines(True)[:3]))
     for r, t in new.items():
         if role(r) in ('ui', 'cubit', 'feature_other') and r.endswith('.dart'):
-            n = count(r'class\s+\w+\s+extends\s+(?:StatelessWidget|StatefulWidget|State<)', t)
+            n = count(r'class\s+\w+\s+extends\s+(?:StatelessWidget|StatefulWidget)\b', t)   # a State<> class belongs with its widget
             v['multiple_widgets_per_file'] += max(0, n - 1)
     # Screen / Body split
     screens = [r for r in new if r.endswith('_screen.dart') and '/ui/' in r]
@@ -390,7 +391,8 @@ def grade(run_dir, fixture_dir, task):
     new_task_checks(v, task, run_dir, new, touched, full, code, dart, ui, cubits, sl_add)
     if TASKS[task].get('fixture') == 'skin':
         skin_checks(v, task, new, touched, full, code, dart, ui)
-        motion_checks(v, task, touched, full, dart)
+    if TASKS[task].get('fixture') == 'skin' or task == 'm2':
+        motion_checks(v, task, new, touched, full, dart)
     return {k: n for k, n in v.items() if n}, info
 
 
@@ -577,8 +579,8 @@ def skin_checks(v, task, new, touched, full, code, dart, ui):
             v['s2_tint_not_derived'] += 1
 
 
-def motion_checks(v, task, touched, full, dart):
-    """Skin fixture (it has AppMotion): animation timing comes from AppMotion tokens."""
+def motion_checks(v, task, new, touched, full, dart):
+    """Skin fixture (it has AppMotion) and m2: animation timing comes from AppMotion tokens."""
     not_animation = re.compile(r'Future\.delayed|\bTimer\b|timeout|debounce|Stream\.periodic|displayDuration|snack', re.I)
     for r, t in dart.items():
         if r.startswith('lib/core/app_themes/') or role(r) == 'test':
@@ -592,9 +594,9 @@ def motion_checks(v, task, touched, full, dart):
                     and 'staggerAt' not in line:
                 v['motion_stagger_by_hand'] += 1
         v['motion_token_outside_app_motion'] += count(r'static\s+const\s+(?:Duration|Curve|Motion)\b', t)
-    if MOTION_FILE in touched:
+    if MOTION_FILE in touched or MOTION_FILE in new:
         lines = full.get(MOTION_FILE, '').splitlines()
-        added = set(touched[MOTION_FILE].splitlines())
+        added = set((touched.get(MOTION_FILE) or new[MOTION_FILE]).splitlines())
         for i, line in enumerate(lines):
             if line in added and re.match(r'\s*static\s+(?:const\s+|final\s+)?[\w<>?]+\s+\w+\s*(?:=|\()', line):
                 prev = next((lines[j].strip() for j in range(i - 1, -1, -1) if lines[j].strip()), '')
@@ -604,8 +606,14 @@ def motion_checks(v, task, touched, full, dart):
         widgets = ' '.join(t for r, t in dart.items() if role(r) in ('ui', 'core'))
         if not re.search(r'AppMotion\.(?:press|surface|exit|effects)Spring', widgets):
             v['m1_press_not_spring'] += 1
-        if not re.search(r'Duration\(\s*(?:milliseconds:\s*2000|seconds:\s*2)\s*\)', touched.get(MOTION_FILE, '')):
-            v['m1_pulse_not_a_token'] += 1
+    if task in ('m1', 'm2'):
+        if not re.search(r'Duration\(\s*(?:milliseconds:\s*2000|seconds:\s*2)\s*\)', touched.get(MOTION_FILE) or new.get(MOTION_FILE, '')):
+            v[task + '_pulse_not_a_token'] += 1
+    if task == 'm2':
+        if MOTION_FILE not in new:
+            v['m2_no_app_motion_created'] += 1
+        if re.search(r'^\s*motor\s*:', touched.get('pubspec.yaml', ''), re.M):
+            v['m2_added_motor_dependency'] += 1
 
 
 def main():
