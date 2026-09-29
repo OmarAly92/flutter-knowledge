@@ -32,6 +32,7 @@ TRIP_SCREEN_TASKS = {'f1', 'f2'}                # a new screen inside the existi
 TASK_SKILL = {'t1': 'flutter-testing', 'g1': 'design-from-html-flutter'}
 SKIN_DIR = 'lib/core/app_themes/colors/'
 SKIN_GOLD = {'light_skin.dart': 'C8A24A', 'dark_skin.dart': 'E3C77A'}   # task s2
+MOTION_FILE_DEFAULT = 'lib/core/app_themes/app_motion.dart'
 # design/prototype.html (task g1): the values its injected CSS resolves to
 DESIGN_COLORS = ['F4F6F5', 'FFFFFF', 'EDF1EF', '0E1A17', '4A5A55', '83928D', 'D6DEDA', '0F766E', '15803D', 'B45309', 'B91C1C']
 DESIGN_TYPE = [(28, 34, -0.56), (20, 26, -0.2), (15, 22, 0.0), (12, 16, 0.24)]   # font size, line height, tracking (px)
@@ -140,7 +141,8 @@ def grade(run_dir, fixture_dir, task):
         v['bloc_or_events'] += count(r'extends Bloc<|\bon<\w+>\(', t)
         v['build_x_method'] += count(r'Widget\s+_build\w*\(', t)
         v['screenutil'] += count(r'flutter_screenutil|\d\.(?:h|w|r|sp)\b', t)
-        v['stateful_or_initState'] += count(r'StatefulWidget|initState\(', t)
+        if task not in ('m1', 'm2') or r.endswith(('_screen.dart', '_body.dart')):   # animated leaf widgets may hold state
+            v['stateful_or_initState'] += count(r'StatefulWidget|initState\(', t)
         v['scaffold_messenger'] += count(r'ScaffoldMessenger', t)
         v['endpoint_interpolation'] += count(r"'\$\{EndPoints\.|EndPoints\.\w+\s*\+", t)
         v['print_call'] += count(r'(?<![\w.])print\(', t)
@@ -158,7 +160,7 @@ def grade(run_dir, fixture_dir, task):
     raw_ok = [w for w, f in RAW_TO_WRAPPER.items() if f'lib/core/widgets/{f}.dart' in fx and w != 'SizedBox']
     raw_re = r'(?<![\w.])(?:%s)\(' % '|'.join(raw_ok) if raw_ok else r'(?!x)x'
     if 'lib/core/widgets/vertical_space.dart' in fx:
-        raw_re += r'|(?<![\w.])SizedBox\((?:\s*(?:height|width):\s*[\w.]+\s*,?)+\s*\)'
+        raw_re += r'|(?<![\w.])SizedBox\(\s*(?:height|width):\s*[\w.]+\s*,?\s*\)'
     for r, t in ui.items():
         v['raw_widget_with_wrapper'] += count(raw_re, t)
     # missing-wrapper fallback: never import or use a wrapper the project lacks, never invent one
@@ -170,7 +172,8 @@ def grade(run_dir, fixture_dir, task):
             if f'lib/core/widgets/{f}.dart' not in rn and re.search(r'(?<![\w.])%s\(' % cls, t):
                 v['uses_missing_wrapper'] += 1
     for r in new:
-        if r.startswith('lib/core/widgets/') and task != 'g1':  # g1: the design skill adds the design's primitives
+        # g1: the design skill adds the design's primitives; animation/ holds reusable effects, not wrappers
+        if r.startswith('lib/core/widgets/') and not r.startswith('lib/core/widgets/animation/') and task != 'g1':
             v['created_new_wrapper'] += 1
     for r, t in ui.items():
         v['raw_color_or_textstyle'] += count(r'Color\(0x|TextStyle\(|\bColors\.(?!transparent)', t)
@@ -186,7 +189,7 @@ def grade(run_dir, fixture_dir, task):
                                      if 'AppFormValidations' not in ''.join(t[m.end():].splitlines(True)[:3]))
     for r, t in new.items():
         if role(r) in ('ui', 'cubit', 'feature_other') and r.endswith('.dart'):
-            n = count(r'class\s+\w+\s+extends\s+(?:StatelessWidget|StatefulWidget|State<)', t)
+            n = count(r'class\s+\w+\s+extends\s+(?:StatelessWidget|StatefulWidget)\b', t)   # a State<> class belongs with its widget
             v['multiple_widgets_per_file'] += max(0, n - 1)
     # Screen / Body split
     screens = [r for r in new if r.endswith('_screen.dart') and '/ui/' in r]
@@ -388,6 +391,8 @@ def grade(run_dir, fixture_dir, task):
     new_task_checks(v, task, run_dir, new, touched, full, code, dart, ui, cubits, sl_add)
     if TASKS[task].get('fixture') == 'skin':
         skin_checks(v, task, new, touched, full, code, dart, ui)
+    if TASKS[task].get('fixture') == 'skin' or task == 'm2':
+        motion_checks(v, task, new, touched, full, dart)
     return {k: n for k, n in v.items() if n}, info
 
 
@@ -572,6 +577,50 @@ def skin_checks(v, task, new, touched, full, code, dart, ui):
         # the soft tint is derivable from the gold, so it should be a derived slot, not a second abstract one
         if count(r'^\s*Color\s+get\s+\w+\s*;', touched.get(SKIN_DIR + 'app_skin.dart', ''), re.M) > 1:
             v['s2_tint_not_derived'] += 1
+
+
+def motion_checks(v, task, new, touched, full, dart):
+    """Skin fixture (it has AppMotion) and m2: animation timing comes from AppMotion tokens."""
+    # the skin fixture's file, or wherever an agent created one under app_themes/ (m2)
+    MOTION_FILE = next((r for r in list(touched) + list(new)
+                        if r.startswith('lib/core/app_themes/') and r.endswith('app_motion.dart')), MOTION_FILE_DEFAULT)
+    not_animation = re.compile(r'Future\.delayed|\bTimer\b|timeout|debounce|Stream\.periodic|displayDuration|snack', re.I)
+    for r, t in dart.items():
+        if r.startswith('lib/core/app_themes/') or role(r) == 'test':
+            continue
+        for line in t.splitlines():
+            if not_animation.search(line):
+                continue
+            v['motion_inline_duration'] += count(r'(?<![\w.])Duration\(\s*(?:milliseconds|seconds|microseconds):', line)
+            v['motion_inline_curve'] += count(r'\bCurves\.\w+|(?<![\w.])Cubic\(', line)
+            if re.search(r'\bindex\b', line) and re.search(r'\*', line) and re.search(r'Duration|milliseconds|staggerStep', line) \
+                    and 'staggerAt' not in line:
+                v['motion_stagger_by_hand'] += 1
+        v['motion_token_outside_app_motion'] += count(r'static\s+const\s+(?:Duration|Curve|Motion)\b', t)
+    if MOTION_FILE in touched or MOTION_FILE in new:
+        lines = full.get(MOTION_FILE, '').splitlines()
+        added = set((touched.get(MOTION_FILE) or new[MOTION_FILE]).splitlines())
+        for i, line in enumerate(lines):
+            if line in added and re.match(r'\s*static\s+(?:const\s+|final\s+)?[\w<>?]+\s+\w+\s*(?:=|\()', line):
+                prev = next((lines[j].strip() for j in range(i - 1, -1, -1) if lines[j].strip()), '')
+                if not prev.startswith('///'):
+                    v['motion_token_without_doc'] += 1
+    if task == 'm1':
+        widgets = ' '.join(t for r, t in dart.items() if role(r) in ('ui', 'core'))
+        if not re.search(r'AppMotion\.(?:press|surface|exit|effects)Spring', widgets):
+            v['m1_press_not_spring'] += 1
+    if task in ('m1', 'm2'):
+        if not re.search(r'Duration\(\s*(?:milliseconds:\s*2000|seconds:\s*2)\s*\)', touched.get(MOTION_FILE) or new.get(MOTION_FILE, '')):
+            v[task + '_pulse_not_a_token'] += 1
+    if task == 'm2':
+        if MOTION_FILE not in new:
+            v['m2_no_app_motion_created'] += 1
+        if re.search(r'^\s*motor\s*:', touched.get('pubspec.yaml', ''), re.M):
+            v['m2_added_motor_dependency'] += 1
+        # the project ships design/prototype.html, so a new AppMotion should carry its durations (post hoc)
+        made = {int(x) for x in re.findall(r'milliseconds:\s*(\d+)', new.get(MOTION_FILE, ''))}
+        if MOTION_FILE in new and sum(d in made for d in DESIGN_DURATIONS) < 2:
+            v['m2_motion_not_from_design'] += 1
 
 
 def main():

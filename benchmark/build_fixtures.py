@@ -1857,6 +1857,84 @@ SKIN = {
           List<Object?> get props => [skin];
         }
         ''',
+    'lib/core/app_themes/app_motion.dart': '''
+        import 'package:flutter/animation.dart';
+        import 'package:motor/motor.dart';
+
+        /// Motion tokens mirroring the design's durations, easing curves, and
+        /// animation distances. Every animated widget picks from here instead of
+        /// inventing its own timing.
+        sealed class AppMotion {
+          /// Micro interactions: press states, border and color flips on chips
+          /// and inputs. Example: a filter chip's border darkening on tap.
+          static const Duration fast = Duration(milliseconds: 120);
+
+          /// Standard transitions: fades, background shifts, tab label color.
+          /// Example: the primary button fading when it is disabled.
+          static const Duration base = Duration(milliseconds: 180);
+
+          /// Entrances of content blocks. Example: a trip card appearing.
+          static const Duration slow = Duration(milliseconds: 260);
+
+          /// Big springy morphs. Example: a segmented thumb sliding between
+          /// filters.
+          static const Duration emphasis = Duration(milliseconds: 450);
+
+          /// One full sweep of the loading shimmer across a placeholder card.
+          static const Duration shimmerLoop = Duration(milliseconds: 1400);
+
+          /// The default deceleration curve: fast start, gentle stop. Pairs with
+          /// [fast]/[base] for most transitions.
+          static const Curve easeOut = Cubic(0.22, 0.61, 0.36, 1);
+
+          /// The symmetric curve for looping animations. Pairs with
+          /// [shimmerLoop].
+          static const Curve easeInOut = Cubic(0.65, 0, 0.35, 1);
+
+          /// The overshoot curve giving entrances a playful bounce. Pairs with
+          /// [slow]/[emphasis] for pops and sheets.
+          static const Curve spring = Cubic(0.34, 1.4, 0.64, 1);
+
+          /// How far a fade-up entrance starts below its resting spot. Example:
+          /// a form's fields rising 10 into place.
+          static const double fadeUpOffset = 10;
+
+          /// How far a sheet-like entrance starts below its resting spot.
+          /// Example: the filter sheet rising 60 into place.
+          static const double slideUpOffset = 60;
+
+          /// The starting scale of a pop entrance. Example: an empty-state
+          /// illustration scaling from 0.94 to full size.
+          static const double popScale = 0.94;
+
+          /// The delay before the first item of a staggered group starts.
+          static const Duration staggerBase = Duration(milliseconds: 120);
+
+          /// The gap between consecutive items of a staggered group. Example: the
+          /// offset between cards popping in on a list.
+          static const Duration staggerStep = Duration(milliseconds: 40);
+
+          /// The entrance delay for item [index] of a staggered group. Pass
+          /// `leadIn: false` for a list the user is already looking at.
+          static Duration staggerAt(int index, {bool leadIn = true}) =>
+              (leadIn ? staggerBase : Duration.zero) + staggerStep * index;
+
+          /// Small components reacting to touch: chips, buttons, cards. Example:
+          /// a card's press morph.
+          static const Motion pressSpring = MaterialSpringMotion.expressiveSpatialFast();
+
+          /// Large surfaces entering. Example: a bottom sheet springing up.
+          static const Motion surfaceSpring = MaterialSpringMotion.expressiveSpatialDefault();
+
+          /// Exits and dismissals: quieter, so the overshoot doesn't fight the
+          /// gesture that dismissed it. Example: a sheet flung closed.
+          static const Motion exitSpring = MaterialSpringMotion.standardSpatialFast();
+
+          /// Non-spatial changes: color, opacity, elevation. Example: a selection
+          /// tint settling after a tap.
+          static const Motion effectsSpring = MaterialSpringMotion.standardEffectsDefault();
+        }
+        ''',
     'lib/core/app_themes/themes/app_themes.dart': '''
         import 'package:app/core/app_themes/colors/app_skin.dart';
         import 'package:app/core/app_themes/text_style/app_text_style.dart';
@@ -2109,6 +2187,7 @@ SKIN = {
         import 'package:flutter/material.dart';
         import 'package:app/core/app_themes/colors/skin_scope.dart';
         import 'package:app/core/app_themes/text_style/app_text_style.dart';
+        import 'package:app/core/app_themes/app_motion.dart';
         import 'package:app/core/widgets/app_loader.dart';
         import 'package:app/core/widgets/app_text.dart';
 
@@ -2134,7 +2213,13 @@ SKIN = {
                   ? const AppLoader(size: 18)
                   : AppText(text, style: AppTextStyle.style14Medium.copyWith(color: context.skin.buttonText)),
             );
-            return expand ? SizedBox(width: double.infinity, child: button) : button;
+            final faded = AnimatedOpacity(
+              duration: AppMotion.base,
+              curve: AppMotion.easeOut,
+              opacity: onPressed == null ? 0.6 : 1,
+              child: button,
+            );
+            return expand ? SizedBox(width: double.infinity, child: faded) : faded;
           }
         }
         ''',
@@ -2229,7 +2314,7 @@ def skin(root):
     for path, text in SKIN.items():
         w(root, path, text)
     w(root, 'pubspec.yaml', PUBSPEC.format(
-        extra_deps='  drift: ^2.20.0\n  drift_flutter: ^0.2.0\n  shared_preferences: ^2.3.2',
+        extra_deps='  drift: ^2.20.0\n  drift_flutter: ^0.2.0\n  shared_preferences: ^2.3.2\n  motor: ^1.1.0',
         extra_dev='  drift_dev: ^2.20.0\n  build_runner: ^2.4.0\n  mockito: ^5.4.4'))
 
 
