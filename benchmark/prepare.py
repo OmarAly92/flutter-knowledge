@@ -77,7 +77,11 @@ def main():
         if step['mode'] not in cfg['modes'] or any(t not in cfg['tasks'] for t in step['tasks']):
             sys.exit(f'unknown mode or task in {step}')
 
-    if not os.path.isdir(os.path.join(out, 'fixture-drift')):
+    def fixture(task, mode):
+        t = cfg['tasks'][task]
+        return os.path.join(out, f"fixture-{t.get('fixture', t['engine'])}{cfg['modes'][mode]['fixture']}")
+
+    if not all(os.path.isdir(fixture(task, step['mode'])) for step in plan for task in step['tasks']):
         subprocess.run([sys.executable, os.path.join(HERE, 'build_fixtures.py'), out], check=True)
 
     agents = []
@@ -95,7 +99,7 @@ def main():
                         if not a.fresh:
                             continue
                         shutil.rmtree(run_path)
-                    shutil.copytree(os.path.join(out, f"fixture-{t['engine']}{mode['fixture']}"), run_path)
+                    shutil.copytree(fixture(task, step['mode']), run_path)
                     prompt = cfg['prompts'][mode['prompt']].format(
                         run=run_path, version=path, skill_index=index, task=t['text'])
                     agents.append({'run': run, 'description': f"{name} {step['mode']} {task} r{rep}", 'prompt': prompt})

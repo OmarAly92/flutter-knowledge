@@ -4,6 +4,8 @@ Measures whether agents follow the skills in this repo, so a skill change can be
 
 Each run gives one agent a realistic Flutter project and one task. A static grader then counts which conventions the agent broke. The project has a real core layer (`ApiConsumer`, `GlobalResponse`, `NetworkStatus`, `Failure`/`Result`, `AppColors`, `AppTextStyle`, `LocaleKeys`, core widgets). It also contains legacy code that breaks the rules on purpose: `RoutesStrings._()`, an `orders` feature on Bloc with inline DI, and a `budget` feature whose params return a drift `Companion`. An agent that copies the code around it instead of following the skills gets caught.
 
+The newer tasks (f1, f2, t1, g1) run on a third project, `app`: the drift project plus a `trips` feature written the way the skills ask, shared email and phone validators, a legacy flat `test/` file that uses mockito, and a design prototype at `design/prototype.html`. The prototype is built like a standalone design export: its real CSS sits escaped inside a JS string, the page's own `<style>` holds a decoy `--primary`, and its font is embedded as compressed base64. Reading the file by eye gives the wrong values, so it tests whether an agent follows the design skill's extraction steps.
+
 ## Results so far (Sonnet 5.5, 2026-09-28)
 
 These are the same 20 runs per version: 5 screen tasks, with 3 forced runs and 1 description-only run each.
@@ -15,12 +17,31 @@ These are the same 20 runs per version: 5 screen tasks, with 3 forced runs and 1
 | Runs with real Arabic for new keys | 0 | 1 | 20 |
 | Mean tokens per run | 117.7k | 124.0k | 123.5k |
 
+### Newer tasks, master baseline (1.3.0, 2026-09-28)
+
+Each task ran 3 times in forced mode and once in description-only mode, 16 runs in all.
+
+| Task | Runs | Rule breaks | Mean skill files read | Mean tokens |
+|---|---|---|---|---|
+| f1 trip details + delete sheet | 4 | 0 | 7.0 | 108.4k |
+| f2 edit form | 4 | 0 | 7.0 | 100.7k |
+| t1 unit tests | 4 | 0 | 2.8 | 85.8k |
+| g1 design prototype | 4 | 0 | 4.0 | 133.7k |
+
+Master broke no rule on these tasks either. Every g1 run ignored the decoy color, pulled the real values from the rendered CSS, and extracted both embedded fonts. In description-only mode the agents still found `flutter-testing` for t1 and `design-from-html-flutter` with its playbook for g1. These tasks are a regression baseline: a skill change should keep them at 0.
+
+### 1.3.1: flutter-testing cubit example fix (2026-09-28)
+
+The skill's cubit example expected the constructor fetch's loading state, which `blocTest` never records because it subscribes after `build()` returns. Every master t1 run noticed and wrote around it. On 1.3.1, t1 again broke no rule in 4 runs (forced ×3, desc ×1), the agents used the example's `act:` and `skip:` pattern directly, and mean tokens fell from 85.8k to 73.7k. The grader now flags a `blocTest` that expects that loading state (`cubit_test_expects_ctor_loading_state`).
+
 ## Files
 
 | File | What it is |
 |---|---|
-| `build_fixtures.py` | Writes the drift and Hive fixture projects, plus a `-nowrap` copy of each with `PrimaryButton`, `AppTextField`, `AppLoader` and `AppErrorWidget` removed. |
-| `tasks.json` | The two agent prompt templates, the three modes, the six tasks, and the default plan. |
+| `build_fixtures.py` | Writes the drift, Hive and `app` fixture projects, plus a `-nowrap` copy of each with `PrimaryButton`, `AppTextField`, `AppLoader` and `AppErrorWidget` removed. |
+| `fixture_files/design/prototype.html` | The design prototype copied into the `app` fixture for task g1. |
+| `make_prototype.py` | Regenerates that prototype and its embedded font. It needs `fonttools`, and you only run it to change the prototype. |
+| `tasks.json` | The two agent prompt templates, the three modes, the ten tasks, and the default plan. |
 | `prepare.py` | Builds the fixtures, makes one project copy per run, writes a skill index per version, and writes one prompt per run to `out/agents.jsonl`. |
 | `grade.py` | The grader. It runs regex checks on the code each agent wrote and writes `out/grades.json`. |
 | `compare.py` | Compares versions on the tasks they all ran. It prints rule breaks, translation outcomes, tokens and skill files read, and runs a permutation test. |
@@ -37,6 +58,12 @@ Generated output goes to `benchmark/out/`, which git ignores.
 | d4 | drift | An optional column on the shipped `budget` table, with a migration (data side only) |
 | h1 | Hive | Same as d2 |
 | h2 | Hive | Same as d3 |
+| f1 | app | A trip details screen loaded by id, with a delete confirmation in a bottom sheet |
+| f2 | app | An edit trip screen with a prefilled, validated form that saves by id |
+| t1 | app | Unit tests for the existing trips data source, repository and cubit |
+| g1 | app | Colors, font, text styles, motion and two core widgets taken from the HTML prototype |
+
+f1 and f2 cover what the first six tasks never reach: `EndPoints` methods that take an id, `registerFactoryParam` with `param1`, a bottom sheet given the cubit through `BlocProvider.value`, controllers and the form key on the cubit, prefilling through the initializer list, `dispose` in `close()`, and the shared validators. t1 checks the `flutter-testing` skill and g1 the `design-from-html-flutter` skill, including whether an agent in description-only mode reads them at all.
 
 ### Modes
 
@@ -46,7 +73,7 @@ Generated output goes to `benchmark/out/`, which git ignores.
 | `desc` | Cursor, Kimi and `install.sh`, where the agent sees only skill descriptions |
 | `nowrap` | Forced mode on the project with four core widgets missing |
 
-The default plan is forced ×3 and desc ×1 on all six tasks, plus nowrap ×2 on d1 and h1. That is 28 runs per version.
+The default plan is forced ×3 and desc ×1 on all ten tasks, plus nowrap ×2 on d1 and h1. That is 44 runs per version. To run only the newer tasks, use `--only forced:f1,f2,t1,g1:3 --only desc:f1,f2,t1,g1:1`.
 
 ## Running it
 

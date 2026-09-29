@@ -63,7 +63,7 @@ void main() {
 }
 ```
 
-**Cubit tests**: mock the repository, use `blocTest` per method. Because the cubit fires its initial fetch from the constructor, stub the repository's response *before* calling `build:` — `blocTest` subscribes to the stream as soon as `build()` returns, in time to catch the states that fetch emits.
+**Cubit tests**: mock the repository, use `blocTest` per method, and stub the repository in `setUp:` so the stub is in place before `build:` constructs the cubit. A cubit that fires its initial fetch from the constructor emits `GetXLoadingState` synchronously inside `build()`, before `blocTest` subscribes to the stream, so that state is never recorded — expect only the states that follow it. To assert the loading state, let the initial fetch settle, call the method again from `act:`, and `skip:` the initial fetch's result.
 
 ```dart
 class MockXRepository extends Mock implements XRepository {}
@@ -75,19 +75,32 @@ void main() {
 
   group('getX', () {
     blocTest<XCubit, XState>(
-      'emits [GetXLoadingState, GetXSuccessState] when getX succeeds',
+      'emits [GetXSuccessState] when the initial getX succeeds',
       setUp: () => when(() => repository.getX())
           .thenAnswer((_) async => Result.success(GlobalResponse(data: XModel()))),
       build: () => XCubit(repository),
-      expect: () => [const GetXLoadingState(), const GetXSuccessState()],
+      expect: () => [const GetXSuccessState()],
     );
 
     blocTest<XCubit, XState>(
-      'emits [GetXLoadingState, GetXFailureState] when getX fails',
+      'emits [GetXFailureState] when the initial getX fails',
       setUp: () => when(() => repository.getX())
           .thenAnswer((_) async => Result.failure(ServerFailure(message: 'error'))),
       build: () => XCubit(repository),
-      expect: () => [const GetXLoadingState(), isA<GetXFailureState>()],
+      expect: () => [isA<GetXFailureState>()],
+    );
+
+    blocTest<XCubit, XState>(
+      'emits [GetXLoadingState, GetXSuccessState] when getX is called again',
+      setUp: () => when(() => repository.getX())
+          .thenAnswer((_) async => Result.success(GlobalResponse(data: XModel()))),
+      build: () => XCubit(repository),
+      act: (cubit) async {
+        await Future<void>.delayed(Duration.zero); // let the constructor's fetch settle
+        await cubit.getX();
+      },
+      skip: 1, // the constructor fetch's GetXSuccessState
+      expect: () => [const GetXLoadingState(), const GetXSuccessState()],
     );
   });
 }
@@ -100,3 +113,4 @@ void main() {
 - Do not test a cubit with plain `test()` + manual `cubit.stream` listening — use `blocTest` from `bloc_test`.
 - Do not drop test files in a flat `test/` dir — mirror the `lib/feature/<feature>/...` tree under `test/`.
 - Do not skip the offline branch when testing a repository method — assert `Result.failure(ServerFailure.noNetwork())` is returned and the data source is never called.
+- Do not expect the constructor fetch's `...LoadingState` in `blocTest` — it is emitted inside `build()`, before `blocTest` listens. Assert a loading state only for a call made from `act:`.
