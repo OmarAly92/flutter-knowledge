@@ -45,7 +45,7 @@ Before writing or editing the code in the left column, you MUST invoke the skill
 | A color, a new skin slot, dark/light switching, or `ThemeData` in a project with `lib/core/app_themes/colors/app_skin.dart` | `flutter-app-skin` |
 | Theme, skin, text styles, motion, core widgets, or screen docs from an HTML design prototype | `design-from-html-flutter` |
 
-If the project has `lib/core/app_themes/colors/app_skin.dart`, colors come from `context.skin` (invoke `flutter-app-skin`) and there is no `AppColors`; otherwise use `AppColors` as `flutter-screen-ui` describes.
+If the project has an `AppSkin` (`lib/core/app_themes/colors/app_skin.dart`, or a `class AppSkin` elsewhere under `lib/`), colors come from `context.skin` (invoke `flutter-app-skin`) and there is no `AppColors`; otherwise use `AppColors` as `flutter-screen-ui` describes.
 
 If neither drift nor hive is present yet and a feature needs local storage, pick the one the feature calls for (or ask the user) and invoke that skill.
 
