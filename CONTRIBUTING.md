@@ -29,6 +29,9 @@ All skill content lives in `skills/`:
   bloc_test cubit tests, data source/repository/cubit coverage.
 - `skills/add-translation/SKILL.md` — add localization keys to `en.json` /
   `ar.json` in sync.
+- `skills/flutter-app-skin/SKILL.md` — colors and light/dark themes for
+  projects with an `AppSkin`: `context.skin`, adding slots, `SkinCubit`,
+  `SkinScope`, `AppThemes.fromSkin` and the `ColorScheme` mapping.
 - `skills/design-from-html-flutter/` — turn an HTML design prototype into skin
   colors, text styles, motion constants, core widgets, and per-screen design
   docs + implementation prompts. The only multi-file skill: `SKILL.md` is the
@@ -41,12 +44,14 @@ demand. The five core mini skills (`flutter-feature-structure`,
 `flutter-data-layer`, `flutter-cubit`, `flutter-screen-ui`,
 `flutter-routing-di`) and the helpers (`drift-local-database`,
 `hive-local-database`, `flutter-testing`, `add-translation`,
-`design-from-html-flutter`) each have their own scoped `description` so the
+`flutter-app-skin`, `design-from-html-flutter`) each have their own scoped `description` so the
 agent can trigger them directly, and the `flutter-knowledge` map tells the
 agent it MUST invoke them (via the Skill tool, or `/<skill-name>`) before
 writing the code they cover. The two local-database skills are mutually
 exclusive per project — the map picks between them by checking
-`pubspec.yaml` for drift vs hive/hive_ce. When adding a new on-demand skill,
+`pubspec.yaml` for drift vs hive/hive_ce. Likewise `flutter-app-skin` applies
+only when the project has `lib/core/app_themes/colors/app_skin.dart`; the map
+and `flutter-screen-ui` fall back to `AppColors` otherwise. When adding a new on-demand skill,
 follow this same pattern rather than inlining it into `flutter-knowledge` —
 give it its own scoped `description`, add a row to the map, and do NOT set
 `disable-model-invocation: true`, since that flag removes a skill from the
@@ -67,12 +72,12 @@ Never duplicate skill text elsewhere. Every harness manifest just points at
 | Kimi | `.kimi-plugin/plugin.json` (`"skills": "./skills/"`) | No — description-based only |
 | OpenCode | `.opencode/plugins/flutter-knowledge.js` (registers `skills/`) | Yes — `experimental.chat.system.transform` hook |
 | Pi | `.pi/extensions/flutter-knowledge.ts` + `package.json` `pi` field | Yes — `session_start` + `before_agent_start` hooks |
-| Gemini | `gemini-extension.json` → `GEMINI.md` (includes all eleven skills) | Yes, implicitly — `GEMINI.md` always loads (Gemini has no on-demand mechanism, so the five core mini skills and `drift-local-database`/`hive-local-database`/`flutter-testing`/`add-translation`/`design-from-html-flutter` are always included there too, unlike every other harness; `design-from-html-flutter` is multi-file, so its `playbook.md` and `templates.md` get their own `@` includes) |
+| Gemini | `gemini-extension.json` → `GEMINI.md` (includes all twelve skills) | Yes, implicitly — `GEMINI.md` always loads (Gemini has no on-demand mechanism, so the five core mini skills and `drift-local-database`/`hive-local-database`/`flutter-testing`/`add-translation`/`flutter-app-skin`/`design-from-html-flutter` are always included there too, unlike every other harness; `design-from-html-flutter` is multi-file, so its `playbook.md` and `templates.md` get their own `@` includes) |
 | Any other agent | `install.sh` symlinks `skills/*` into `~/.claude/skills/` | No — description-based only |
 
 "Forced" means the `flutter-knowledge` map and hard rules (not the five core
 mini skills, `drift-local-database`, `hive-local-database`, `flutter-testing`,
-`add-translation`, or `design-from-html-flutter`, which stay on-demand and are
+`add-translation`, `flutter-app-skin`, or `design-from-html-flutter`, which stay on-demand and are
 reached through the map) get injected
 whenever the project has a `pubspec.yaml`,
 regardless of whether the model would have decided to trigger the skill from
