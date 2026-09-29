@@ -36,6 +36,20 @@ Master broke no rule on these tasks either. Every g1 run ignored the decoy color
 
 The skill's cubit example expected the constructor fetch's loading state, which `blocTest` never records because it subscribes after `build()` returns. Every master t1 run noticed and wrote around it. On 1.3.1, t1 again broke no rule in 4 runs (forced ×3, desc ×1), the agents used the example's `act:` and `skip:` pattern directly, and mean tokens fell from 85.8k to 73.7k. The grader now flags a `blocTest` that expects that loading state (`cubit_test_expects_ctor_loading_state`).
 
+### 1.4.0: flutter-app-skin (2026-09-29)
+
+New tasks s1 and s2 on the `skin` project, forced ×3 and desc ×1 each, plus f1 forced ×2 as a regression check on an `AppColors` project. 10 runs per version.
+
+| | master (1.3.1) | 1.4.0 |
+|---|---|---|
+| Rule breaks | 5 | 0 |
+| Runs with an s2 tint hand-picked per skin instead of derived | 4/4 | 0/4 |
+| Runs adding skin slots without a doc comment | 1/10 | 0/10 |
+| Runs reading `flutter-app-skin` on s1/s2 | - | 8/8 (desc mode too) |
+| Mean tokens | 91.4k | 98.9k |
+
+Permutation test p = 0.03. Master agents already used `context.skin`, never `AppColors`, and switched the mode through `SkinCubit`, because the fixture's own code shows the pattern. The difference is in how they add colors: on 1.4.0 every run made the gold's soft tint a derived slot (`premium.withValues(alpha: 0.16)`), while every master run added a second abstract slot and invented a light-mode value for it. `s2_tint_not_derived` was added after reading these runs, so treat it as a finding to confirm on the next round, not a pre-registered test. f1 broke no rule on either version, and its agents did not read the skin skill.
+
 ## Files
 
 | File | What it is |

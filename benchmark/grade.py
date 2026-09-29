@@ -560,7 +560,7 @@ def skin_checks(v, task, new, touched, full, code, dart, ui):
     if any(r.endswith('app_colors.dart') for r in new):
         v['skin_app_colors_file_created'] += 1
     ui_all = ' '.join(ui.values())
-    if task == 's1' and not re.search(r'\btoggleSkin\(|\bsetSkin\(', ui_all):
+    if task == 's1' and not re.search(r'\btoggleSkin\b|\bsetSkin\b', ui_all):
         v['s1_mode_not_switched_via_skin_cubit'] += 1
     if task == 's2':
         for sk, hexv in SKIN_GOLD.items():
@@ -569,6 +569,9 @@ def skin_checks(v, task, new, touched, full, code, dart, ui):
         for r, t in dart.items():
             if not r.startswith(SKIN_DIR) and re.search('|'.join(SKIN_GOLD.values()), t, re.I):
                 v['s2_gold_hex_outside_skins'] += 1
+        # the soft tint is derivable from the gold, so it should be a derived slot, not a second abstract one
+        if count(r'^\s*Color\s+get\s+\w+\s*;', touched.get(SKIN_DIR + 'app_skin.dart', ''), re.M) > 1:
+            v['s2_tint_not_derived'] += 1
 
 
 def main():
