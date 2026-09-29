@@ -6,7 +6,7 @@ Each run gives one agent a realistic Flutter project and one task. A static grad
 
 The newer tasks (f1, f2, t1, g1) run on a third project, `app`: the drift project plus a `trips` feature written the way the skills ask, shared email and phone validators, a legacy flat `test/` file that uses mockito, and a design prototype at `design/prototype.html`. The prototype is built like a standalone design export: its real CSS sits escaped inside a JS string, the page's own `<style>` holds a decoy `--primary`, and its font is embedded as compressed base64. Reading the file by eye gives the wrong values, so it tests whether an agent follows the design skill's extraction steps.
 
-Tasks s1 and s2 run on a fourth project, `skin`: the `app` project with `AppColors` replaced by an `AppSkin` layer (`LightSkin`/`DarkSkin`, `SkinScope` and `context.skin`, `SkinCubit` persisted through `CacheHelper`, `AppThemes.fromSkin`). They check the `flutter-app-skin` skill: colors come from `context.skin`, a new color becomes a documented slot implemented in both skins, and the mode switch goes through `SkinCubit`. The legacy `orders` feature still uses raw colors, as a trap.
+Tasks s1, s2 and m1 run on a fourth project, `skin`: the `app` project with `AppColors` replaced by an `AppSkin` layer (`LightSkin`/`DarkSkin`, `SkinScope` and `context.skin`, `SkinCubit` persisted through `CacheHelper`, `AppThemes.fromSkin`), plus an `AppMotion` token file with durations, curves, stagger helpers and `motor` springs. s1 and s2 check the skin part of the `flutter-app-theme` skill (called `flutter-app-skin` in 1.4.0): colors come from `context.skin`, a new color becomes a documented slot implemented in both skins, and the mode switch goes through `SkinCubit`. m1 checks its motion part: animation durations, curves, springs and stagger delays come from `AppMotion`, and a new timing becomes a documented token there. The legacy `orders` feature still uses raw colors, as a trap.
 
 ## Results so far (Sonnet 5.5, 2026-09-28)
 
@@ -57,7 +57,7 @@ Permutation test p = 0.03. Master agents already used `context.skin`, never `App
 | `build_fixtures.py` | Writes the drift, Hive and `app` fixture projects, plus a `-nowrap` copy of each with `PrimaryButton`, `AppTextField`, `AppLoader` and `AppErrorWidget` removed. |
 | `fixture_files/design/prototype.html` | The design prototype copied into the `app` fixture for task g1. |
 | `make_prototype.py` | Regenerates that prototype and its embedded font. It needs `fonttools`, and you only run it to change the prototype. |
-| `tasks.json` | The two agent prompt templates, the three modes, the ten tasks, and the default plan. |
+| `tasks.json` | The two agent prompt templates, the three modes, the tasks, and the default plan. |
 | `prepare.py` | Builds the fixtures, makes one project copy per run, writes a skill index per version, and writes one prompt per run to `out/agents.jsonl`. |
 | `grade.py` | The grader. It runs regex checks on the code each agent wrote and writes `out/grades.json`. |
 | `compare.py` | Compares versions on the tasks they all ran. It prints rule breaks, translation outcomes, tokens and skill files read, and runs a permutation test. |
@@ -80,6 +80,7 @@ Generated output goes to `benchmark/out/`, which git ignores.
 | g1 | app | Colors, font, text styles, motion and two core widgets taken from the HTML prototype |
 | s1 | skin | A status pill on each trip that works in light and dark mode, plus an app bar button that switches the mode |
 | s2 | skin | A "Premium" label in a new gold color that differs between light and dark mode |
+| m1 | skin | A staggered entrance for the trips list, a press that shrinks each card and springs back, and a slowly pulsing dot on upcoming trips |
 
 f1 and f2 cover what the first six tasks never reach: `EndPoints` methods that take an id, `registerFactoryParam` with `param1`, a bottom sheet given the cubit through `BlocProvider.value`, controllers and the form key on the cubit, prefilling through the initializer list, `dispose` in `close()`, and the shared validators. t1 checks the `flutter-testing` skill and g1 the `design-from-html-flutter` skill, including whether an agent in description-only mode reads them at all.
 

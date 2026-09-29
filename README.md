@@ -10,8 +10,9 @@ that routes the agent to five core mini skills (`flutter-feature-structure`,
 helpers: `add-translation`
 for keeping `en.json` / `ar.json` in sync, `drift-local-database` and
 `hive-local-database` for local persistence (drift/SQLite or Hive),
-`flutter-testing` for mocktail/bloc_test unit tests, `flutter-app-skin` for
-colors and light/dark themes in projects built on an `AppSkin`, and
+`flutter-testing` for mocktail/bloc_test unit tests, `flutter-app-theme` for
+the theme layer (skin colors with light/dark switching, text styles, motion,
+shapes and `ThemeData`), and
 `design-from-html-flutter` for building the app's design system from an HTML
 prototype.
 
@@ -53,7 +54,7 @@ description-based triggering only (see `CONTRIBUTING.md`).
 | **hive-local-database** | Hive (hive_ce) local persistence: boxes, storage↔model mapping, local-only and hybrid repositories. | On demand, via `flutter-knowledge` or `/hive-local-database` |
 | **flutter-testing** | Unit test conventions: mocktail mocks, bloc_test cubit tests, data source/repository/cubit coverage. | On demand, via `flutter-knowledge` or `/flutter-testing` |
 | **add-translation** | Add localization key(s) to `en.json` and `ar.json` in sync, then regenerate `locale_keys.g.dart`. | On demand, via `flutter-knowledge` or `/add-translation` |
-| **flutter-app-skin** | Colors and light/dark themes for projects with an `AppSkin`: `context.skin`, adding slots, `SkinCubit`/`SkinScope`, `AppThemes.fromSkin` and the `ColorScheme` mapping. | On demand, via `flutter-knowledge` or `/flutter-app-skin` |
+| **flutter-app-theme** | The theme layer: colors through an `AppSkin` (`context.skin`, adding slots, `SkinCubit`/`SkinScope`), `AppTextStyle`, `AppMotion` durations, curves, springs and stagger, shapes and radii, and `AppThemes.fromSkin` with the `ColorScheme` mapping. | On demand, via `flutter-knowledge` or `/flutter-app-theme` |
 | **design-from-html-flutter** | Turn an HTML design prototype into skin colors, text styles, motion constants, core widgets, and per-screen design docs + implementation prompts. | On demand, via `flutter-knowledge` or `/design-from-html-flutter` |
 
 ## Install
