@@ -6,6 +6,8 @@ Each run gives one agent a realistic Flutter project and one task. A static grad
 
 The newer tasks (f1, f2, t1, g1) run on a third project, `app`: the drift project plus a `trips` feature written the way the skills ask, shared email and phone validators, a legacy flat `test/` file that uses mockito, and a design prototype at `design/prototype.html`. The prototype is built like a standalone design export: its real CSS sits escaped inside a JS string, the page's own `<style>` holds a decoy `--primary`, and its font is embedded as compressed base64. Reading the file by eye gives the wrong values, so it tests whether an agent follows the design skill's extraction steps.
 
+Tasks s1 and s2 run on a fourth project, `skin`: the `app` project with `AppColors` replaced by an `AppSkin` layer (`LightSkin`/`DarkSkin`, `SkinScope` and `context.skin`, `SkinCubit` persisted through `CacheHelper`, `AppThemes.fromSkin`). They check the `flutter-app-skin` skill: colors come from `context.skin`, a new color becomes a documented slot implemented in both skins, and the mode switch goes through `SkinCubit`. The legacy `orders` feature still uses raw colors, as a trap.
+
 ## Results so far (Sonnet 5.5, 2026-09-28)
 
 These are the same 20 runs per version: 5 screen tasks, with 3 forced runs and 1 description-only run each.
@@ -33,6 +35,20 @@ Master broke no rule on these tasks either. Every g1 run ignored the decoy color
 ### 1.3.1: flutter-testing cubit example fix (2026-09-28)
 
 The skill's cubit example expected the constructor fetch's loading state, which `blocTest` never records because it subscribes after `build()` returns. Every master t1 run noticed and wrote around it. On 1.3.1, t1 again broke no rule in 4 runs (forced ×3, desc ×1), the agents used the example's `act:` and `skip:` pattern directly, and mean tokens fell from 85.8k to 73.7k. The grader now flags a `blocTest` that expects that loading state (`cubit_test_expects_ctor_loading_state`).
+
+### 1.4.0: flutter-app-skin (2026-09-29)
+
+New tasks s1 and s2 on the `skin` project, forced ×3 and desc ×1 each, plus f1 forced ×2 as a regression check on an `AppColors` project. 10 runs per version.
+
+| | master (1.3.1) | 1.4.0 |
+|---|---|---|
+| Rule breaks | 5 | 0 |
+| Runs with an s2 tint hand-picked per skin instead of derived | 4/4 | 0/4 |
+| Runs adding skin slots without a doc comment | 1/10 | 0/10 |
+| Runs reading `flutter-app-skin` on s1/s2 | - | 8/8 (desc mode too) |
+| Mean tokens | 91.4k | 98.9k |
+
+Permutation test p = 0.03. Master agents already used `context.skin`, never `AppColors`, and switched the mode through `SkinCubit`, because the fixture's own code shows the pattern. The difference is in how they add colors: on 1.4.0 every run made the gold's soft tint a derived slot (`premium.withValues(alpha: 0.16)`), while every master run added a second abstract slot and invented a light-mode value for it. `s2_tint_not_derived` was added after reading these runs, so treat it as a finding to confirm on the next round, not a pre-registered test. f1 broke no rule on either version, and its agents did not read the skin skill.
 
 ## Files
 
@@ -62,6 +78,8 @@ Generated output goes to `benchmark/out/`, which git ignores.
 | f2 | app | An edit trip screen with a prefilled, validated form that saves by id |
 | t1 | app | Unit tests for the existing trips data source, repository and cubit |
 | g1 | app | Colors, font, text styles, motion and two core widgets taken from the HTML prototype |
+| s1 | skin | A status pill on each trip that works in light and dark mode, plus an app bar button that switches the mode |
+| s2 | skin | A "Premium" label in a new gold color that differs between light and dark mode |
 
 f1 and f2 cover what the first six tasks never reach: `EndPoints` methods that take an id, `registerFactoryParam` with `param1`, a bottom sheet given the cubit through `BlocProvider.value`, controllers and the form key on the cubit, prefilling through the initializer list, `dispose` in `close()`, and the shared validators. t1 checks the `flutter-testing` skill and g1 the `design-from-html-flutter` skill, including whether an agent in description-only mode reads them at all.
 

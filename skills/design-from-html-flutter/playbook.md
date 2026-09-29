@@ -10,7 +10,7 @@ in this shape rather than inventing another:
 - **Skin**: `lib/core/app_themes/colors/` — abstract `AppSkin` (core slots + derived getters)
   + `LightSkin`/`DarkSkin`; `SkinCubit` (persisted via `CacheHelper`) → `SkinScope` →
   `context.skin.<getter>`; `AppThemes.fromSkin()` builds `ThemeData`. Never raw `Color(0x…)`
-  in feature code.
+  in feature code. Invoke `/flutter-app-skin` for the slot, naming and `ColorScheme`-mapping rules.
   If the project's `flutter-knowledge` conventions default to a single flat color-constants class
   but the design ships a real working light/dark toggle (not just a static palette), this skin
   shape wins over that flat default — flag the substitution to the user rather than silently

@@ -17,7 +17,7 @@ Map of the Flutter conventions: the always-on hard rules below, plus the skill y
 - **Every `BlocBuilder` declares `buildWhen`** naming the exact state types it rebuilds on.
 - **No `Widget _buildX()` methods** — every extracted widget is a `StatelessWidget` class in its own file; one widget class per file.
 - **Core wrappers over raw widgets**: `AppText`, `AppScaffold`, `GlobalAppbar`, `VerticalSpace`/`HorizontalSpace`, `PrimaryButton`, `AppTextField`, `AppLoader`, `AppErrorWidget`, … instead of `Text`, `Scaffold`, `AppBar`, `SizedBox` — when the wrapper exists in the project's `lib/core/widgets/`. If it does not, fall back to the raw Flutter widget; never import or invent a missing wrapper.
-- **`AppColors` and `AppTextStyle` only** — never inline `Color(0x...)` or raw `TextStyle(...)` in presentation code.
+- **Colors from the project's color layer, text from `AppTextStyle`** — `context.skin.<slot>` when the project has `lib/core/app_themes/colors/app_skin.dart`, otherwise `AppColors`. Never inline `Color(0x...)` or raw `TextStyle(...)` in presentation code.
 - **Every user-facing string is `LocaleKeys.xxx.tr()`** — never a raw `'...'` literal in a widget shown to the user.
 - **No `flutter_screenutil` in feature code** — no `.h`/`.w`/`.r`/`.sp`, no import; spacing/padding/radius take raw ints.
 - **Static-only classes are `sealed class X`** — never a private `X._()` constructor.
@@ -42,7 +42,10 @@ Before writing or editing the code in the left column, you MUST invoke the skill
 | Local persistence with drift (check `pubspec.yaml`) | `drift-local-database` |
 | Local persistence with hive / hive_ce (check `pubspec.yaml`) | `hive-local-database` |
 | Unit tests — only when the user explicitly asks for tests | `flutter-testing` |
+| A color, a new skin slot, dark/light switching, or `ThemeData` in a project with `lib/core/app_themes/colors/app_skin.dart` | `flutter-app-skin` |
 | Theme, skin, text styles, motion, core widgets, or screen docs from an HTML design prototype | `design-from-html-flutter` |
+
+If the project has an `AppSkin` (`lib/core/app_themes/colors/app_skin.dart`, or a `class AppSkin` elsewhere under `lib/`), colors come from `context.skin` (invoke `flutter-app-skin`) and there is no `AppColors`; otherwise use `AppColors` as `flutter-screen-ui` describes.
 
 If neither drift nor hive is present yet and a feature needs local storage, pick the one the feature calls for (or ask the user) and invoke that skill.
 
