@@ -6,6 +6,8 @@ Each run gives one agent a realistic Flutter project and one task. A static grad
 
 The newer tasks (f1, f2, t1, g1) run on a third project, `app`: the drift project plus a `trips` feature written the way the skills ask, shared email and phone validators, a legacy flat `test/` file that uses mockito, and a design prototype at `design/prototype.html`. The prototype is built like a standalone design export: its real CSS sits escaped inside a JS string, the page's own `<style>` holds a decoy `--primary`, and its font is embedded as compressed base64. Reading the file by eye gives the wrong values, so it tests whether an agent follows the design skill's extraction steps.
 
+Tasks s1 and s2 run on a fourth project, `skin`: the `app` project with `AppColors` replaced by an `AppSkin` layer (`LightSkin`/`DarkSkin`, `SkinScope` and `context.skin`, `SkinCubit` persisted through `CacheHelper`, `AppThemes.fromSkin`). They check the `flutter-app-skin` skill: colors come from `context.skin`, a new color becomes a documented slot implemented in both skins, and the mode switch goes through `SkinCubit`. The legacy `orders` feature still uses raw colors, as a trap.
+
 ## Results so far (Sonnet 5.5, 2026-09-28)
 
 These are the same 20 runs per version: 5 screen tasks, with 3 forced runs and 1 description-only run each.
@@ -62,6 +64,8 @@ Generated output goes to `benchmark/out/`, which git ignores.
 | f2 | app | An edit trip screen with a prefilled, validated form that saves by id |
 | t1 | app | Unit tests for the existing trips data source, repository and cubit |
 | g1 | app | Colors, font, text styles, motion and two core widgets taken from the HTML prototype |
+| s1 | skin | A status pill on each trip that works in light and dark mode, plus an app bar button that switches the mode |
+| s2 | skin | A "Premium" label in a new gold color that differs between light and dark mode |
 
 f1 and f2 cover what the first six tasks never reach: `EndPoints` methods that take an id, `registerFactoryParam` with `param1`, a bottom sheet given the cubit through `BlocProvider.value`, controllers and the form key on the cubit, prefilling through the initializer list, `dispose` in `close()`, and the shared validators. t1 checks the `flutter-testing` skill and g1 the `design-from-html-flutter` skill, including whether an agent in description-only mode reads them at all.
 

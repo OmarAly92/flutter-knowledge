@@ -30,6 +30,8 @@ ARABIC = re.compile(r'[؀-ۿ]')
 SCREEN_TASKS = {'d1', 'd2', 'd3', 'h1', 'h2'}   # a new feature with its own screen
 TRIP_SCREEN_TASKS = {'f1', 'f2'}                # a new screen inside the existing trips feature
 TASK_SKILL = {'t1': 'flutter-testing', 'g1': 'design-from-html-flutter'}
+SKIN_DIR = 'lib/core/app_themes/colors/'
+SKIN_GOLD = {'light_skin.dart': 'C8A24A', 'dark_skin.dart': 'E3C77A'}   # task s2
 # design/prototype.html (task g1): the values its injected CSS resolves to
 DESIGN_COLORS = ['F4F6F5', 'FFFFFF', 'EDF1EF', '0E1A17', '4A5A55', '83928D', 'D6DEDA', '0F766E', '15803D', 'B45309', 'B91C1C']
 DESIGN_TYPE = [(28, 34, -0.56), (20, 26, -0.2), (15, 22, 0.0), (12, 16, 0.24)]   # font size, line height, tracking (px)
@@ -384,6 +386,8 @@ def grade(run_dir, fixture_dir, task):
                 and 'description' not in full.get('lib/feature/budget/domain/params/add_budget_params.dart', ''):
             v['d4_description_not_written'] += 1
     new_task_checks(v, task, run_dir, new, touched, full, code, dart, ui, cubits, sl_add)
+    if TASKS[task].get('fixture') == 'skin':
+        skin_checks(v, task, new, touched, full, code, dart, ui)
     return {k: n for k, n in v.items() if n}, info
 
 
@@ -519,6 +523,52 @@ def new_task_checks(v, task, run_dir, new, touched, full, code, dart, ui, cubits
             if r.startswith('lib/core/widgets/') and r.endswith('.dart'):
                 v['design_raw_value_in_widget'] += count(
                     r'Color\(0x|\bColors\.(?!transparent)|Duration\(|Cubic\(|\bCurves\.|(?<![\w.])TextStyle\(', code[r])
+
+
+def skin_checks(v, task, new, touched, full, code, dart, ui):
+    """Tasks on the AppSkin fixture: colors come from context.skin, slots live in the skins."""
+    widgets = {r: t for r, t in dart.items()
+               if role(r) == 'ui' or (r.startswith('lib/core/widgets/') and r.endswith('.dart'))}
+    for r, t in dart.items():
+        if not r.startswith(SKIN_DIR):
+            v['skin_app_colors_used'] += count(r'\bAppColors\b', t)
+    for r, t in widgets.items():
+        v['skin_colorscheme_in_widget'] += count(r'Theme\.of\(\s*\w+\s*\)\s*\.\s*(?:colorScheme|brightness)|Theme\.of\(\s*\w+\s*\)\.\w+Theme', t)
+        v['skin_mode_branch_for_color'] += count(
+            r'(?:ThemeMode\.dark|Brightness\.dark|\b(?:is)?[dD]ark\w*)\s*\?\s*(?:const\s+)?(?:context\.skin\.|skin\.|Color\(|Colors\.|AppColors\.)', t)
+        if r.startswith('lib/core/widgets/'):
+            v['raw_color_in_core_widget'] += count(r'Color\(0x|\bColors\.(?!transparent)', t)
+        v['skin_theme_persisted_outside_cubit'] += count(r'\bCacheHelper\b|CacheKeys\.currentTheme|SharedPreferences', t)
+    for r, t in dart.items():
+        if r != 'lib/my_app.dart' and not r.startswith(SKIN_DIR):
+            v['skin_cubit_provided_again'] += count(r'(?<![\w.])SkinCubit\(\)|BlocProvider<SkinCubit>|registerFactory<SkinCubit>|registerLazySingleton<SkinCubit>', t)
+    base = full.get(SKIN_DIR + 'app_skin.dart', '')
+    if SKIN_DIR + 'app_skin.dart' in touched:
+        lines = base.splitlines()
+        added = set(touched[SKIN_DIR + 'app_skin.dart'].splitlines())
+        for i, line in enumerate(lines):
+            if line in added and re.match(r'\s*[\w<>?, ]+\s+get\s+\w+', line) and '@override' not in line:
+                prev = next((lines[j].strip() for j in range(i - 1, -1, -1) if lines[j].strip()), '')
+                if not prev.startswith('///'):
+                    v['skin_slot_without_doc'] += 1
+                if re.match(r'\s*(?:double|int|num|bool|String|List<|Map<|BoxShadow|EdgeInsets|BorderRadius)', line):
+                    v['skin_slot_not_color'] += 1
+    for name in re.findall(r'^\s*(?:Color|Gradient)\s+get\s+(\w+)\s*;', base, re.M):
+        for sk in ('light_skin.dart', 'dark_skin.dart'):
+            if not re.search(r'\bget\s+%s\b' % name, full.get(SKIN_DIR + sk, '')):
+                v['skin_abstract_slot_missing_in_a_skin'] += 1
+    if any(r.endswith('app_colors.dart') for r in new):
+        v['skin_app_colors_file_created'] += 1
+    ui_all = ' '.join(ui.values())
+    if task == 's1' and not re.search(r'\btoggleSkin\(|\bsetSkin\(', ui_all):
+        v['s1_mode_not_switched_via_skin_cubit'] += 1
+    if task == 's2':
+        for sk, hexv in SKIN_GOLD.items():
+            if not re.search(r'0x[0-9A-Fa-f]{2}%s' % hexv, full.get(SKIN_DIR + sk, ''), re.I):
+                v['s2_gold_not_in_' + sk.split('_')[0] + '_skin'] += 1
+        for r, t in dart.items():
+            if not r.startswith(SKIN_DIR) and re.search('|'.join(SKIN_GOLD.values()), t, re.I):
+                v['s2_gold_hex_outside_skins'] += 1
 
 
 def main():

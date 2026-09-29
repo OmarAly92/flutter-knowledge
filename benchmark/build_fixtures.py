@@ -10,6 +10,8 @@ Usage: build_fixtures.py <out_dir>
   -> <out_dir>/fixture-app (+ -nowrap): the drift project plus a `trips` feature that
      follows the skills, email/phone validators, a legacy mockito test, and the design
      prototype in design/prototype.html (from make_prototype.py). Tasks f1, f2, t1, g1.
+  -> <out_dir>/fixture-skin (+ -nowrap): the app project with its AppColors replaced by an
+     AppSkin layer (LightSkin/DarkSkin, SkinScope, SkinCubit, AppThemes.fromSkin). Tasks s1, s2.
 The drift and hive fixtures must stay byte-identical, or old results stop being comparable.
 """
 import os, shutil, sys, textwrap
@@ -1462,6 +1464,775 @@ def app(root):
     shutil.copy(os.path.join(os.path.dirname(os.path.abspath(__file__)), 'fixture_files', 'design', 'prototype.html'), design)
 
 
+# ---------- skin fixture: the app project with an AppSkin layer instead of AppColors, for tasks s1, s2 ----------
+SKIN_DIR = 'lib/core/app_themes/colors/'
+SKIN = {
+    'lib/core/helpers/cache/cache_keys.dart': '''
+        sealed class CacheKeys {
+          static const String currentTheme = 'current-theme';
+          static const String accessToken = 'access-token';
+        }
+        ''',
+    'lib/core/helpers/cache/cache_helper.dart': '''
+        import 'package:shared_preferences/shared_preferences.dart';
+
+        export 'package:app/core/helpers/cache/cache_keys.dart';
+
+        sealed class CacheHelper {
+          static late SharedPreferences _preferences;
+
+          static Future<void> init() async => _preferences = await SharedPreferences.getInstance();
+
+          static Object? get(String key) => _preferences.get(key);
+
+          static Future<bool> save(String key, Object value) => switch (value) {
+                String v => _preferences.setString(key, v),
+                bool v => _preferences.setBool(key, v),
+                int v => _preferences.setInt(key, v),
+                double v => _preferences.setDouble(key, v),
+                _ => throw ArgumentError('Unsupported cache value: $value'),
+              };
+
+          static Future<bool> remove(String key) => _preferences.remove(key);
+        }
+        ''',
+    SKIN_DIR + 'app_skin.dart': '''
+        import 'package:flutter/material.dart';
+
+        abstract class AppSkin {
+          const AppSkin();
+
+          /// The Material [ThemeMode] this skin drives. Example: LightSkin returns
+          /// [ThemeMode.light], DarkSkin returns [ThemeMode.dark].
+          ThemeMode get themeMode;
+
+          /// The base color of every screen, painted by [AppScaffold] behind all
+          /// content. Example: the page behind the trips list.
+          Color get background;
+
+          /// The color of blocks sitting on top of [background]. Example: the
+          /// card holding one trip in the trips list.
+          Color get surface;
+
+          /// A sunken variant of [surface] for blocks that blend with the page.
+          /// Example: the tinted fill behind an empty-state illustration.
+          Color get card;
+
+          /// The default outline around cards and inputs. Example: the stroke
+          /// around a trip card.
+          Color get border;
+
+          /// The brand blue used for primary actions and emphasis. Example: the
+          /// Save button and the trip price.
+          Color get primary;
+
+          /// A readable shade of [primary] for text on [primaryLight] fills.
+          /// Example: a label inside a soft brand pill.
+          Color get primaryDark;
+
+          /// A soft tint of [primary] used behind brand content. Example: the fill
+          /// of a soft brand pill.
+          Color get primaryLight;
+
+          /// The sky-blue secondary color for highlights that must not read as
+          /// primary. Example: an informational icon on a trip.
+          Color get accent;
+
+          /// A soft tint of [accent] used behind accent content. Example: the
+          /// square behind an informational icon.
+          Color get accentLight;
+
+          /// The strongest text color, for titles. Example: a trip's title.
+          Color get textPrimary;
+
+          /// The medium-emphasis text color. Example: a trip's destination.
+          Color get textSecondary;
+
+          /// The lowest-emphasis text color, for fine print. Example: a
+          /// timestamp under a trip.
+          Color get textMuted;
+
+          /// The text color on top of [primary] fills. Example: the Save label.
+          Color get textOnPrimary;
+
+          /// The color of a positive outcome. Example: the success snackbar.
+          Color get success;
+
+          /// A soft tint of [success] used as a background. Example: the fill of
+          /// a confirmed badge.
+          Color get successLight;
+
+          /// The color of a failure or destructive state. Example: the error
+          /// snackbar.
+          Color get error;
+
+          /// A soft tint of [error] used as a background. Example: the fill behind
+          /// a destructive action's icon.
+          Color get errorLight;
+
+          /// The color of caution. Example: a trip that needs attention.
+          Color get warning;
+
+          /// A soft tint of [warning] used as a background. Example: the fill
+          /// behind a caution badge.
+          Color get warningLight;
+
+          /// The fill of the top app bar. Example: the bar behind 'Trips'.
+          Color get appBarBackground => surface;
+
+          /// The title text in the app bar. Example: the 'Trips' title.
+          Color get appBarTitle => textPrimary;
+
+          /// Tappable icons in the app bar. Example: the back arrow.
+          Color get appBarIcon => textPrimary;
+
+          /// The hairline between rows and around containers. Example: the
+          /// outline of [AppContainer].
+          Color get divider => border;
+
+          /// The fill of [AppContainer] blocks. Example: a trip card.
+          Color get containerBackground => surface;
+
+          /// The fill of [PrimaryButton]. Example: the Save button.
+          Color get buttonBackground => primary;
+
+          /// The label color inside [PrimaryButton]. Example: the 'Save' text.
+          Color get buttonText => textOnPrimary;
+
+          /// The spinner of [AppLoader]. Example: the loader while trips load.
+          Color get loader => primary;
+
+          /// The fill of small rounded label pills. Example: a soft brand pill on
+          /// a trip.
+          Color get chipBackground => primaryLight;
+
+          /// The text inside those pills. Example: the label in a brand pill.
+          Color get chipText => primaryDark;
+
+          /// The background of the success snackbar. Example: 'Trip saved'.
+          Color get snackBarSuccess => success;
+
+          /// The background of the error snackbar. Example: 'Something went
+          /// wrong'.
+          Color get snackBarError => error;
+
+          /// The text inside snackbars. Example: the message on the error bar.
+          Color get snackBarText => textOnPrimary;
+
+          /// The dimmed layer behind dialogs and bottom sheets. Example: the scrim
+          /// behind a confirmation sheet.
+          Color get overlayBarrier => const Color(0x80000000);
+
+          /// The fill of bottom sheets. Example: a confirmation sheet.
+          Color get bottomSheetBackground => surface;
+
+          /// The fill of dialogs. Example: a confirmation dialog.
+          Color get dialogBackground => surface;
+        }
+        ''',
+    SKIN_DIR + 'light_skin.dart': '''
+        import 'package:app/core/app_themes/colors/app_skin.dart';
+        import 'package:flutter/material.dart';
+
+        class LightSkin extends AppSkin {
+          const LightSkin();
+
+          @override
+          ThemeMode get themeMode => ThemeMode.light;
+
+          @override
+          Color get background => const Color(0xFFF7F8FA);
+
+          @override
+          Color get surface => const Color(0xFFFFFFFF);
+
+          @override
+          Color get card => const Color(0xFFF0F2F5);
+
+          @override
+          Color get border => const Color(0xFFE5E7EB);
+
+          @override
+          Color get primary => const Color(0xFF1E6FD9);
+
+          @override
+          Color get primaryDark => const Color(0xFF1553A6);
+
+          @override
+          Color get primaryLight => const Color(0xFFE3EEFC);
+
+          @override
+          Color get accent => const Color(0xFF0EA5E9);
+
+          @override
+          Color get accentLight => const Color(0xFFE0F4FD);
+
+          @override
+          Color get textPrimary => const Color(0xFF1A1C1E);
+
+          @override
+          Color get textSecondary => const Color(0xFF6B7280);
+
+          @override
+          Color get textMuted => const Color(0xFF9CA3AF);
+
+          @override
+          Color get textOnPrimary => const Color(0xFFFFFFFF);
+
+          @override
+          Color get success => const Color(0xFF16A34A);
+
+          @override
+          Color get successLight => const Color(0xFFE3F6EA);
+
+          @override
+          Color get error => const Color(0xFFDC2626);
+
+          @override
+          Color get errorLight => const Color(0xFFFCE7E7);
+
+          @override
+          Color get warning => const Color(0xFFF59E0B);
+
+          @override
+          Color get warningLight => const Color(0xFFFEF3DC);
+        }
+        ''',
+    SKIN_DIR + 'dark_skin.dart': '''
+        import 'package:app/core/app_themes/colors/app_skin.dart';
+        import 'package:flutter/material.dart';
+
+        class DarkSkin extends AppSkin {
+          const DarkSkin();
+
+          @override
+          ThemeMode get themeMode => ThemeMode.dark;
+
+          @override
+          Color get background => const Color(0xFF111316);
+
+          @override
+          Color get surface => const Color(0xFF1A1D21);
+
+          @override
+          Color get card => const Color(0xFF0C0E10);
+
+          @override
+          Color get border => const Color(0x1FFFFFFF);
+
+          @override
+          Color get primary => const Color(0xFF5B9BF0);
+
+          @override
+          Color get primaryDark => const Color(0xFF9CC3F7);
+
+          @override
+          Color get primaryLight => const Color(0x295B9BF0);
+
+          @override
+          Color get accent => const Color(0xFF7DD3FC);
+
+          @override
+          Color get accentLight => const Color(0x247DD3FC);
+
+          @override
+          Color get textPrimary => const Color(0xFFF3F4F6);
+
+          @override
+          Color get textSecondary => const Color(0xFFA1A7B0);
+
+          @override
+          Color get textMuted => const Color(0xFF6B7280);
+
+          @override
+          Color get textOnPrimary => const Color(0xFF0B1220);
+
+          @override
+          Color get success => const Color(0xFF4ADE80);
+
+          @override
+          Color get successLight => const Color(0x294ADE80);
+
+          @override
+          Color get error => const Color(0xFFF87171);
+
+          @override
+          Color get errorLight => const Color(0x29F87171);
+
+          @override
+          Color get warning => const Color(0xFFFBBF24);
+
+          @override
+          Color get warningLight => const Color(0x29FBBF24);
+
+          @override
+          Color get bottomSheetBackground => const Color(0xFF23272C);
+
+          @override
+          Color get dialogBackground => const Color(0xFF23272C);
+        }
+        ''',
+    SKIN_DIR + 'skin_scope.dart': '''
+        import 'package:app/core/app_themes/colors/app_skin.dart';
+        import 'package:flutter/material.dart';
+
+        class SkinScope extends InheritedWidget {
+          const SkinScope({super.key, required this.skin, required super.child});
+
+          final AppSkin skin;
+
+          static AppSkin of(BuildContext context) {
+            final scope = context.dependOnInheritedWidgetOfExactType<SkinScope>();
+            assert(scope != null, 'SkinScope not found above this context');
+            return scope!.skin;
+          }
+
+          @override
+          bool updateShouldNotify(SkinScope oldWidget) => skin != oldWidget.skin;
+        }
+
+        extension SkinContext on BuildContext {
+          AppSkin get skin => SkinScope.of(this);
+        }
+        ''',
+    SKIN_DIR + 'logic/skin_cubit.dart': '''
+        import 'package:app/core/app_themes/colors/app_skin.dart';
+        import 'package:app/core/app_themes/colors/dark_skin.dart';
+        import 'package:app/core/app_themes/colors/light_skin.dart';
+        import 'package:app/core/helpers/cache/cache_helper.dart';
+        import 'package:equatable/equatable.dart';
+        import 'package:flutter/material.dart';
+        import 'package:flutter_bloc/flutter_bloc.dart';
+
+        part 'skin_state.dart';
+
+        class SkinCubit extends Cubit<SkinState> {
+          SkinCubit() : skin = _savedSkin(), super(const SkinInitialState());
+
+          AppSkin skin;
+
+          static AppSkin _savedSkin() {
+            return CacheHelper.get(CacheKeys.currentTheme) == ThemeMode.dark.name
+                ? const DarkSkin()
+                : const LightSkin();
+          }
+
+          void setSkin(AppSkin newSkin) {
+            skin = newSkin;
+            CacheHelper.save(CacheKeys.currentTheme, newSkin.themeMode.name);
+            emit(SkinChangedState(newSkin));
+          }
+
+          void toggleSkin() {
+            setSkin(skin.themeMode == ThemeMode.dark ? const LightSkin() : const DarkSkin());
+          }
+        }
+
+        extension SkinSwitcherContext on BuildContext {
+          void setSkin(AppSkin skin) => read<SkinCubit>().setSkin(skin);
+
+          void toggleSkin() => read<SkinCubit>().toggleSkin();
+        }
+        ''',
+    SKIN_DIR + 'logic/skin_state.dart': '''
+        part of 'skin_cubit.dart';
+
+        sealed class SkinState extends Equatable {
+          const SkinState();
+
+          @override
+          List<Object?> get props => [];
+        }
+
+        final class SkinInitialState extends SkinState {
+          const SkinInitialState();
+        }
+
+        final class SkinChangedState extends SkinState {
+          const SkinChangedState(this.skin);
+
+          final AppSkin skin;
+
+          @override
+          List<Object?> get props => [skin];
+        }
+        ''',
+    'lib/core/app_themes/themes/app_themes.dart': '''
+        import 'package:app/core/app_themes/colors/app_skin.dart';
+        import 'package:app/core/app_themes/text_style/app_text_style.dart';
+        import 'package:flutter/material.dart';
+
+        sealed class AppThemes {
+          static ThemeData fromSkin(AppSkin skin) {
+            final brightness = skin.themeMode == ThemeMode.dark ? Brightness.dark : Brightness.light;
+            return ThemeData(
+              useMaterial3: true,
+              brightness: brightness,
+              scaffoldBackgroundColor: skin.background,
+              appBarTheme: AppBarTheme(
+                backgroundColor: skin.appBarBackground,
+                titleTextStyle: AppTextStyle.style18Bold.copyWith(color: skin.appBarTitle),
+                iconTheme: IconThemeData(color: skin.appBarIcon),
+                actionsIconTheme: IconThemeData(color: skin.appBarIcon),
+                surfaceTintColor: Colors.transparent,
+                elevation: 0,
+              ),
+              colorScheme: ColorScheme.fromSeed(
+                seedColor: skin.primary,
+                brightness: brightness,
+                primary: skin.primary,
+                onPrimary: skin.textOnPrimary,
+                primaryContainer: skin.primaryLight,
+                onPrimaryContainer: skin.primaryDark,
+                secondary: skin.accent,
+                onSecondary: skin.textOnPrimary,
+                secondaryContainer: skin.accentLight,
+                onSecondaryContainer: skin.accent,
+                tertiary: skin.accent,
+                onTertiary: skin.textOnPrimary,
+                tertiaryContainer: skin.accentLight,
+                onTertiaryContainer: skin.accent,
+                surface: skin.surface,
+                onSurface: skin.textPrimary,
+                onSurfaceVariant: skin.textSecondary,
+                surfaceContainerLowest: skin.card,
+                surfaceContainerLow: skin.background,
+                surfaceContainer: skin.surface,
+                surfaceContainerHigh: skin.surface,
+                surfaceContainerHighest: skin.surface,
+                outline: skin.border,
+                outlineVariant: skin.divider,
+                error: skin.error,
+                onError: skin.textOnPrimary,
+                errorContainer: skin.errorLight,
+                onErrorContainer: skin.error,
+              ),
+              dialogTheme: DialogThemeData(backgroundColor: skin.dialogBackground, barrierColor: skin.overlayBarrier),
+              bottomSheetTheme: BottomSheetThemeData(
+                backgroundColor: skin.bottomSheetBackground,
+                modalBarrierColor: skin.overlayBarrier,
+                surfaceTintColor: Colors.transparent,
+              ),
+              dividerColor: skin.divider,
+            );
+          }
+        }
+        ''',
+    'lib/my_app.dart': '''
+        import 'package:app/core/app_routes/app_router.dart';
+        import 'package:app/core/app_routes/routes_strings.dart';
+        import 'package:app/core/app_themes/colors/dark_skin.dart';
+        import 'package:app/core/app_themes/colors/light_skin.dart';
+        import 'package:app/core/app_themes/colors/logic/skin_cubit.dart';
+        import 'package:app/core/app_themes/colors/skin_scope.dart';
+        import 'package:app/core/app_themes/themes/app_themes.dart';
+        import 'package:easy_localization/easy_localization.dart';
+        import 'package:flutter/material.dart';
+        import 'package:flutter_bloc/flutter_bloc.dart';
+        import 'package:flutter_screenutil/flutter_screenutil.dart';
+
+        class MyApp extends StatelessWidget {
+          const MyApp({super.key});
+
+          @override
+          Widget build(BuildContext context) {
+            return MultiBlocProvider(
+              providers: [BlocProvider(create: (context) => SkinCubit())],
+              child: BlocBuilder<SkinCubit, SkinState>(
+                buildWhen: (previous, current) => current is SkinChangedState,
+                builder: (context, state) {
+                  final skin = context.read<SkinCubit>().skin;
+                  return ScreenUtilInit(
+                    designSize: const Size(375, 812),
+                    minTextAdapt: true,
+                    builder: (context, child) => SkinScope(
+                      skin: skin,
+                      child: MaterialApp(
+                        debugShowCheckedModeBanner: false,
+                        theme: AppThemes.fromSkin(const LightSkin()),
+                        darkTheme: AppThemes.fromSkin(const DarkSkin()),
+                        themeMode: skin.themeMode,
+                        localizationsDelegates: context.localizationDelegates,
+                        supportedLocales: context.supportedLocales,
+                        locale: context.locale,
+                        onGenerateRoute: AppRouter.onGenerateRoute,
+                        initialRoute: RoutesStrings.trips,
+                      ),
+                    ),
+                  );
+                },
+              ),
+            );
+          }
+        }
+        ''',
+    'lib/main.dart': '''
+        import 'package:app/core/helpers/cache/cache_helper.dart';
+        import 'package:app/core/utils/service_locator.dart';
+        import 'package:app/my_app.dart';
+        import 'package:easy_localization/easy_localization.dart';
+        import 'package:flutter/material.dart';
+
+        Future<void> main() async {
+          WidgetsFlutterBinding.ensureInitialized();
+          await EasyLocalization.ensureInitialized();
+          await CacheHelper.init();
+          await ServiceLocator.init();
+          runApp(
+            EasyLocalization(
+              supportedLocales: const [Locale('en'), Locale('ar')],
+              path: 'assets/translations',
+              fallbackLocale: const Locale('en'),
+              child: const MyApp(),
+            ),
+          );
+        }
+        ''',
+    # ---------- the core widgets, reading colors from the skin ----------
+    'lib/core/app_themes/text_style/app_text_style.dart': '''
+        import 'package:flutter/material.dart';
+        import 'package:flutter_screenutil/flutter_screenutil.dart';
+
+        sealed class AppTextStyle {
+          static TextStyle get style12Regular => TextStyle(fontSize: 12.sp, fontWeight: FontWeight.w400);
+          static TextStyle get style14Regular => TextStyle(fontSize: 14.sp, fontWeight: FontWeight.w400);
+          static TextStyle get style14Medium => TextStyle(fontSize: 14.sp, fontWeight: FontWeight.w500);
+          static TextStyle get style16Medium => TextStyle(fontSize: 16.sp, fontWeight: FontWeight.w500);
+          static TextStyle get style18Bold => TextStyle(fontSize: 18.sp, fontWeight: FontWeight.w700);
+        }
+        ''',
+    'lib/core/widgets/app_text.dart': '''
+        import 'package:flutter/material.dart';
+        import 'package:app/core/app_themes/colors/skin_scope.dart';
+        import 'package:app/core/app_themes/text_style/app_text_style.dart';
+
+        class AppText extends StatelessWidget {
+          const AppText(this.text, {super.key, this.style, this.maxLines, this.textAlign});
+
+          final String text;
+          final TextStyle? style;
+          final int? maxLines;
+          final TextAlign? textAlign;
+
+          @override
+          Widget build(BuildContext context) {
+            final base = style ?? AppTextStyle.style14Regular;
+            return Text(
+              text,
+              style: base.color == null ? base.copyWith(color: context.skin.textPrimary) : base,
+              maxLines: maxLines,
+              overflow: maxLines == null ? null : TextOverflow.ellipsis,
+              textAlign: textAlign,
+            );
+          }
+        }
+        ''',
+    'lib/core/helpers/extensions/context_extensions.dart': '''
+        import 'package:flutter/material.dart';
+        import 'package:app/core/app_themes/colors/skin_scope.dart';
+        import 'package:app/core/app_themes/text_style/app_text_style.dart';
+        import 'package:app/core/widgets/app_text.dart';
+
+        extension ContextExtensions on BuildContext {
+          void showSnackBar(String message, {bool isError = true}) {
+            ScaffoldMessenger.of(this).showSnackBar(
+              SnackBar(
+                content: AppText(message, style: AppTextStyle.style14Regular.copyWith(color: skin.snackBarText)),
+                backgroundColor: isError ? skin.snackBarError : skin.snackBarSuccess,
+              ),
+            );
+          }
+
+          Future<T?> pushNamed<T>(String route, {Object? arguments}) =>
+              Navigator.of(this).pushNamed<T>(route, arguments: arguments);
+
+          void pop<T>([T? result]) => Navigator.of(this).pop(result);
+        }
+        ''',
+    'lib/core/widgets/app_scaffold.dart': '''
+        import 'package:flutter/material.dart';
+        import 'package:app/core/app_themes/colors/skin_scope.dart';
+
+        class AppScaffold extends StatelessWidget {
+          const AppScaffold({
+            super.key,
+            required this.body,
+            this.appBar,
+            this.floatingActionButton,
+            this.bottomNavigationBar,
+          });
+
+          final Widget body;
+          final PreferredSizeWidget? appBar;
+          final Widget? floatingActionButton;
+          final Widget? bottomNavigationBar;
+
+          @override
+          Widget build(BuildContext context) => Scaffold(
+                backgroundColor: context.skin.background,
+                appBar: appBar,
+                body: SafeArea(child: body),
+                floatingActionButton: floatingActionButton,
+                bottomNavigationBar: bottomNavigationBar,
+              );
+        }
+        ''',
+    'lib/core/widgets/global_appbar.dart': '''
+        import 'package:flutter/material.dart';
+        import 'package:app/core/app_themes/colors/skin_scope.dart';
+        import 'package:app/core/app_themes/text_style/app_text_style.dart';
+
+        class GlobalAppbar extends StatelessWidget implements PreferredSizeWidget {
+          const GlobalAppbar.main({super.key, required this.titleText, this.actions})
+              : showBack = false;
+
+          const GlobalAppbar.sub({super.key, required this.titleText, this.actions})
+              : showBack = true;
+
+          final String titleText;
+          final List<Widget>? actions;
+          final bool showBack;
+
+          @override
+          Size get preferredSize => const Size.fromHeight(kToolbarHeight);
+
+          @override
+          Widget build(BuildContext context) => AppBar(
+                backgroundColor: context.skin.appBarBackground,
+                automaticallyImplyLeading: showBack,
+                title: Text(titleText, style: AppTextStyle.style18Bold.copyWith(color: context.skin.appBarTitle)),
+                actions: actions,
+              );
+        }
+        ''',
+    'lib/core/widgets/primary_button.dart': '''
+        import 'package:flutter/material.dart';
+        import 'package:app/core/app_themes/colors/skin_scope.dart';
+        import 'package:app/core/app_themes/text_style/app_text_style.dart';
+        import 'package:app/core/widgets/app_loader.dart';
+        import 'package:app/core/widgets/app_text.dart';
+
+        class PrimaryButton extends StatelessWidget {
+          const PrimaryButton({super.key, required this.text, required this.onPressed, this.isLoading = false, this.backgroundColor})
+              : expand = false;
+
+          const PrimaryButton.expand({super.key, required this.text, required this.onPressed, this.isLoading = false, this.backgroundColor})
+              : expand = true;
+
+          final String text;
+          final VoidCallback? onPressed;
+          final bool isLoading;
+          final bool expand;
+          final Color? backgroundColor;
+
+          @override
+          Widget build(BuildContext context) {
+            final button = ElevatedButton(
+              style: ElevatedButton.styleFrom(backgroundColor: backgroundColor ?? context.skin.buttonBackground),
+              onPressed: isLoading ? null : onPressed,
+              child: isLoading
+                  ? const AppLoader(size: 18)
+                  : AppText(text, style: AppTextStyle.style14Medium.copyWith(color: context.skin.buttonText)),
+            );
+            return expand ? SizedBox(width: double.infinity, child: button) : button;
+          }
+        }
+        ''',
+    'lib/core/widgets/app_loader.dart': '''
+        import 'package:flutter/material.dart';
+        import 'package:app/core/app_themes/colors/skin_scope.dart';
+
+        class AppLoader extends StatelessWidget {
+          const AppLoader({super.key, this.size = 32});
+
+          final double size;
+
+          @override
+          Widget build(BuildContext context) => Center(
+                child: SizedBox.square(
+                  dimension: size,
+                  child: CircularProgressIndicator(color: context.skin.loader),
+                ),
+              );
+        }
+        ''',
+    'lib/core/widgets/app_container.dart': '''
+        import 'package:flutter/material.dart';
+        import 'package:app/core/app_themes/colors/skin_scope.dart';
+
+        class AppContainer extends StatelessWidget {
+          const AppContainer({super.key, required this.child, this.padding = const EdgeInsets.all(12)});
+
+          final Widget child;
+          final EdgeInsetsGeometry padding;
+
+          @override
+          Widget build(BuildContext context) => Container(
+                padding: padding,
+                decoration: BoxDecoration(
+                  color: context.skin.containerBackground,
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: context.skin.divider),
+                ),
+                child: child,
+              );
+        }
+        ''',
+    TRIPS_SCREEN + 'ui/widgets/trip_item.dart': '''
+        import 'package:flutter/material.dart';
+        import 'package:app/core/app_themes/colors/skin_scope.dart';
+        import 'package:app/core/app_themes/text_style/app_text_style.dart';
+        import 'package:app/core/widgets/app_container.dart';
+        import 'package:app/core/widgets/app_text.dart';
+        import 'package:app/core/widgets/horizontal_space.dart';
+
+        class TripItem extends StatelessWidget {
+          const TripItem({super.key, required this.title, required this.destination, required this.price});
+
+          final String title;
+          final String destination;
+          final double price;
+
+          @override
+          Widget build(BuildContext context) => AppContainer(
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          AppText(title, style: AppTextStyle.style16Medium),
+                          AppText(
+                            destination,
+                            style: AppTextStyle.style12Regular.copyWith(color: context.skin.textSecondary),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const HorizontalSpace(12),
+                    AppText(
+                      '\\$${price.toStringAsFixed(2)}',
+                      style: AppTextStyle.style14Medium.copyWith(color: context.skin.primary),
+                    ),
+                  ],
+                ),
+              );
+        }
+        ''',
+}
+
+
+def skin(root):
+    app(root)
+    os.remove(os.path.join(root, 'lib/core/app_themes/colors/app_colors.dart'))
+    shutil.rmtree(os.path.join(root, 'design'))
+    for path, text in SKIN.items():
+        w(root, path, text)
+    w(root, 'pubspec.yaml', PUBSPEC.format(
+        extra_deps='  drift: ^2.20.0\n  drift_flutter: ^0.2.0\n  shared_preferences: ^2.3.2',
+        extra_dev='  drift_dev: ^2.20.0\n  build_runner: ^2.4.0\n  mockito: ^5.4.4'))
+
+
 def nowrap(src, dst):
     shutil.copytree(src, dst)
     for name in NOWRAP_REMOVED:
@@ -1469,7 +2240,7 @@ def nowrap(src, dst):
 
 
 if __name__ == '__main__':
-    for engine, build in (('drift', drift), ('hive', hive), ('app', app)):
+    for engine, build in (('drift', drift), ('hive', hive), ('app', app), ('skin', skin)):
         root = os.path.join(OUT, 'fixture-' + engine)
         for d in (root, root + '-nowrap'):
             shutil.rmtree(d, ignore_errors=True)
