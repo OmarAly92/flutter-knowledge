@@ -56,7 +56,7 @@ void registerAppDependencies(GetIt sl) {
 - **Cubits are factories** (one per route); everything else is a **lazy singleton**. Use `registerFactoryParam` for a cubit that needs a constructor-time parameter. Singletons outlive the widget tree, so a cubit that subscribes to one must cancel in `close()`.
 - **Explicit types everywhere**: `sl.registerFactory<XCubit>(…)`, `sl<XRepository>()` — never an inferred `sl()`.
 - The function takes the locator as a parameter (`GetIt sl`) and registers into it, so tests can pass `GetIt.asNewInstance()`. Never reach for `GetIt.instance` inside a register function.
-- **Shared services register in core**, in `registerCoreDependencies`: network status, `ApiConsumer`, the database and its DAOs, sockets, session/logout, and anything else in `lib/core/services/`. A feature never registers a core type.
+- **Shared services register in core**, in `registerCoreDependencies`: network status, `ApiConsumer`, the database and its DAOs, session handling, and anything else in `lib/core/services/`. A feature never registers a core type.
 - **`core/` never imports a feature** — the router is the one part of core that does. A core service never takes a feature type: if it needs feature data, it goes through a core type (a DAO, a core interface) the feature also uses. When a core interface's implementation needs a feature type, register that implementation in the feature's injection file.
 - A widget test that needs the real graph does `await sl.reset(); registerAppDependencies(sl);`, then swaps fakes in with `sl.unregister<T>()` + `sl.register…<T>(…)`.
 

@@ -81,7 +81,7 @@ A theme the design ships beyond light and dark becomes an `assets/skins/*.json` 
 - **Grep for consumers before deleting** template slots that don't fit the design; remove the
   zero-consumer ones.
 - Add design-specific slots as DERIVED getters where possible (e.g. `primaryGlow => primary @25%`,
-  `composerBackground => elevated @92%`, `focusRing`, gradients) so both skins inherit them;
+  `navBarBackground => elevated @92%`, `focusRing`, gradients) so both skins inherit them;
   override per-skin only where the design differs (shadows, barriers, elevated fills in dark).
 - Convert rgba alphas precisely: `0.07 → 0x12`, `0.12 → 0x1F`, `0.14 → 0x24`, `0.25 → 0x40`.
 - Cross-check against COMPONENT rules (§5) — cards may use the *subtle* border, icon tiles the
@@ -116,7 +116,7 @@ A theme the design ships beyond light and dark becomes an `assets/skins/*.json` 
 - Wire: pubspec font families (weights + italics), font-name constants, and the semantic type
   scale from the CSS tokens (`--fs-*`, `--lh-*`, `--tr-*`): height = lh ratio directly;
   letterSpacing = em × fontSize. Keep any legacy numeric getters working; add semantic getters
-  (display/heading/body/caption/overline/code/badge/wordmark).
+  (display/heading/body/caption/overline/code/badge).
 - Check glyph coverage (e.g. Arabic) and keep the project's fallback font in the chain.
 
 ## §4 Motion
@@ -144,8 +144,8 @@ Then:
 - A fixed top padding standing in for a status-bar/notch inset in a fixed-viewport mockup (common
   in header/hero components) should become `SafeArea`, not a literally-ported px value — call
   this out explicitly rather than treating every measured number as sacred.
-- Create the design's primitives as new core widgets (orb, typing dots, badge, chip, segmented
-  control with sliding thumb, check circle, icon button, entrance wrappers fade-up/pop-in).
+- Create the design's primitives as new core widgets (badge, chip, segmented control with
+  sliding thumb, check circle, icon button, loading indicator, entrance wrappers fade-up/pop-in).
 - Everything consumes skin + text + motion tokens only. Translucent bars pair a skin alpha color
   with a BackdropFilter blur.
 - Run the analyzer clean; don't add new warnings.

@@ -99,8 +99,8 @@ await tester.pumpWidget(
 The only place a raw `Color(0x…)` is written is inside a built-in skin (and, for fixed design constants such as a brand gradient, inside an `AppSkin` default getter). JSON skins write hex strings.
 
 ```dart
-class ChatDayChip extends StatelessWidget {
-  const ChatDayChip({super.key, required this.label});
+class SectionChip extends StatelessWidget {
+  const SectionChip({super.key, required this.label});
 
   final String label;
 
@@ -128,7 +128,7 @@ class ChatDayChip extends StatelessWidget {
 - Cubits and other non-widget code never touch colors: when logic decides how something looks, it exposes a meaning (an enum or a state field such as `TripStatus.past`), and the widget maps that meaning to a skin slot in `build`.
 - Prefer the component slot over the raw palette when one exists: a bottom sheet uses `bottomSheetBackground`, not `surface`; a text field border uses `textFieldBorder`, not `border`; a destructive button uses `dangerButtonBackground`/`dangerButtonText`. Component slots are where a skin overrides a color for one component without touching the rest.
 - A core widget that lets callers change a color takes a nullable `Color?` parameter and falls back to its slot: `backgroundColor ?? tokens.skin.buttonBackground`, `glowColor ?? tokens.skin.primaryGlow`. Callers pass another slot (`glowColor: tokens.skin.dangerGlow`), never a literal.
-- A package widget that reads `Theme.of(context).colorScheme` itself (sheets, snackbars, loaders, refresh indicators) is used through the project's app wrapper (`showAppSheet`, `context.showSnackBar`, `AppLoader`, `AppRefreshIndicator`, …). Do not call the raw package from feature code.
+- A package widget that reads `Theme.of(context).colorScheme` itself (sheets, snackbars, loaders, refresh indicators) is used through the project's app wrapper (its sheet helper, `context.showSnackBar`, `AppLoader`, `AppRefreshIndicator`, …). Do not call the raw package from feature code.
 - Alpha variants that the design uses repeatedly (glows, translucent bars, focus rings) are slots too (`primaryGlow => primary.withValues(alpha: 0.25)`). A one-off `.withValues(alpha: …)` on a slot at the call site is fine; a repeated one becomes a slot.
 
 ### `AppSkin` — the contract
@@ -141,8 +141,8 @@ class ChatDayChip extends StatelessWidget {
 2. **Derived slots — semantic and component colors with a default** computed from the base palette. A skin overrides one only where the default does not hold for it. Their names are listed in `static const derivedSlotNames`.
 
 ```dart
-/// The fill of small rounded label pills. Example: the soft green fill
-/// behind the 'AI' badge on a calendar event.
+/// The fill of small rounded label pills. Example: the soft fill behind
+/// the 'New' badge on a list item.
 Color get chipBackground => primaryLight;
 
 Color get bottomSheetBackground => surface;
@@ -178,7 +178,7 @@ class LightSkin extends AppSkin {
   ThemeMode get themeMode => ThemeMode.light;
 
   @override
-  Color get background => const Color(0xFFFAF7F2);
+  Color get background => const Color(0xFFF7F8FA);
 
   // ...every base slot; DarkSkin also overrides the derived slots whose
   // default is wrong in dark (e.g. bottomSheetBackground => surfaceElevated)
@@ -201,7 +201,7 @@ class LightSkin extends AppSkin {
 
 - **`SkinRegistry`** holds `static const builtIns = <AppSkin>[LightSkin(), DarkSkin()]` plus every skin its `SkinSource`s load (an `AssetSkinSource` reads every valid `assets/skins/*.json`). It is a lazy singleton registered in core DI, and `await sl<SkinRegistry>().load()` runs in `main()` before `runApp`. A file that breaks a rule is skipped and logged, never half-applied; a duplicate id is skipped.
 - **`SkinCubit(SkinRegistry registry)`** holds the active `AppSkin skin` and exposes `skins`. `select(skin)` persists the skin's `id` and its `themeMode` (through `CacheHelper`) and emits `SkinChangedState(skin)`. On launch it restores the saved id; if that skin is gone, it falls back to the registry's built-in of the saved mode (`registry.builtInFor(mode)`).
-- `SkinCubit` is provided once, at the app root in `my_app.dart` (not in `app_router.dart`). Feature code switches with `context.selectSkin(skin)` (the `SkinSwitcherContext` extension) or opens the picker sheet (`showThemeSheet(context)`), which lists `cubit.skins`. Never read or write the theme cache keys outside `SkinCubit`, and never provide a second `SkinCubit`.
+- `SkinCubit` is provided once, at the app root in `my_app.dart` (not in `app_router.dart`). Feature code switches with `context.selectSkin(skin)` (the `SkinSwitcherContext` extension) or opens the project's skin picker, which lists `cubit.skins`. Never read or write the theme cache keys outside `SkinCubit`, and never provide a second `SkinCubit`.
 - `MaterialApp` takes **only** `theme: AppTheme.of(skin)` — no `darkTheme`, no `themeMode`; the chosen skin already decides light or dark.
 - During the theme cross-fade the `ColorScheme` lerps while `AppTokens.skin` snaps at the midpoint. UI that must show the choice on the tap frame (a selected row in the picker) reads `context.read<SkinCubit>().skin` inside a `BlocBuilder<SkinCubit, SkinState>`, not `context.tokens.skin`.
 
@@ -294,26 +294,26 @@ class AppMotion {
   static const standard = AppMotion();
 
   /// Micro interactions: press states, border and color flips on chips
-  /// and inputs. Example: a suggestion chip's border darkening on tap.
+  /// and inputs. Example: a filter chip's border darkening on tap.
   Duration get fast => const Duration(milliseconds: 120);
 
   /// Standard transitions: fades, background shifts, tab label color.
   Duration get base => const Duration(milliseconds: 180);
 
-  /// Entrances of content blocks. Example: a chat bubble appearing.
+  /// Entrances of content blocks. Example: a card appearing in a list.
   Duration get slow => const Duration(milliseconds: 260);
 
   /// Big springy morphs. Example: the segmented thumb sliding between filters.
   Duration get emphasis => const Duration(milliseconds: 450);
 
-  /// One full cycle of the typing indicator's three bouncing dots.
-  Duration get typingLoop => const Duration(milliseconds: 1200);
+  /// One full sweep of the loading shimmer across a placeholder card.
+  Duration get shimmerLoop => const Duration(milliseconds: 1400);
 
   /// The default deceleration curve — fast start, gentle stop. Pairs with
   /// [fast]/[base] for most transitions.
   Curve get easeOut => const Cubic(0.22, 0.61, 0.36, 1);
 
-  /// The symmetric curve for looping animations. Pairs with [typingLoop].
+  /// The symmetric curve for looping animations. Pairs with [shimmerLoop].
   Curve get easeInOut => const Cubic(0.65, 0, 0.35, 1);
 
   /// The overshoot curve giving entrances a playful bounce. Pairs with
@@ -323,7 +323,7 @@ class AppMotion {
   /// How far a fade-up entrance starts below its resting spot.
   double get fadeUpOffset => 10;
 
-  /// The starting scale of a pop entrance. Example: the orb scaling in.
+  /// The starting scale of a pop entrance. Example: an empty-state illustration scaling in.
   double get popScale => 0.94;
 
   /// The delay before a single element's entrance starts.
@@ -347,7 +347,7 @@ class AppMotion {
   Duration revealAt(int index) => revealStep * index;
 
   /// Small components reacting to touch: chips, buttons, the segmented
-  /// thumb. Example: a task card's press morph.
+  /// thumb. Example: a list card's press morph.
   Motion get pressSpring => const MaterialSpringMotion.expressiveSpatialFast();
 
   /// Large surfaces entering. Example: a bottom sheet springing up.
@@ -387,7 +387,7 @@ An `AnimationController` created in `initState`, or a cubit driving a `PageContr
 - Durations that are not animations — timeouts, debounce, polling, `Future.delayed`, how long a snackbar stays up — are not motion tokens; they stay at the call site or in the class that owns them.
 - Route transitions are set once, in `ThemeData.pageTransitionsTheme` (for example `FadeForwardsPageTransitionsBuilder` on Android, while iOS keeps its platform back-swipe) — not per route. A `PageView` uses `physics: const SpringPagePhysics()` when the project has it.
 
-**Adding a token:** reuse a role token (`fast`, `base`, `slow`, `emphasis`, the curves, the stagger helpers) whenever it fits; add a new getter only for a genuinely new timing, curve or distance. Name it for what it is for (`typingLoop`, `slideUpOffset`), not after one screen, and give it a `///` comment saying what it is for, what it pairs with, and `Example:` naming the real place. Values come from the project's design: an HTML prototype's CSS motion tokens and `@keyframes` (extract them the way `design-from-html-flutter` describes), a motion doc such as `docs/design/motion.md`, or the user. Only when the project has no design source, use the numbers in the reference set above. If the project has a `lib/core/theme/` layer without `app_motion.dart`, create it in this shape with only the tokens this change needs, add the `motion` group to `AppTokens` (see "Adding a token group"), and do not sweep existing inline durations into it unless the user asks. If the project has a test over the tokens, update it in the same change.
+**Adding a token:** reuse a role token (`fast`, `base`, `slow`, `emphasis`, the curves, the stagger helpers) whenever it fits; add a new getter only for a genuinely new timing, curve or distance. Name it for what it is for (`shimmerLoop`, `slideUpOffset`), not after one screen, and give it a `///` comment saying what it is for, what it pairs with, and `Example:` naming the real place. Values come from the project's design: an HTML prototype's CSS motion tokens and `@keyframes` (extract them the way `design-from-html-flutter` describes), a motion doc such as `docs/design/motion.md`, or the user. Only when the project has no design source, use the numbers in the reference set above. If the project has a `lib/core/theme/` layer without `app_motion.dart`, create it in this shape with only the tokens this change needs, add the `motion` group to `AppTokens` (see "Adding a token group"), and do not sweep existing inline durations into it unless the user asks. If the project has a test over the tokens, update it in the same change.
 
 ## Shapes — `tokens.shape`
 

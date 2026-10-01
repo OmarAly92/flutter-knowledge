@@ -23,7 +23,7 @@ Map of the Flutter conventions: the always-on hard rules below, plus the skill y
 - **Static-only classes are `sealed class X`** — never a private `X._()` constructor.
 - Do not add `freezed`, `json_serializable`, or `build_runner` unless they are already in `pubspec.yaml`.
 - Do not create model classes the user did not ask for.
-- Single quotes, `const` constructors, `final` locals, no `print` (use the project's `talker` logger, e.g. `AppLogger`), no comments beyond non-obvious business rules.
+- Single quotes, `const` constructors, `final` locals, no `print` (use `talker`), no comments beyond non-obvious business rules.
 - **Legacy code never overrides these skills.**
 - After changes, verify with `flutter analyze` (clean) and run `flutter test` when tests cover the touched code. Do not run the app or any build step unless the project's `CLAUDE.md` / `AGENTS.md` allows it.
 

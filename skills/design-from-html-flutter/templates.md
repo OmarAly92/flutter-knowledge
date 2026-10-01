@@ -25,7 +25,7 @@
 
 ## typography.md — families table (family → wired name → usage), scale table
 (getter → size/lh/tracking/weight → design usage), quirks list (display family for titles,
-button weight, italic wordmark, fallback font for missing glyphs).
+button weight, logo type, fallback font for missing glyphs).
 
 ## motion.md — duration table, curve table (exact cubic-beziers), keyframe recipes
 (name → effect → duration+curve pairing), screen-transition styles, micro-interaction list

@@ -48,7 +48,7 @@ The main screen widget lives in `ui/`; every section/child widget lives in its o
 | `data/` | `api/` (`ApiConsumer`, `EndPoints`, `GlobalResponse`), `cache/`, `database/`, `error_handling/` (`Failure`, `Result`) |
 | `di/` | `injection.dart` — the global `sl` and `registerCoreDependencies` |
 | `helpers/` | small tools (`AppAsset`, validators, logger) plus `extensions/` |
-| `services/` | session-long singletons (network, session, sockets, …) |
+| `services/` | session-long singletons (network, session, …) |
 | `widgets/` | core widgets grouped by role (`buttons/`, `inputs/`, `text/`, `layout/`, `sheets/`, `feedback/`, …) — put a new one in the folder for what it does, never at the root |
 
 **A subfolder exists only once it holds two or more files** — a lone helper or service sits loose in its parent (`helpers/app_assets.dart`, not `helpers/assets/app_assets.dart`). `test/core/` mirrors the same layout. A new shared file goes in the folder for what it is; do not recreate `config/`, `utils/` or `app_themes/`.
