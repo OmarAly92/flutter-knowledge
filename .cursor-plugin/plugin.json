@@ -2,7 +2,7 @@
   "name": "flutter-knowledge",
   "displayName": "Flutter Knowledge",
   "description": "Full-stack Flutter/Dart conventions — feature architecture, data layer, Cubit state management, dependency injection, routing, core UI wrappers, and localization — a hard-rules map skill plus on-demand mini skills and helpers (translations, local databases, testing, design-from-HTML).",
-  "version": "1.5.0",
+  "version": "2.0.0",
   "author": {
     "name": "Omar Aly",
     "email": "omarkarim5555@gmail.com"

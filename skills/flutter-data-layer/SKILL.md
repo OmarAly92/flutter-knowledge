@@ -32,8 +32,8 @@ FutureResult<GlobalResponse<XModel>> getX(XParams params) async {
 }
 ```
 
-- **Failure type**: the `Failure` hierarchy from `lib/core/error_handling/`.
-- **Endpoints**: for any URL that takes a runtime parameter, add a static method on `EndPoints` (in `lib/core/api/api_request_helpers/end_points.dart`) returning the formatted path — `static String getTripById(String tripId) => '$passengers/trips/$tripId';` — and call it as `_apiConsumer.get(EndPoints.getTripById(tripId))`. NEVER interpolate at the call site: `'${EndPoints.trip}/$tripId'` is forbidden. For URLs with no params, keep using `static const String x = '...';`. `EndPoints` is a `sealed class` holding only static members — do NOT add a private constructor (`EndPoints._()`) to block instantiation; `sealed` already does that.
+- **Failure type**: the `Failure` hierarchy and `Result`/`FutureResult` from `lib/core/data/error_handling/`.
+- **Endpoints**: for any URL that takes a runtime parameter, add a static method on `EndPoints` (in `lib/core/data/api/end_points.dart`) returning the formatted path — `static String getTripById(String tripId) => '$passengers/trips/$tripId';` — and call it as `_apiConsumer.get(EndPoints.getTripById(tripId))`. NEVER interpolate at the call site: `'${EndPoints.trip}/$tripId'` is forbidden. For URLs with no params, keep using `static const String x = '...';`. `EndPoints` is a `sealed class` holding only static members — do NOT add a private constructor (`EndPoints._()`) to block instantiation; `sealed` already does that. The base URL is a constant on it too (`static const String baseUrl`), with any derived URL (a WebSocket URL) as a getter built from it — no env file, no `--dart-define`.
 
 ## Local database
 
@@ -53,4 +53,4 @@ If neither is present yet, pick the one the feature calls for (or ask the user) 
 - Do not declare model fields as non-nullable. Assume any API field can be missing or null.
 - Do not mix up model member order. Fields, then constructor, then `fromJson`, then `toJson` — every model file in the same order.
 - Do not interpolate `EndPoints` constants with runtime params at the call site (no `'${EndPoints.trip}/$tripId'`). Use a static method on `EndPoints`.
-- Do not add a private constructor (`X._()`) to a static-only constants class (`EndPoints`, `RoutesStrings`, `AppColors`, ...) to block instantiation — declare it `sealed class X` instead.
+- Do not add a private constructor (`X._()`) to a static-only constants class (`EndPoints`, `RoutesStrings`, `AppFonts`, ...) to block instantiation — declare it `sealed class X` instead.

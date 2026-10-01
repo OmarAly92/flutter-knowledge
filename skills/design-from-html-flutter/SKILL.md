@@ -22,9 +22,9 @@ agents build every screen pixel-accurately. The prototype is the single source o
    from the file when present (it usually is in standalone exports) before telling the user to
    download anything; wire the type scale (size/line-height/tracking per token). See playbook §3.
 4. **Motion constants** — durations, cubic-bezier curves, keyframe offsets, transition usages →
-   one motion constants class. See playbook §4.
+   documented `AppMotion` getters (`tokens.motion`). See playbook §4.
 5. **Core widgets** — dump every component CSS rule; restyle existing shared widgets and create
-   the design's primitives, all consuming ONLY the skin/type/motion tokens. See playbook §5.
+   the design's primitives, all consuming ONLY `context.tokens` (skin, text, space, radius, elevation, motion). See playbook §5.
 6. **Docs + prompts** — `docs/design/`: shared foundation docs + one dir per screen containing
    ONE self-contained `<screen>.md` (full spec **and** implementation brief in a single file)
    plus headless screenshots. Every bottom sheet or dialog a screen opens lives INSIDE that

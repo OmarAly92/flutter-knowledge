@@ -46,8 +46,8 @@ never give a sheet/dialog its own dir.
 1. Image refs at top + links to the four shared docs.
 2. One-paragraph purpose/context (where it mounts, when it shows).
 3. Layout tree (top → bottom) with exact paddings/sizes.
-4. Per-element specs: colors as skin getters, text styles by getter name, radii/spacing
-   numbers, every state (selected/disabled/done/out-of-range/today...).
+4. Per-element specs: colors as `tokens.skin` getters, text styles as `tokens.text` getters,
+   radii/spacing as `tokens.radius`/`tokens.space` steps (raw numbers only where no step fits), every state (selected/disabled/done/out-of-range/today...).
 5. Dummy content VERBATIM (strings, times, names) so screens match the PNGs.
 6. Motion: which entrance/loop/press each element uses, with token names.
 7. Behavior: interactions, gestures (verified ones marked as such), navigation.

@@ -1,6 +1,6 @@
 ---
 name: flutter-feature-structure
-description: Feature folder layout for a Flutter project — lib/feature/<feature>/ tree, data/ vs presentation/, the `_screen` directory suffix, logic/ui/widgets placement, and the "read an existing equivalent file first and mirror it" rule. Use before creating a new Flutter feature, screen, or file, or when deciding where a Dart file belongs.
+description: Folder layout for a Flutter project — the lib/feature/<feature>/ tree (data/ vs presentation/, the `_screen` directory suffix, logic/ui/widgets placement, `<feature>_injection.dart`), the lib/core/ folders (theme, l10n, layout, router, data, di, helpers, services, widgets), and the "read an existing equivalent file first and mirror it" rule. Use before creating a new Flutter feature, screen, or file, or when deciding where a Dart file belongs.
 ---
 
 # Flutter feature structure
@@ -14,6 +14,7 @@ Invoked by the `flutter-knowledge` skill (or directly via `/flutter-feature-stru
 Features live under `lib/feature/<feature>/` (snake_case — singular `feature`, NOT `features`). Every feature follows this tree — the presentation screen directory MUST be suffixed `_screen`:
 
 ```
+<feature>_injection.dart                  # register<Feature>Dependencies(GetIt sl) — see flutter-routing-di
 data/
   data_source/<feature>_remote_data_source.dart
   data_source/<feature>_local_data_source.dart   # only for local-only / hybrid features
@@ -33,6 +34,24 @@ presentation/
 Omit `data/` entirely for UI-only features. A local-only or hybrid feature also needs local persistence — invoke the matching local-database skill for that before writing any local data source or storage code: `drift-local-database` if the project uses drift, `hive-local-database` if it uses Hive.
 
 The main screen widget lives in `ui/`; every section/child widget lives in its own file under the sibling `ui/widgets/` dir and gets imported (see `flutter-screen-ui`).
+
+## Core layout
+
+`lib/core/` holds what features share, in these top-level folders:
+
+| Folder | Holds |
+| --- | --- |
+| `theme/` | design tokens (`AppTokens`, `context.tokens`), skins, typography, motion, `AppTheme` — see `flutter-app-theme` |
+| `l10n/` | `AppLocales`, the generated `locale_keys.g.dart`, locale extensions, text-direction helpers |
+| `layout/` | breakpoints and screen-size extensions (`context.width`, `context.windowSize`, …) |
+| `router/` | `app_router.dart` + its `routes_strings.dart` part — see `flutter-routing-di` |
+| `data/` | `api/` (`ApiConsumer`, `EndPoints`, `GlobalResponse`), `cache/`, `database/`, `error_handling/` (`Failure`, `Result`) |
+| `di/` | `injection.dart` — the global `sl` and `registerCoreDependencies` |
+| `helpers/` | small tools (`AppAsset`, validators, logger) plus `extensions/` |
+| `services/` | session-long singletons (network, session, sockets, …) |
+| `widgets/` | core widgets grouped by role (`buttons/`, `inputs/`, `text/`, `layout/`, `sheets/`, `feedback/`, …) — put a new one in the folder for what it does, never at the root |
+
+**A subfolder exists only once it holds two or more files** — a lone helper or service sits loose in its parent (`helpers/app_assets.dart`, not `helpers/assets/app_assets.dart`). `test/core/` mirrors the same layout. A new shared file goes in the folder for what it is; do not recreate `config/`, `utils/` or `app_themes/`.
 
 ## Mirror an existing equivalent file
 

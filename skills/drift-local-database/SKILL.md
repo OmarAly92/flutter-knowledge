@@ -12,12 +12,15 @@ Uses `drift` + `drift_flutter`, with `drift_dev` + `build_runner` in `dev_depend
 ```
 lib/
   core/
-    database/
-      app_database.dart              # the one @DriftDatabase — owns schemaVersion + migration
-      tables/
-        <tableName>/
-          <tableName>_table.dart     # Table + @DataClassName('XEntity')
-          <tableName>_dao.dart       # @DriftAccessor, every method chains .handleLocalFailure()
+    data/
+      database/
+        app_database.dart            # the one @DriftDatabase — owns schemaVersion + migration
+        tables/
+          <tableName>/
+            <tableName>_table.dart   # Table + @DataClassName('XEntity')
+            <tableName>_dao.dart     # @DriftAccessor, every method chains .handleLocalFailure()
+      error_handling/
+        drift_error_handler.dart     # handleLocalFailure() → LocalFailure
   feature/
     <feature>/
       data/
@@ -31,7 +34,7 @@ The folder/file name under `tables/` is the **table's** name, not the feature's 
 
 ## Database
 
-One `AppDatabase` class in `lib/core/database/app_database.dart`, built with `drift_flutter`'s `driftDatabase(name: ...)`, plus an `AppDatabase.forTesting(super.executor)` constructor used only in tests (with an in-memory executor). Registered once as a lazy singleton in `ServiceLocator._coreSetup()`. Features never open their own database.
+One `AppDatabase` class in `lib/core/data/database/app_database.dart`, built with `drift_flutter`'s `driftDatabase(name: ...)`, plus an `AppDatabase.forTesting(super.executor)` constructor used only in tests (with an in-memory executor). Registered once as a lazy singleton in `registerCoreDependencies` (`lib/core/di/injection.dart`). Features never open their own database.
 
 ```dart
 @DriftDatabase(tables: [Budgets], daos: [BudgetDao])
@@ -51,9 +54,9 @@ class AppDatabase extends _$AppDatabase {
 
 ## Tables and DAOs
 
-**Tables and DAOs live in `lib/core/database/tables/<tableName>/`** — `<tableName>_table.dart` + `<tableName>_dao.dart` — NEVER inside `lib/feature/<feature>/data/`. The folder/file name is the **table's** name, not the feature's; a feature with more than one table gets one subfolder per table. Both get listed in `AppDatabase`'s `@DriftDatabase(tables: [...], daos: [...])`, then run `build_runner`. The row class is named `<X>Entity` via `@DataClassName('XEntity')` on the table — `XModel` stays reserved for the feature's own model.
+**Tables and DAOs live in `lib/core/data/database/tables/<tableName>/`** — `<tableName>_table.dart` + `<tableName>_dao.dart` — NEVER inside `lib/feature/<feature>/data/`. The folder/file name is the **table's** name, not the feature's; a feature with more than one table gets one subfolder per table. Both get listed in `AppDatabase`'s `@DriftDatabase(tables: [...], daos: [...])`, then run `build_runner`. The row class is named `<X>Entity` via `@DataClassName('XEntity')` on the table — `XModel` stays reserved for the feature's own model.
 
-**Why core, not the feature**: `AppDatabase` is one shared drift-generated class — its `@DriftDatabase` annotation must list every table/DAO up front, and its single `schemaVersion`/`MigrationStrategy` reason about all of them together. That means `app_database.dart` has to import each table — if a table lived inside `lib/feature/<feature>/...`, a `core` file would end up depending on a `feature`, which inverts the one dependency direction this codebase never allows (`feature` → `core`, never the reverse). Keeping tables/DAOs in `core/database/tables/<tableName>/` keeps every import core→core or feature→core, and doubles as the one place to read the app's whole SQLite schema when writing a migration.
+**Why core, not the feature**: `AppDatabase` is one shared drift-generated class — its `@DriftDatabase` annotation must list every table/DAO up front, and its single `schemaVersion`/`MigrationStrategy` reason about all of them together. That means `app_database.dart` has to import each table — if a table lived inside `lib/feature/<feature>/...`, a `core` file would end up depending on a `feature`, which inverts the one dependency direction this codebase never allows (`feature` → `core`, never the reverse). Keeping tables/DAOs in `core/data/database/tables/<tableName>/` keeps every import core→core or feature→core, and doubles as the one place to read the app's whole SQLite schema when writing a migration.
 
 ```dart
 @DataClassName('BudgetEntity')
@@ -69,7 +72,7 @@ class Budgets extends Table {
 }
 ```
 
-`@DriftAccessor(tables: [...])` extending `DatabaseAccessor<AppDatabase>` with the generated `_$XDaoMixin`, constructed with `XDao(super.db)`. Every method — `Future` or `Stream`, read or write — chains `.handleLocalFailure()` (the extension in `core/error_handling/drift_error_handler/drift_error_handler.dart` that catches any drift/sqlite exception and rethrows it as `LocalFailure`, a `Failure` subtype). This is why nothing above the DAO needs a try/catch for local errors.
+`@DriftAccessor(tables: [...])` extending `DatabaseAccessor<AppDatabase>` with the generated `_$XDaoMixin`, constructed with `XDao(super.db)`. Every method — `Future` or `Stream`, read or write — chains `.handleLocalFailure()` (the extension in `core/data/error_handling/drift_error_handler.dart` that catches any drift/sqlite exception and rethrows it as `LocalFailure`, a `Failure` subtype). This is why nothing above the DAO needs a try/catch for local errors.
 
 ```dart
 @DriftAccessor(tables: [Budgets])
@@ -169,17 +172,23 @@ Use `XsCompanion.insert(...)` for adds (required columns are named params, match
 
 ## DI
 
-Three registrations per feature, not two — the DAO is its own injectable, sitting between `AppDatabase` and the local data source:
+The DAO is its own injectable, sitting between `AppDatabase` and the local data source. `AppDatabase` and every DAO are core types, so they register in `registerCoreDependencies`; the local data source and repository register in the feature's own injection file (see `flutter-routing-di`):
 
 ```dart
+// lib/core/di/injection.dart — registerCoreDependencies(GetIt sl)
+sl.registerLazySingleton<AppDatabase>(() => AppDatabase());
+sl.registerLazySingleton<BudgetDao>(() => sl<AppDatabase>().budgetDao);
+
+// lib/feature/budget/budget_injection.dart — registerBudgetDependencies(GetIt sl)
 sl.registerLazySingleton<BudgetRepository>(
   () => BudgetRepositoryImp(sl<BudgetLocalDataSource>()),
 );
 sl.registerLazySingleton<BudgetLocalDataSource>(
   () => BudgetLocalDataSourceImp(sl<BudgetDao>()),
 );
-sl.registerLazySingleton<BudgetDao>(() => BudgetDao(sl<AppDatabase>()));
 ```
+
+A core service that needs a feature's rows (logout clearing a table, say) takes the DAO, never the feature's local data source.
 
 ## Pagination and schema changes
 
@@ -228,11 +237,11 @@ FutureResult<GlobalResponse<List<XModel>>> getX(XParams params) async {
 
 ## What NOT to do
 
-- Do not put a drift `Table` or `@DriftAccessor` class inside `lib/feature/...`. Tables and DAOs live in `lib/core/database/tables/<tableName>/`, named for the table, not the feature.
+- Do not put a drift `Table` or `@DriftAccessor` class inside `lib/feature/...`. Tables and DAOs live in `lib/core/data/database/tables/<tableName>/`, named for the table, not the feature.
 - Do not name a `@DataClassName` row class anything other than `<X>Entity`, and do not reuse `XModel` for it.
 - Do not skip `.handleLocalFailure()` on a DAO method (`Future` or `Stream`) — it's how drift/sqlite exceptions become `LocalFailure`.
 - Do not let `XCompanion`/`XEntity` leak past the local data source — no `drift` import in a repository or presentation code; map to `XModel`/params one layer down.
 - Do not give a local write Params class `toJson()` or blanket-nullable fields like an API model — its fields should be required/nullable based on what the write actually needs.
 - Do not reflexively paginate every local list read — only add page/limit handling for lists that can grow unbounded (e.g. transactions); a small bounded list (e.g. budgets) can return whole.
 - Do not use the hybrid offline-fallback pattern for ordinary remote features — offline still returns `ServerFailure.noNetwork()` unless the feature is explicitly meant to work offline. And in hybrid repositories, do not skip caching the remote response into local on success.
-- Do not open a database inside a feature or data source, and do not add `drift`/`drift_flutter`/`drift_dev`/`build_runner` for a feature that doesn't need local storage. One `AppDatabase` in `lib/core/database/`, injected via the service locator.
+- Do not open a database inside a feature or data source, and do not add `drift`/`drift_flutter`/`drift_dev`/`build_runner` for a feature that doesn't need local storage. One `AppDatabase` in `lib/core/data/database/`, registered in `registerCoreDependencies`.

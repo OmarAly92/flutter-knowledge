@@ -7,29 +7,31 @@ Concrete techniques per phase. Code snippets are proven from real runs; adapt pa
 Unless the repo clearly differs, assume and use these; if the project lacks them, create them
 in this shape rather than inventing another:
 
-- **Skin**: `lib/core/app_themes/colors/` — abstract `AppSkin` (core slots + derived getters)
-  + `LightSkin`/`DarkSkin`; `SkinCubit` (persisted via `CacheHelper`) → `SkinScope` →
-  `context.skin.<getter>`; `AppThemes.fromSkin()` builds `ThemeData`. Never raw `Color(0x…)`
-  in feature code. Invoke `/flutter-app-theme` for the slot, naming and `ColorScheme`-mapping rules, and for the
-  text-style, motion-token and `ThemeData` conventions.
-  If the project's `flutter-knowledge` conventions default to a single flat color-constants class
-  but the design ships a real working light/dark toggle (not just a static palette), this skin
-  shape wins over that flat default — flag the substitution to the user rather than silently
-  picking one.
-- **Type**: `lib/core/app_themes/text_style/app_text_style.dart` (`AppTextStyle` +
-  `FontWeightHelper`); keep legacy `styleNNWeight` getters working, add the semantic scale.
-  Font name constants in `AppStrings`.
-- **Motion**: `lib/core/app_themes/app_motion.dart` (`AppMotion`, sealed).
-- **Radii/spacing**: `AppConstants` in `lib/core/utils/app_constants.dart` (`radiusXs…radiusPill`).
-- **Core widgets**: `lib/core/widgets/` (AppText, AppScaffold, PrimaryButton, SecondaryButton,
-  AppTextField, spacing widgets, …) — restyle these, add design primitives beside them.
+- **Tokens**: everything lives under `lib/core/theme/` and is read as `context.tokens.<group>`
+  (`AppTokens`, a `ThemeExtension` registered by `AppTheme.of(skin)`). Invoke `/flutter-app-theme`
+  for the slot, naming and `ColorScheme`-mapping rules, and for the text-style, spacing/radius,
+  motion-token and `ThemeData` conventions.
+- **Skin**: `lib/core/theme/skin/` — abstract `AppSkin` (base slots + derived getters, an `id`,
+  `displayName`, `themeMode`) + built-in `LightSkin`/`DarkSkin`; extra skins are
+  `assets/skins/*.json` loaded into `SkinRegistry`; `SkinCubit.select(skin)` →
+  `MaterialApp(theme: AppTheme.of(skin))` → `context.tokens.skin.<getter>`. Never raw
+  `Color(0x…)` in feature code.
+- **Type**: `lib/core/theme/typography/app_typography.dart` (`AppTypography` → `tokens.text`,
+  plus `FontWeightHelper`); keep legacy `styleNNWeight` getters working, add the semantic scale.
+  Font family names in `AppFonts` (`typography/app_fonts.dart`).
+- **Motion**: `lib/core/theme/motion/app_motion.dart` (`AppMotion` → `tokens.motion`).
+- **Radii/spacing/shadows**: `AppRadius`, `AppSpacing`, `AppElevation` in `lib/core/theme/`
+  (`tokens.radius` xs…pill, `tokens.space` xs…xxxl, `tokens.elevation`).
+- **Core widgets**: `lib/core/widgets/<role>/` (AppText, AppScaffold, PrimaryButton, SecondaryButton,
+  AppTextField, spacing widgets, …) — restyle these, add design primitives beside them in the
+  folder for what they do.
 - **Architecture**: invoke the `/flutter-knowledge` skill (REQUIRED when available) — it is
   the authority; follow it exactly, including invoking the mini skills it maps
   (`/flutter-feature-structure`, `/flutter-cubit`, `/flutter-screen-ui`, `/flutter-routing-di`)
   before writing that code. Summary of its shape — features in
   `lib/feature/<feature>/presentation/<screen>_screen/` (`logic/` cubit+state part files,
-  `ui/` + `ui/widgets/`), Cubit-only, screen/body split, BlocProvider in `app_router.dart`,
-  DI via `ServiceLocator._<feature>FeatureSetup()`.
+  `ui/` + `ui/widgets/`), Cubit-only, screen/body split, BlocProvider in
+  `lib/core/router/app_router.dart`, DI per feature in `lib/feature/<feature>/<feature>_injection.dart`.
 - **Strings**: every user-facing string is `LocaleKeys.x.tr()` (easy_localization, en + ar) —
   add keys via the `add-translation` skill when present. RTL must work.
 - **Gate**: `flutter analyze` clean after every phase; no new warnings.
@@ -72,7 +74,8 @@ for (const ss of document.styleSheets) for (const r of ss.cssRules)
 This yields the light (`:root`) and dark (`[data-theme="dark"]`) token sets.
 
 Then map onto the project's skin layer (Flutter template: abstract `AppSkin` with derived
-getters + `LightSkin`/`DarkSkin`; flow SkinCubit → SkinScope → `context.skin`):
+getters + `LightSkin`/`DarkSkin`; flow SkinCubit → `AppTheme.of(skin)` → `context.tokens.skin`).
+A theme the design ships beyond light and dark becomes an `assets/skins/*.json` file, not Dart:
 - Map semantic tokens (page/surface/sunken/elevated, fg 1-2-3, border default/strong/subtle,
   brand + hover + soft pair, status colors + soft tints) to existing slots.
 - **Grep for consumers before deleting** template slots that don't fit the design; remove the
@@ -119,10 +122,11 @@ getters + `LightSkin`/`DarkSkin`; flow SkinCubit → SkinScope → `context.skin
 ## §4 Motion
 
 Extract: `--dur-*` and `--ease-*` tokens, every `@keyframes` body, and unique
-`animation:`/`transition:` usages (regex over the CSSOM dump). Produce one sealed constants
-class: Durations (fast/base/slow + screen-transition + any longer emphasis + loop durations),
+`animation:`/`transition:` usages (regex over the CSSOM dump). Put them in `AppMotion`:
+Durations (fast/base/slow + screen-transition + any longer emphasis + loop durations),
 Curves (exact cubic-beziers — keep overshoot values like 1.4), and keyframe deltas
-(fade-up offset, slide-up offset, pop scale, bounce/float amplitudes). No ad-hoc
+(fade-up offset, slide-up offset, pop scale, bounce/float amplitudes), as documented getters on
+`AppMotion` (stagger delays through its `staggerAt` helper). No ad-hoc
 `Duration`/`Curves` anywhere afterward.
 
 ## §5 Core widgets
@@ -135,7 +139,7 @@ Then:
 - Restyle existing shared widgets (primary/secondary buttons, text field, dialog, sheet handle,
   dots indicator, press effect) to the exact specs: min-heights, paddings, radii, borders,
   shadows (glows!), text styles, press scales.
-- Update the radius/spacing constants class to the design scale (xs…pill).
+- Update `AppRadius` / `AppSpacing` / `AppElevation` to the design scale (xs…pill, glows).
 - Update theme-level defaults (button shape, dialog/sheet shapes, barrier colors).
 - A fixed top padding standing in for a status-bar/notch inset in a fixed-viewport mockup (common
   in header/hero components) should become `SafeArea`, not a literally-ported px value — call

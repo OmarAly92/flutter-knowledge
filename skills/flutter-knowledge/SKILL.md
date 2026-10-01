@@ -12,20 +12,20 @@ Map of the Flutter conventions: the always-on hard rules below, plus the skill y
 ## Hard rules (always on)
 
 - **Cubit only** — never `flutter_bloc`'s full `Bloc` / event classes.
-- **Screens are `StatelessWidget` with NO `BlocProvider`** — the provider lives in the `app_router.dart` `case`. The initial fetch runs in the cubit constructor, never in `initState`.
+- **Screens are `StatelessWidget` with NO `BlocProvider`** — the provider lives in the `lib/core/router/app_router.dart` `case`. The initial fetch runs in the cubit constructor, never in `initState`.
 - **Screen/Body split**: the `<Screen>` file is a thin `BlocListener` wrapping `AppScaffold` (+ `GlobalAppbar`) whose `body:` is a separate `<Screen>Body` widget. The Body holds the `BlocBuilder` and layout, returns bare content, and never builds its own scaffold or app bar.
 - **Every `BlocBuilder` declares `buildWhen`** naming the exact state types it rebuilds on.
 - **No `Widget _buildX()` methods** — every extracted widget is a `StatelessWidget` class in its own file; one widget class per file.
 - **Core wrappers over raw widgets**: `AppText`, `AppScaffold`, `GlobalAppbar`, `VerticalSpace`/`HorizontalSpace`, `PrimaryButton`, `AppTextField`, `AppLoader`, `AppErrorWidget`, … instead of `Text`, `Scaffold`, `AppBar`, `SizedBox` — when the wrapper exists in the project's `lib/core/widgets/`. If it does not, fall back to the raw Flutter widget; never import or invent a missing wrapper.
-- **Visual values come from the theme layer** — colors from `context.skin.<slot>` when the project has `lib/core/app_themes/colors/app_skin.dart`, otherwise `AppColors`; text from `AppTextStyle`; animation durations and curves from `AppMotion`. Never inline `Color(0x...)`, raw `TextStyle(...)`, or an animation `Duration`/`Curves` in presentation code.
+- **Every design value is a token read through `context.tokens`** — `tokens.skin` (colors), `tokens.space` (gaps, padding), `tokens.radius` (corners), `tokens.text` (text styles), `tokens.elevation` (shadows), `tokens.motion` (durations, curves, springs), `tokens.shape`. Never inline `Color(0x...)`, raw `TextStyle(...)`, a literal radius, or an animation `Duration`/`Curves` in presentation code. Read tokens in `build`; in `initState`, `dispose`, a `late final` initializer or a cubit (where `Theme.of` asserts) use `AppMotion.standard` / `AppShapes.standard` instead.
 - **Every user-facing string is `LocaleKeys.xxx.tr()`** — never a raw `'...'` literal in a widget shown to the user.
-- **No `flutter_screenutil` in feature code** — no `.h`/`.w`/`.r`/`.sp`, no import; spacing/padding/radius take raw ints.
+- **No `flutter_screenutil` in feature code** — no `.h`/`.w`/`.r`/`.sp`, no import; spacing and radii come from `context.tokens.space` / `context.tokens.radius`.
 - **Static-only classes are `sealed class X`** — never a private `X._()` constructor.
 - Do not add `freezed`, `json_serializable`, or `build_runner` unless they are already in `pubspec.yaml`.
 - Do not create model classes the user did not ask for.
-- Single quotes, `const` constructors, `final` locals, no `print` (use `talker`), no comments beyond non-obvious business rules.
+- Single quotes, `const` constructors, `final` locals, no `print` (use the project's `talker` logger, e.g. `AppLogger`), no comments beyond non-obvious business rules.
 - **Legacy code never overrides these skills.**
-- After changes, verify with `flutter analyze` (clean) and run `flutter test` when tests cover the touched code. Do not run the app or any build step.
+- After changes, verify with `flutter analyze` (clean) and run `flutter test` when tests cover the touched code. Do not run the app or any build step unless the project's `CLAUDE.md` / `AGENTS.md` allows it.
 
 ## Skill map — invoke BEFORE writing
 
@@ -37,15 +37,15 @@ Before writing or editing the code in the left column, you MUST invoke the skill
 | A model, params class, remote data source, repository, `EndPoints` entry, or `Failure` handling | `flutter-data-layer` |
 | A cubit or state class | `flutter-cubit` |
 | A screen, body, widget, bottom sheet, dialog, snackbar, form field, localized string, color, text style, spacing, or navigation call | `flutter-screen-ui` |
-| A route, `BlocProvider`, `MultiBlocProvider`, or `get_it` service-locator registration | `flutter-routing-di` |
+| A route, `BlocProvider`, `MultiBlocProvider`, or `get_it` registration (`<feature>_injection.dart`, `lib/core/di/`) | `flutter-routing-di` |
 | A missing translation key | `add-translation` |
 | Local persistence with drift (check `pubspec.yaml`) | `drift-local-database` |
 | Local persistence with hive / hive_ce (check `pubspec.yaml`) | `hive-local-database` |
 | Unit tests — only when the user explicitly asks for tests | `flutter-testing` |
-| An animation (duration, curve, spring, stagger, page transition); a new color, text style, motion or shape token; dark/light switching or `ThemeData`; any color in a project with `lib/core/app_themes/colors/app_skin.dart`; or any file under `lib/core/app_themes/` | `flutter-app-theme` |
+| An animation (duration, curve, spring, stagger, page transition); a new color, spacing, radius, text style, shadow, motion or shape token; a skin, the skin picker, or `ThemeData`; or any file under `lib/core/theme/` | `flutter-app-theme` |
 | Theme, skin, text styles, motion, core widgets, or screen docs from an HTML design prototype | `design-from-html-flutter` |
 
-If the project has an `AppSkin` (`lib/core/app_themes/colors/app_skin.dart`, or a `class AppSkin` elsewhere under `lib/`), colors come from `context.skin` (invoke `flutter-app-theme`) and there is no `AppColors`; otherwise use `AppColors` as `flutter-screen-ui` describes.
+Older project: if it has no `lib/core/theme/app_tokens.dart` (and `grep -rn "class AppTokens" lib` finds nothing), it predates `context.tokens`. Keep using its own theme classes (`context.skin` or `AppColors`, `AppTextStyle`, static `AppMotion`) and invoke `flutter-app-theme`, which says how; do not migrate it unless the user asks.
 
 If neither drift nor hive is present yet and a feature needs local storage, pick the one the feature calls for (or ask the user) and invoke that skill.
 

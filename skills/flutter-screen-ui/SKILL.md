@@ -1,6 +1,6 @@
 ---
 name: flutter-screen-ui
-description: Flutter screen and widget UI conventions — Screen/Body split with BlocListener + AppScaffold, BlocBuilder buildWhen, one widget per file and when to inline, threading cubit data to child widgets, bottom sheets/dialogs, snackbar extension, form validators, localization with LocaleKeys, core widget wrappers (AppText, AppScaffold, GlobalAppbar, VerticalSpace...), AppColors or context.skin, AppTextStyle, spacing without flutter_screenutil, general style, and navigation extensions. Use before writing or editing any Flutter screen, widget, sheet, dialog, or styling code.
+description: Flutter screen and widget UI conventions — Screen/Body split with BlocListener + AppScaffold, BlocBuilder buildWhen, one widget per file and when to inline, threading cubit data to child widgets, bottom sheets/dialogs, snackbar extension, form validators, localization with LocaleKeys, core widget wrappers (AppText, AppScaffold, GlobalAppbar, VerticalSpace...), design tokens through context.tokens (skin colors, space, radius, text, elevation), spacing without flutter_screenutil, general style, and navigation extensions. Use before writing or editing any Flutter screen, widget, sheet, dialog, or styling code.
 ---
 
 # Flutter screen & UI
@@ -60,11 +60,11 @@ Splitting into a file is for genuine sections — a form, a card, a list item, a
 
 **Threading data to child widgets**: only two kinds of widgets take data via constructor parameters — the `<Screen>Body` (via `BlocBuilder`) and true leaf/item widgets (e.g. a list row). Intermediate structural widgets (a list wrapper, a section container) should read the cubit directly via `context.read<XCubit>()` rather than having its data threaded through as a constructor argument one layer at a time. Keep the cubit reference itself, and read its fields off that reference at each use site — `final cubit = context.read<XCubit>(); ...cubit.items.length... cubit.items[index]...` — rather than extracting a field into a separately-defaulted local (`final items = cubit.items ?? const [];`); the local copy can drift from the live cubit field and adds a redundant fallback. Leaf/item widget constructors take plain primitive values (`String id, String status, DateTime date, ...`), never the whole model object — passing the model directly couples the widget to that specific type and makes it unusable anywhere else; primitives keep it reusable.
 
-**Static-only helper classes** (`EndPoints`, `RoutesStrings`, `AppColors`, `AppConstants`, and similar constants holders) are declared `sealed class X { ... }` — never add a private constructor (`X._()`) to block instantiation; `sealed` already prevents it.
+**Static-only helper classes** (`EndPoints`, `RoutesStrings`, `AppFonts`, `AppAsset`, and similar constants holders) are declared `sealed class X { ... }` — never add a private constructor (`X._()`) to block instantiation; `sealed` already prevents it.
 
-**Snackbars**: show them through the `BuildContext` extension (`context.showSnackBar(message)`, typically in `core/utils/extensions.dart`) — never call `ScaffoldMessenger.of(context).showSnackBar(...)` directly in feature code. Mirror whatever extension name the project already uses if it differs.
+**Snackbars**: show them through the `BuildContext` extension in `lib/core/helpers/extensions/snackbar_extensions.dart` — `context.showSnackBar(message)` for notices, `context.showErrorSnackBar(message)` for failures — never call `ScaffoldMessenger.of(context).showSnackBar(...)` directly in feature code. Mirror whatever extension name the project already uses if it differs.
 
-**Form validation**: check for an existing shared validators helper (e.g. `AppFormValidations` in `lib/core/helpers/validations/`) before writing a field's `validator:`. If one exists, use its static validators (email, phone, password, username, ...) instead of an inline validation closure — this keeps validation rules (and their `LocaleKeys` messages) consistent across every form in the app. Only write an inline validator when the field doesn't match any case the shared helper already covers.
+**Form validation**: check for an existing shared validators helper (e.g. `AppFormValidations` in `lib/core/helpers/`) before writing a field's `validator:`. If one exists, use its static validators (email, phone, password, username, ...) instead of an inline validation closure — this keeps validation rules (and their `LocaleKeys` messages) consistent across every form in the app. Only write an inline validator when the field doesn't match any case the shared helper already covers.
 
 **Localization**: every user-facing string (in `AppText`, `PrimaryButton.text`, `GlobalAppbar.titleText`, dialog messages, snackbars, validator messages, etc.) MUST be `LocaleKeys.xxx.tr()` from `easy_localization`. NEVER inline a raw `'...'` literal into a widget shown to the user. If a needed key doesn't exist, invoke the `add-translation` skill (via the Skill tool, or tell the user to run `/add-translation`) which adds the key to both `assets/translations/ar.json` and `en.json` in sync, writing the English and the Arabic itself. Exceptions: debug-only strings (`talker` logs), asset paths, hex colors, route names, regex patterns — anything not shown to the user.
 
@@ -77,23 +77,47 @@ Splitting into a file is for genuine sections — a form, a card, a list item, a
 - `AppLoader(...)` for loading states; `AppErrorWidget(...)` for failure states
 - `AppNetworkImage(...)`, `AppSvgImage(...)`, `AppAssetsImage(...)` for images
 - `AppContainer(...)`, `AppDivider(...)`, `AppShimmer(...)`, `AppListTile(...)`, `AppDropDown(...)`, `AppInkWell(...)`, `AppRefreshIndicator(...)`, `AppDialog(...)`, `LabeledContainer(...)`, `HorizontalPadding(...)` as needed
-- Also check `animation/` (`AppAnimate`, `TapBounceEffect`) and the root-level widgets (`PaginationWidget`, `CustomCalendar`, `BottomSheetContainer`, …) before writing a new widget. Animation timing (durations, curves, springs, stagger delays) comes from `AppMotion` — invoke the `flutter-app-theme` skill before writing an animation.
+- Core widgets are grouped by role (`animation/`, `buttons/`, `inputs/`, `text/`, `layout/`, `sheets/`, `feedback/`, `errors/`, `images/`, `indicators/`, …) — check the folder for what you need (`AppAnimate`, `TapBounceEffect`, `PaginationWidget`, `BottomSheetContainer`, …) before writing a new widget. Animation timing (durations, curves, springs, stagger delays) comes from `context.tokens.motion` — invoke the `flutter-app-theme` skill before writing an animation.
 - **Fallback when a wrapper is missing**: before using a wrapper, check that it exists in the project's `lib/core/widgets/`. If the project has no wrapper for what you need (or has no `lib/core/widgets/` at all), use the raw Flutter widget (`Text`, `Scaffold`, `AppBar`, `SizedBox`, ...). Do not import a wrapper that is not in the project, and do not create a new wrapper unless the user asks for one.
 
-**Colors — ALWAYS use `AppColors` constants from `lib/core/app_themes/colors/app_colors.dart`. NEVER inline a `Color(0x...)` in presentation code.** If a needed color doesn't exist, add it to `AppColors` first with a descriptive name, then reference the constant. **Exception:** if the project has `lib/core/app_themes/colors/app_skin.dart`, it has no `AppColors` — colors come from `context.skin.<slot>` instead; invoke the `flutter-app-theme` skill before writing any color, and read `AppColors.X` below as `context.skin.x`.
+**Design tokens — every color, text style, gap, radius and shadow is read through `context.tokens`** (`lib/core/theme/app_tokens.dart`). Take it once at the top of `build` (or of a `BlocBuilder` builder) and read the group you need:
 
-**Text styles — ALWAYS use `AppTextStyle` (under `lib/core/app_themes/text_style/`). NEVER write raw `TextStyle(fontSize: …, fontWeight: …)` in presentation code.** The class exposes `style<Size><Weight>` getters — weights `Light`, `Regular`, `Medium`, `SemiBold`, `Bold` across sizes 10–32 (e.g. `style12Regular`, `style14Medium`, `style16SemiBold`, `style20Bold`, `style24Bold`, `style28Bold`, `style32Bold`) — check the class for the exact getter before using it; not every size/weight combination exists. For a color, weight tweak, or letterSpacing on top of a base style, use `.copyWith(color: AppColors.X)`. The base styles internally apply `.spMin` for responsive font sizing — clients of `AppTextStyle` do NOT touch `flutter_screenutil` directly.
+```dart
+@override
+Widget build(BuildContext context) {
+  final tokens = context.tokens;
+  return Container(
+    padding: EdgeInsets.all(tokens.space.lg),
+    decoration: BoxDecoration(
+      color: tokens.skin.surface,
+      borderRadius: tokens.radius.card,
+      boxShadow: tokens.elevation.low,
+    ),
+    child: AppText(
+      LocaleKeys.xTitle.tr(),
+      style: tokens.text.headingSm.copyWith(color: tokens.skin.textSecondary),
+    ),
+  );
+}
+```
 
-**Spacing, padding, and sizing — NEVER use `flutter_screenutil` extensions (`.h`, `.w`, `.r`, `.sp`) in presentation code.** Use raw ints / doubles — responsiveness is handled by the design system:
-- Gaps: `const VerticalSpace(8)`, `const HorizontalSpace(16)` — NOT `VerticalSpace(8.h)`.
-- Padding: `const EdgeInsets.all(16)`, `const EdgeInsets.symmetric(horizontal: 24)` — NOT `EdgeInsets.all(16.r)` or `EdgeInsets.symmetric(horizontal: 24.w)`.
-- BorderRadius: `BorderRadius.circular(12)` — NOT `BorderRadius.circular(12.r)`.
-- Fixed widths/heights: prefer `AppConstants.X` constants where they exist (e.g. `AppConstants.horizontalPadding` in `lib/core/utils/app_constants.dart`); otherwise raw ints.
-- The only place `flutter_screenutil` is allowed is inside `AppTextStyle` and similar core wrappers. Feature code should not even import `package:flutter_screenutil/flutter_screenutil.dart`.
+- **Colors**: `tokens.skin.<slot>`. NEVER a `Color(0x...)`, `Colors.x` (`Colors.transparent` aside) or `Theme.of(context).colorScheme` in presentation code. A missing color is a missing skin slot — invoke `flutter-app-theme` and add it there.
+- **Text**: `tokens.text.<style>` — prefer the semantic getters (`headingSm`, `bodyMd`, `caption`, …). NEVER a raw `TextStyle(fontSize: …, fontWeight: …)`. Styles carry no color: add it with `.copyWith(color: tokens.skin.x)`. A different size is a different getter, not a `copyWith(fontSize:)`.
+- **Spacing**: `tokens.space.<step>` (`xs`, `sm`, `md`, `lg`, `xl`, `xxl`, `xxxl`; `screenH` for the screen's horizontal edge) — `VerticalSpace(tokens.space.sm)`, `EdgeInsets.all(tokens.space.lg)`, `padding: tokens.space.screenH`.
+- **Radii**: `tokens.radius.<step>` gives a `BorderRadius` (`card`, `input`, `button`, `sheet`, `xs` … `pill`); `tokens.radius.<step>Value` gives the `double` for `Radius.circular(...)` and `radius:` parameters.
+- **Shadows**: `tokens.elevation.low` / `.high` / `.glow()`.
+- Tokens are not `const`: when one lands in a `const` expression, drop that `const`.
+- Read `context.tokens` in `build` only — never in `initState`, `dispose`, a `late final` initializer or a cubit (`Theme.of` asserts there). A helper without a `BuildContext` takes `AppTokens tokens` as a parameter.
+- **Older project** (no `lib/core/theme/app_tokens.dart`): mirror its own theme classes instead — `context.skin` or `AppColors` for colors, `AppTextStyle` for text, raw numbers for spacing and radii — and invoke `flutter-app-theme` before adding a color, style or token.
+
+**Spacing, padding, and sizing — NEVER use `flutter_screenutil` extensions (`.h`, `.w`, `.r`, `.sp`) in presentation code.** Responsiveness is handled by the design system:
+- Gaps, padding and radii come from the tokens above — NOT `VerticalSpace(8.h)`, `EdgeInsets.all(16.r)` or `BorderRadius.circular(12.r)`.
+- Fixed widths/heights that are not spacing (an icon size, an avatar diameter) are plain numbers at the call site.
+- The only place `flutter_screenutil` is allowed is inside the theme layer (`AppTypography`). Feature code should not even import `package:flutter_screenutil/flutter_screenutil.dart`.
 
 **General style**: single quotes, `const` constructors wherever possible, full 8-digit hex for colors, `final` locals. No `print` — use the `talker` logger. Don't write comments — use self-explanatory names; only comment non-obvious business rules, external constraints, or workarounds.
 
-**Navigation**: `context.pushNamed(...)`, `context.pushReplacementNamed(...)`, `context.pushNamedAndRemoveUntil(name, (_) => false)`, `context.pop()` — never raw `Navigator.of(context)` calls.
+**Navigation**: `context.pushNamed(...)`, `context.pushReplacementNamed(...)`, `context.pushNamedAndRemoveUntil(name, (_) => false)`, `context.pop()`, `context.popToRoot()` — the `Navigation` extension and `RoutesStrings` both come from importing `lib/core/router/app_router.dart`. Never raw `Navigator.of(context)` calls.
 
 ## What NOT to do
 
@@ -106,9 +130,9 @@ Splitting into a file is for genuine sections — a form, a card, a list item, a
 - Do not pass a whole model object into a leaf/item widget's constructor — pass its primitive fields instead so the widget is reusable elsewhere. Do not thread cubit data through intermediate structural widgets via constructor params either — read it directly with `context.read<XCubit>()`, and read fields off that same cubit reference rather than copying one into a separately-defaulted local variable.
 - Do not call `ScaffoldMessenger.of(context).showSnackBar(...)` directly in feature code. Use the project's `BuildContext` snackbar extension.
 - Do not write an inline validator closure for a field that a shared validators helper (e.g. `AppFormValidations`) already covers — use the shared one.
-- Do not add a private constructor (`X._()`) to a static-only constants class (`EndPoints`, `RoutesStrings`, `AppColors`, ...) to block instantiation — declare it `sealed class X` instead.
+- Do not add a private constructor (`X._()`) to a static-only constants class (`EndPoints`, `RoutesStrings`, `AppFonts`, ...) to block instantiation — declare it `sealed class X` instead.
 - Do not reach for raw `Text(...)` / `Scaffold(...)` / `SizedBox(height: ...)` / `AppBar(...)` when the corresponding core widget exists in `lib/core/widgets/`. When it does not exist, fall back to the raw widget instead of importing or inventing a wrapper.
 - Do not inline raw string literals into widgets shown to the user. Every user-facing string is `LocaleKeys.xxx.tr()`.
-- Do not write raw `TextStyle(fontSize: …, fontWeight: …, …)` in presentation widgets. Use `AppTextStyle.styleNN<Weight>` (with `.copyWith(...)` for tweaks).
-- Do not use `flutter_screenutil` extensions (`.h`, `.w`, `.r`, `.sp`, `.spMin`, `.dm`) in feature presentation code. Spacing/padding/radius take raw ints; fonts go through `AppTextStyle`. (Existing code that did this is legacy; do not copy it.)
+- Do not write raw `TextStyle(fontSize: …, fontWeight: …, …)`, a `Color(0x…)`, a literal radius or spacing number, or `Theme.of(context).colorScheme` in presentation widgets. Read `context.tokens` (`.text`, `.skin`, `.radius`, `.space`).
+- Do not use `flutter_screenutil` extensions (`.h`, `.w`, `.r`, `.sp`, `.spMin`, `.dm`) in feature presentation code. Spacing and radii come from `context.tokens.space` / `.radius`; fonts from `context.tokens.text`. (Existing code that did this is legacy; do not copy it.)
 - Do not transcribe a design from an HTML prototype by eye, and do not set skin/text-style/motion tokens from a screenshot — invoke the `design-from-html-flutter` skill first and extract the values from the prototype's computed CSS.

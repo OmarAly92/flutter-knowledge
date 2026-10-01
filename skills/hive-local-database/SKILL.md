@@ -18,10 +18,10 @@ Uses `hive_ce` + `hive_ce_flutter` (the maintained community fork — original `
 ```
 lib/
   core/
-    database/
-      hive_boxes.dart                # opens + registers every box; features never open their own
-    error_handling/
-      hive_error_handler/
+    data/
+      database/
+        hive_boxes.dart              # opens + registers every box; features never open their own
+      error_handling/
         hive_error_handler.dart      # handleLocalFailure() → LocalFailure
   feature/
     <feature>/
@@ -34,10 +34,10 @@ lib/
 
 ## Boxes and initialization
 
-`Hive.initFlutter()` runs once at bootstrap, before `runApp`, and every box a feature needs is opened there and registered in the `ServiceLocator` — features never call `Hive.openBox` themselves, exactly as drift features never open the database. One box per feature (or per stored type); its opened `Box` is what gets injected, mirroring how drift injects the one `AppDatabase`.
+`Hive.initFlutter()` runs once at bootstrap, before `runApp`, and every box a feature needs is opened there and registered into the locator (`initHive(sl)`, awaited in `main()` next to `registerAppDependencies(sl)`) — features never call `Hive.openBox` themselves, exactly as drift features never open the database. One box per feature (or per stored type); its opened `Box` is what gets injected, mirroring how drift injects the one `AppDatabase`.
 
 ```dart
-Future<void> initHive() async {
+Future<void> initHive(GetIt sl) async {
   await Hive.initFlutter();
   final budgetBox = await Hive.openBox<Map>('budgets');
   sl.registerSingleton<Box<Map>>(budgetBox, instanceName: 'budgets');
@@ -48,7 +48,7 @@ Store the JSON map keyed by the model's own `id` (`box.put(model.id, json)`) so 
 
 ## Error handling
 
-A `handleLocalFailure()` helper — the Hive analogue of drift's — lives in `core/error_handling/hive_error_handler/hive_error_handler.dart`. It catches any `HiveError`/storage exception and rethrows it as `LocalFailure` (a `Failure` subtype). Because there is no DAO, the wrap happens on the **box calls inside the LocalDataSource** — so Repository and Cubit still never `try/catch` a local error, just like the drift layering.
+A `handleLocalFailure()` helper — the Hive analogue of drift's — lives in `core/data/error_handling/hive_error_handler.dart`. It catches any `HiveError`/storage exception and rethrows it as `LocalFailure` (a `Failure` subtype). Because there is no DAO, the wrap happens on the **box calls inside the LocalDataSource** — so Repository and Cubit still never `try/catch` a local error, just like the drift layering.
 
 ```dart
 extension HiveFutureFailure<T> on Future<T> {
@@ -132,9 +132,10 @@ class BudgetLocalDataSourceImp implements BudgetLocalDataSource {
 
 ## DI
 
-Two registrations per feature — no DAO layer, so the LocalDataSource takes the injected `Box` directly:
+Two registrations per feature, in its own `<feature>_injection.dart` (see `flutter-routing-di`) — no DAO layer, so the LocalDataSource takes the injected `Box` directly:
 
 ```dart
+// lib/feature/budget/budget_injection.dart — registerBudgetDependencies(GetIt sl)
 sl.registerLazySingleton<BudgetRepository>(
   () => BudgetRepositoryImp(sl<BudgetLocalDataSource>()),
 );
@@ -186,7 +187,7 @@ FutureResult<GlobalResponse<List<XModel>>> getX(XParams params) async {
 ## What NOT to do
 
 - Do not let a stored `Map` or a `@HiveType XHiveModel` cross past the LocalDataSource — no `hive_ce` import, no `Box`, no stored type in a repository, cubit, or widget. Map to `XModel`/params at the data source.
-- Do not open a box inside a feature or data source. Boxes are opened once at bootstrap and registered in the `ServiceLocator`; features receive the injected `Box`.
+- Do not open a box inside a feature or data source. Boxes are opened once at bootstrap by `initHive(sl)` and registered into the locator; features receive the injected `Box`.
 - Do not skip `handleLocalFailure()` / `handleLocalFailureSync()` on a box call — it is how Hive exceptions become `LocalFailure`, which is why nothing above the data source needs a local `try/catch`.
 - Do not give a local write Params class `toJson()` or blanket-nullable fields like an API model — expose `toDb()` and make fields required/nullable by what the write needs.
 - Do not have `watchX()` return the raw `Stream<BoxEvent>` — map each event to a full re-read so it yields `Stream<List<XModel>>`, matching the drift contract.

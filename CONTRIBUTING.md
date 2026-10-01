@@ -12,15 +12,17 @@ All skill content lives in `skills/`:
   table telling the agent which skill it MUST invoke before writing each kind
   of code.
 - `skills/flutter-feature-structure/SKILL.md` — feature folder tree, `_screen`
-  suffix, and "read an existing equivalent file first and mirror it".
+  suffix, the `lib/core/` folders, and "read an existing equivalent file first
+  and mirror it".
 - `skills/flutter-data-layer/SKILL.md` — models, params, remote data sources,
   repositories, `EndPoints`, `Failure`.
 - `skills/flutter-cubit/SKILL.md` — Cubit + state classes, state naming, data
   and controller lifecycle.
 - `skills/flutter-screen-ui/SKILL.md` — Screen/Body split, widget structure,
   core UI wrappers, colors, text styles, spacing, localization, navigation.
-- `skills/flutter-routing-di/SKILL.md` — routes, `BlocProvider` wiring,
-  `get_it` service-locator setup.
+- `skills/flutter-routing-di/SKILL.md` — routes in `lib/core/router/`,
+  `BlocProvider` wiring, per-feature `get_it` injection files
+  (`<feature>_injection.dart` + `registerAppDependencies`).
 - `skills/drift-local-database/SKILL.md` — local persistence (drift/SQLite):
   tables, DAOs, entities, migrations, local-only and hybrid repositories.
 - `skills/hive-local-database/SKILL.md` — local persistence (Hive/hive_ce):
@@ -29,11 +31,11 @@ All skill content lives in `skills/`:
   bloc_test cubit tests, data source/repository/cubit coverage.
 - `skills/add-translation/SKILL.md` — add localization keys to `en.json` /
   `ar.json` in sync.
-- `skills/flutter-app-theme/SKILL.md` — the `lib/core/app_themes` layer:
-  colors through an `AppSkin` (`context.skin`, adding slots, `SkinCubit`,
-  `SkinScope`), `AppTextStyle`, `AppMotion` (durations, curves, springs,
-  stagger), shapes and radii, and `AppThemes.fromSkin` with the `ColorScheme`
-  mapping.
+- `skills/flutter-app-theme/SKILL.md` — the `lib/core/theme` layer:
+  `AppTokens` read as `context.tokens` (skin colors, spacing, radii, text,
+  elevation, motion, shapes), skins as a list (built-in + JSON skins in a
+  `SkinRegistry`, `SkinCubit.select`), and `AppTheme.of(skin)` with the
+  `ColorScheme` mapping.
 - `skills/design-from-html-flutter/` — turn an HTML design prototype into skin
   colors, text styles, motion constants, core widgets, and per-screen design
   docs + implementation prompts. The only multi-file skill: `SKILL.md` is the
@@ -51,9 +53,11 @@ agent can trigger them directly, and the `flutter-knowledge` map tells the
 agent it MUST invoke them (via the Skill tool, or `/<skill-name>`) before
 writing the code they cover. The two local-database skills are mutually
 exclusive per project — the map picks between them by checking
-`pubspec.yaml` for drift vs hive/hive_ce. Likewise the skin part of `flutter-app-theme`
-applies only when the project has `lib/core/app_themes/colors/app_skin.dart`;
-the map and `flutter-screen-ui` fall back to `AppColors` otherwise. When adding a new on-demand skill,
+`pubspec.yaml` for drift vs hive/hive_ce. Likewise the skills teach the `context.tokens` theme layer; a project
+without `lib/core/theme/app_tokens.dart` is an older one, and the map,
+`flutter-screen-ui` and `flutter-app-theme` each carry one short note telling
+the agent to mirror that project's own theme classes instead. Keep old-shape
+fallbacks to those three notes. When adding a new on-demand skill,
 follow this same pattern rather than inlining it into `flutter-knowledge` —
 give it its own scoped `description`, add a row to the map, and do NOT set
 `disable-model-invocation: true`, since that flag removes a skill from the
