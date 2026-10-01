@@ -2,7 +2,7 @@
 """Static grader for the flutter-knowledge benchmark.
 
 Usage: grade.py <out_dir>
-  <out_dir>/fixture-{drift,hive,app}[-nowrap]       (from build_fixtures.py)
+  <out_dir>/fixture-{drift,hive,app,skin,older}[-nowrap]   (from build_fixtures.py)
   <out_dir>/runs/<version>-<mode>-<task>-<rep>/      (one agent run each, from prepare.py)
   <out_dir>/tokens.txt  (optional: "<run name> <tokens>" per line)
 Writes <out_dir>/grades.json and prints markdown tables. Runs without SKILLS_READ.txt
@@ -12,6 +12,8 @@ Only code the agent wrote counts: whole new files, and the added lines of files 
 edited. The legacy `orders` feature is ignored (it is the trap), except that
 editing it at all is reported. A few checks look at the whole file after an edit,
 to catch "extended the legacy pattern instead of following the skill".
+The fixtures are in the 2.0.0 shape (context.tokens, per-feature injection files,
+lib/core/router/), except `older`, whose pre-2.0 theme the agent must keep (task o1).
 The checks are regexes: spot-check every rule hit by reading the flagged code.
 """
 import difflib, json, os, re, sys
@@ -28,24 +30,39 @@ if os.path.exists(os.path.join(B, 'tokens.txt')):
             TOKENS[line.split()[0]] = int(line.split()[1])
 ARABIC = re.compile(r'[؀-ۿ]')
 SCREEN_TASKS = {'d1', 'd2', 'd3', 'h1', 'h2'}   # a new feature with its own screen
-TRIP_SCREEN_TASKS = {'f1', 'f2'}                # a new screen inside the existing trips feature
+TRIP_SCREEN_TASKS = {'f1', 'f2', 'o1'}          # a new screen inside the existing trips feature
+DETAILS_TASKS = {'f1', 'o1'}                    # o1 is f1 on the older-project fixture
 TASK_SKILL = {'t1': 'flutter-testing', 'g1': 'design-from-html-flutter'}
-SKIN_DIR = 'lib/core/app_themes/colors/'
+THEME_DIR = 'lib/core/theme/'
+SKIN_DIR = THEME_DIR + 'skin/'
 SKIN_GOLD = {'light_skin.dart': 'C8A24A', 'dark_skin.dart': 'E3C77A'}   # task s2
-MOTION_FILE_DEFAULT = 'lib/core/app_themes/app_motion.dart'
+MOTION_FILE_DEFAULT = THEME_DIR + 'motion/app_motion.dart'
+TOKENS_FILE = THEME_DIR + 'app_tokens.dart'
+CORE_DI = 'lib/core/di/injection.dart'
+APP_DI = 'lib/app_injection.dart'
+DI_TEST = 'test/app_injection_test.dart'
+ROUTER = 'lib/core/router/app_router.dart'
+ROUTES = 'lib/core/router/routes_strings.dart'
+DB_DIR = 'lib/core/data/database/'
+LOCALE_KEYS = 'lib/core/l10n/locale_keys.g.dart'
 # design/prototype.html (task g1): the values its injected CSS resolves to
 DESIGN_COLORS = ['F4F6F5', 'FFFFFF', 'EDF1EF', '0E1A17', '4A5A55', '83928D', 'D6DEDA', '0F766E', '15803D', 'B45309', 'B91C1C']
 DESIGN_TYPE = [(28, 34, -0.56), (20, 26, -0.2), (15, 22, 0.0), (12, 16, 0.24)]   # font size, line height, tracking (px)
 DESIGN_DURATIONS = [120, 220, 360]
 DESIGN_CURVES = [(0.2, 0, 0, 1), (0.34, 1.56, 0.64, 1)]
 LEGACY_TEXT_GETTERS = ['style12Regular', 'style14Regular', 'style14Medium', 'style16Medium', 'style18Bold']
-RAW_TO_WRAPPER = {'Text': 'app_text', 'Scaffold': 'app_scaffold', 'AppBar': 'global_appbar', 'SizedBox': 'vertical_space',
-                  'ElevatedButton': 'primary_button', 'TextButton': 'secondary_button', 'OutlinedButton': 'secondary_button',
-                  'TextFormField': 'app_text_field', 'TextField': 'app_text_field', 'CircularProgressIndicator': 'app_loader'}
-WRAPPER_CLASSES = {'AppText': 'app_text', 'AppScaffold': 'app_scaffold', 'GlobalAppbar': 'global_appbar',
-                   'VerticalSpace': 'vertical_space', 'HorizontalSpace': 'horizontal_space', 'AppContainer': 'app_container',
-                   'PrimaryButton': 'primary_button', 'AppTextField': 'app_text_field', 'AppLoader': 'app_loader',
-                   'AppErrorWidget': 'app_error_widget'}
+WIDGETS = 'lib/core/widgets/'
+WRAPPER_CLASSES = {'AppText': 'text/app_text', 'AppScaffold': 'layout/app_scaffold', 'GlobalAppbar': 'layout/global_appbar',
+                   'VerticalSpace': 'layout/space_widgets', 'HorizontalSpace': 'layout/space_widgets',
+                   'AppContainer': 'layout/app_container', 'PrimaryButton': 'buttons/primary_button',
+                   'SecondaryButton': 'buttons/secondary_button', 'AppTextField': 'inputs/app_text_field',
+                   'AppCheckBox': 'inputs/app_check_box', 'AppLoader': 'feedback/app_loader',
+                   'AppErrorWidget': 'feedback/app_error_widget'}
+RAW_TO_WRAPPER = {'Text': 'AppText', 'Scaffold': 'AppScaffold', 'AppBar': 'GlobalAppbar', 'SizedBox': 'VerticalSpace',
+                  'ElevatedButton': 'PrimaryButton', 'TextButton': 'SecondaryButton', 'OutlinedButton': 'SecondaryButton',
+                  'TextFormField': 'AppTextField', 'TextField': 'AppTextField', 'CircularProgressIndicator': 'AppLoader',
+                  'Checkbox': 'AppCheckBox'}
+OLD_THEME_API = r'context\.skin\b|\bAppColors\b|\bAppTextStyle\b|\bSkinScope\b|\bAppThemes\b|\btoggleSkin\b'
 
 
 def read(p):
@@ -87,7 +104,7 @@ def role(rel):
         return 'ds'
     if re.search(r'/models?/', rel):
         return 'model'
-    if rel.startswith('lib/core/database/tables/'):
+    if rel.startswith(DB_DIR + 'tables/'):
         return 'db'
     if rel.startswith('lib/feature/'):
         return 'feature_other'
@@ -127,8 +144,9 @@ def grade(run_dir, fixture_dir, task):
 
     if any(r.startswith('lib/feature/orders/') or r == 'test/orders_repository_test.dart' for r in code):
         v['touched_legacy_orders'] += 1
-    if 'lib/core/helpers/localization/locale_keys.g.dart' in touched:
+    if LOCALE_KEYS in touched:
         v['edited_generated_locale_keys'] += 1
+    older = TASKS[task].get('fixture') == 'older'
 
     by_role = defaultdict(dict)
     for r, t in dart.items():
@@ -157,19 +175,19 @@ def grade(run_dir, fixture_dir, task):
         v['tests_unprompted'] += 1
     # raw widget where the project has a wrapper (only wrappers present in the fixture count)
     # SizedBox counts only as a bare gap (no child); SizedBox(width: double.infinity, child: ...) is sizing
-    raw_ok = [w for w, f in RAW_TO_WRAPPER.items() if f'lib/core/widgets/{f}.dart' in fx and w != 'SizedBox']
+    raw_ok = [w for w, cls in RAW_TO_WRAPPER.items() if WIDGETS + WRAPPER_CLASSES[cls] + '.dart' in fx and w != 'SizedBox']
     raw_re = r'(?<![\w.])(?:%s)\(' % '|'.join(raw_ok) if raw_ok else r'(?!x)x'
-    if 'lib/core/widgets/vertical_space.dart' in fx:
+    if WIDGETS + 'layout/space_widgets.dart' in fx:
         raw_re += r'|(?<![\w.])SizedBox\(\s*(?:height|width):\s*[\w.]+\s*,?\s*\)'
     for r, t in ui.items():
         v['raw_widget_with_wrapper'] += count(raw_re, t)
     # missing-wrapper fallback: never import or use a wrapper the project lacks, never invent one
     for r, t in feat.items():
-        for w in re.findall(r"import 'package:app/core/widgets/(\w+)\.dart'", t):
-            if f'lib/core/widgets/{w}.dart' not in rn:
+        for w in re.findall(r"import 'package:app/core/widgets/([\w/]+)\.dart'", t):
+            if f'{WIDGETS}{w}.dart' not in rn:
                 v['imports_missing_wrapper'] += 1
         for cls, f in WRAPPER_CLASSES.items():
-            if f'lib/core/widgets/{f}.dart' not in rn and re.search(r'(?<![\w.])%s\(' % cls, t):
+            if f'{WIDGETS}{f}.dart' not in rn and re.search(r'(?<![\w.])%s\(' % cls, t):
                 v['uses_missing_wrapper'] += 1
     for r in new:
         # g1: the design skill adds the design's primitives; animation/ holds reusable effects, not wrappers
@@ -187,6 +205,44 @@ def grade(run_dir, fixture_dir, task):
         # a closure that only delegates to the shared AppFormValidations is fine
         v['inline_validator'] += sum(1 for m in re.finditer(r'validator:\s*\(', t)
                                      if 'AppFormValidations' not in ''.join(t[m.end():].splitlines(True)[:3]))
+    # Theme tokens: every design value comes through context.tokens; the older fixture keeps its own classes
+    widget_code = {r: t for r, t in dart.items() if role(r) == 'ui' or r.startswith(WIDGETS)}
+    if older:
+        for r, t in dart.items():
+            v['older_project_migrated_to_tokens'] += count(r'context\.tokens|\bAppTokens\b|\bAppSkin\b', t)
+        v['older_project_migrated_to_tokens'] += sum(1 for r in new if r.startswith(THEME_DIR))
+    else:
+        for r, t in dart.items():
+            if role(r) != 'legacy':
+                v['old_theme_api_used'] += count(OLD_THEME_API, t)
+        for r, t in ui.items():
+            v['literal_spacing'] += count(
+                r'EdgeInsets(?:Directional)?\.(?:all|symmetric|only|fromLTRB|fromSTEB)\([^)]*?(?<![\w.])\d', t) + count(
+                r'(?:Vertical|Horizontal)Space\(\s*\d', t)
+            v['literal_radius'] += count(r'(?:BorderRadius|Radius)\.circular\(\s*\d', t)
+        for r, t in feat.items():
+            v['legacy_text_getter_in_new_code'] += count(r'\.style\d+(?:Light|Regular|Medium|SemiBold|Bold)\b', t)
+    for r, t in widget_code.items():
+        v['colorscheme_or_texttheme_in_widget'] += count(r'Theme\.of\(\s*\w+\s*\)\s*\.\s*(?:colorScheme|textTheme)', t)
+    for r, t in dart.items():
+        if role(r) in ('legacy', 'test'):
+            continue
+        # Theme.of asserts in initState, dispose, a late final initializer and a cubit
+        outside = ' '.join(re.findall(r'void\s+(?:initState|dispose)\(\)\s*\{(.*?)\n  \}', t, re.S))
+        outside += ' '.join(re.findall(r'late\s+final[^;]*;', t, re.S))
+        if role(r) == 'cubit':
+            outside += t
+        v['tokens_read_outside_build'] += count(r'context\.tokens|Theme\.of\(', outside)
+    for r, t in ui.items():
+        # the statics are for places with no theme; a widget with a context reads context.tokens
+        rest = re.sub(r'void\s+(?:initState|dispose)\(\)\s*\{.*?\n  \}', '', t, flags=re.S)
+        rest = re.sub(r'late\s+final[^;]*;', '', rest, flags=re.S)
+        v['static_token_where_context_available'] += count(r'\bApp(?:Motion|Shapes)\.standard\b', rest)
+    for r, t in dart.items():
+        v['imports_router_part_file'] += count(
+            r"import\s+'package:app/core/(?:router/routes_strings|helpers/extensions/router_extensions)\.dart'", t)
+        if r.startswith('lib/core/') and r != ROUTER:
+            v['core_imports_feature'] += count(r"import\s+'package:app/feature/", t)
     for r, t in new.items():
         if role(r) in ('ui', 'cubit', 'feature_other') and r.endswith('.dart'):
             n = count(r'class\s+\w+\s+extends\s+(?:StatelessWidget|StatefulWidget)\b', t)   # a State<> class belongs with its widget
@@ -276,23 +332,28 @@ def grade(run_dir, fixture_dir, task):
             v['repo_not_abstract_plus_imp'] += 1
         if role(r) == 'ds' and t and not re.search(r'abstract\s+(?:interface\s+)?class', t):
             v['ds_not_abstract_plus_imp'] += 1
-    # DI and routing
-    sl_path = 'lib/core/utils/service_locator.dart'
-    sl_add = touched.get(sl_path, '')
-    if task in SCREEN_TASKS and not re.search(r'static\s+void\s+_\w+FeatureSetup', sl_add):
-        v['di_no_feature_setup_method'] += 1
+    # DI (one injection file per feature, wired through app_injection.dart) and routing
+    feature_di = re.compile(r'lib/feature/\w+/\w+_injection\.dart$')
+    di_files = {r: t for r, t in code.items() if r == CORE_DI or feature_di.match(r)}
+    di_add = '\n'.join(di_files.values())
+    for r, t in di_files.items():
+        v['di_untyped_registration'] += count(
+            r'\bsl\(\)|\.register(?:Factory|FactoryParam|LazySingleton|Singleton)\(\s*\(', t)
+        if r != CORE_DI:
+            v['di_global_getit_in_register_fn'] += count(r'GetIt\.instance', t)
+    if task in SCREEN_TASKS:
+        if not any(feature_di.match(r) for r in new):
+            v['di_no_feature_injection_file'] += 1
+        if not re.search(r'register\w+Dependencies\(\s*sl\s*\)', touched.get(APP_DI, '')):
+            v['di_not_wired_in_app_injection'] += 1
+        if DI_TEST not in touched:
+            v['di_registration_test_not_updated'] += 1
     if task in SCREEN_TASKS | TRIP_SCREEN_TASKS:
-        init_body = re.search(r'static Future<void> init\(\) async \{(.*?)\n  \}', full.get(sl_path, ''), re.S)
-        if init_body:
-            fixture_init = re.search(r'static Future<void> init\(\) async \{(.*?)\n  \}', read(fx[sl_path]), re.S).group(1)
-            added_in_init = added_lines(fixture_init, init_body.group(1))
-            v['di_inline_registration'] += count(r'sl\.register', added_in_init)
-        if not re.search(r'BlocProvider', touched.get('lib/core/app_routes/app_router.dart', '')):
+        if not re.search(r'BlocProvider', touched.get(ROUTER, '')):
             v['router_case_without_blocprovider'] += 1
-        rs = 'lib/core/app_routes/routes_strings.dart'
-        if rs in touched and 'RoutesStrings._()' in full[rs]:
+        if ROUTES in touched and 'RoutesStrings._()' in full[ROUTES]:
             v['legacy_private_ctor_kept_on_edit'] += 1
-        if rs not in touched and not re.search(r"static const String \w+ = '/", ''.join(touched.values())):
+        if ROUTES not in touched and not re.search(r"static const String \w+ = '", ''.join(touched.values())):
             v['no_route_constant'] += 1
     # Localization
     en = json.loads(read(os.path.join(run_dir, 'assets/translations/en.json')) or '{}')
@@ -313,16 +374,21 @@ def grade(run_dir, fixture_dir, task):
         for r, t in feat.items():
             v['drift_table_or_dao_in_feature'] += count(r'extends Table\b|@DriftAccessor', t)
         for r, t in new.items():
-            if r.startswith('lib/core/database/tables/') and r.endswith('_table.dart'):
+            if r.startswith(DB_DIR + 'tables/') and r.endswith('_table.dart'):
                 names = re.findall(r"@DataClassName\('(\w+)'\)", t)
                 if not names or not all(n.endswith('Entity') for n in names):
                     v['drift_row_class_not_XEntity'] += 1
-        for r in [r for r in code if r.startswith('lib/core/database/tables/') and r.endswith('_dao.dart')]:
+        for r in [r for r in code if r.startswith(DB_DIR + 'tables/') and r.endswith('_dao.dart')]:
             added = code[r]
             for name, body in dao_methods(full[r]):
                 if (r in new or re.search(r'\b%s\s*\(' % name, added)) and 'handleLocalFailure' not in body:
                     v['dao_method_without_handleLocalFailure'] += 1
-        db = full.get('lib/core/database/app_database.dart', '')
+        for r, t in new.items():
+            if r.startswith(DB_DIR + 'tables/') and r.endswith('_dao.dart'):
+                for name in re.findall(r'class\s+(\w+)\s+extends\s+DatabaseAccessor', t):
+                    if not re.search(r'\b%s\b' % name, touched.get(CORE_DI, '')):
+                        v['dao_not_registered_in_core'] += 1
+        db = full.get(DB_DIR + 'app_database.dart', '')
         new_tables = [r for r in new if r.endswith('_table.dart')]
         sv = re.search(r'schemaVersion\s*=>\s*(\d+)', db)
         sv = int(sv.group(1)) if sv else 1
@@ -381,14 +447,14 @@ def grade(run_dir, fixture_dir, task):
         if not re.search(r'(?:serverId|remoteId|\bid)\s*(?:==|!=)\s*null|\?\?|case null|if \(\w+ (?:==|!=) null', repos):
             v['sync_no_null_server_id_guard'] += 1
     if task == 'd4':
-        if 'nullable()' not in full.get('lib/core/database/tables/budgets/budgets_table.dart', ''):
+        if 'nullable()' not in full.get(DB_DIR + 'tables/budgets/budgets_table.dart', ''):
             v['d4_column_not_nullable'] += 1
         if not re.search(r'String\?\s+description', full.get('lib/feature/budget/data/models/budget_model.dart', '')):
             v['d4_model_field_missing_or_non_nullable'] += 1
         if 'description' not in full.get('lib/feature/budget/data/data_source/local/budget_local_data_source.dart', '') \
                 and 'description' not in full.get('lib/feature/budget/domain/params/add_budget_params.dart', ''):
             v['d4_description_not_written'] += 1
-    new_task_checks(v, task, run_dir, new, touched, full, code, dart, ui, cubits, sl_add)
+    new_task_checks(v, task, run_dir, new, touched, full, code, dart, ui, cubits, di_add)
     if TASKS[task].get('fixture') == 'skin':
         skin_checks(v, task, new, touched, full, code, dart, ui)
     if TASKS[task].get('fixture') == 'skin' or task == 'm2':
@@ -430,16 +496,18 @@ def type_scale_hits(text):
     return out
 
 
-def new_task_checks(v, task, run_dir, new, touched, full, code, dart, ui, cubits, sl_add):
+def new_task_checks(v, task, run_dir, new, touched, full, code, dart, ui, cubits, di_add):
     ui_all = ' '.join(ui.values())
     if task in TRIP_SCREEN_TASKS:
-        if not re.search(r'static\s+String\s+\w+\s*\(', touched.get('lib/core/api/api_request_helpers/end_points.dart', '')):
+        if not re.search(r'static\s+String\s+\w+\s*\(', touched.get('lib/core/data/api/end_points.dart', '')):
             v['endpoint_with_id_not_static_method'] += 1
-        if 'registerFactoryParam' not in sl_add:
+        if 'registerFactoryParam' not in di_add:
             v['route_arg_cubit_not_registerFactoryParam'] += 1
-        if 'param1' not in touched.get('lib/core/app_routes/app_router.dart', ''):
+        if not re.search(r'register\w*<\w+Cubit\b', touched.get('lib/feature/trips/trips_injection.dart', '')):
+            v['cubit_not_registered_in_feature_injection'] += 1
+        if 'param1' not in touched.get(ROUTER, ''):
             v['route_arg_not_passed_as_param1'] += 1
-    if task == 'f1':
+    if task in DETAILS_TASKS:
         if not re.search(r'showModalBottomSheet|showBottomSheet|showDialog', ui_all):
             v['f1_no_bottom_sheet'] += 1
         else:
@@ -493,7 +561,7 @@ def new_task_checks(v, task, run_dir, new, touched, full, code, dart, ui, cubits
         v['design_color_missing'] += sum(1 for c in DESIGN_COLORS if 'FF' + c not in hexes) + (0 if soft else 1)
         if 'FF3366FF' in hexes:
             v['design_decoy_color_used'] += 1
-        if re.search(r'\bprimary\s*=\s*Color\(0xFF1E6FD9', full.get('lib/core/app_themes/colors/app_colors.dart', '')):
+        if re.search(r'\bprimary\s*=>\s*const\s+Color\(0xFF1E6FD9', full.get(SKIN_DIR + 'light_skin.dart', '')):
             v['design_old_primary_kept'] += 1
         fonts = []
         for d, _, fs in os.walk(run_dir):
@@ -509,11 +577,11 @@ def new_task_checks(v, task, run_dir, new, touched, full, code, dart, ui, cubits
             v['design_font_not_declared'] += 1
         if 'fontFamily' not in core:
             v['design_font_family_not_applied'] += 1
-        styles = ' ;'.join(full[r] for r in code if r.startswith('lib/core/app_themes/') and r.endswith('.dart'))
+        styles = ' ;'.join(full[r] for r in code if r.startswith(THEME_DIR) and r.endswith('.dart'))
         hits = type_scale_hits(styles)
         v['design_type_scale_wrong'] += sum(1 for scale, _ in hits if not scale)
         v['design_tracking_wrong'] += sum(1 for scale, track in hits if scale and not track)
-        legacy = full.get('lib/core/app_themes/text_style/app_text_style.dart', '')
+        legacy = full.get(THEME_DIR + 'typography/app_typography.dart', '')
         v['design_legacy_text_getters_removed'] += sum(1 for g in LEGACY_TEXT_GETTERS if not re.search(r'\b%s\b' % g, legacy))
         durs = {int(x) for x in re.findall(r'Duration\(\s*milliseconds:\s*(\d+)', core)}
         curves = [tuple(float(x) for x in m) for m in
@@ -521,33 +589,36 @@ def new_task_checks(v, task, run_dir, new, touched, full, code, dart, ui, cubits
         v['design_motion_missing'] += sum(1 for d in DESIGN_DURATIONS if d not in durs) + sum(
             1 for c in DESIGN_CURVES if not any(all(abs(a - b) < 1e-6 for a, b in zip(c, k)) for k in curves))
         # sizes are not checked: 48 px can come from padding plus line height, with no literal 48
-        for f in ('primary_button', 'app_text_field'):
-            if f'lib/core/widgets/{f}.dart' not in touched:
+        for f in ('buttons/primary_button', 'inputs/app_text_field'):
+            if f'{WIDGETS}{f}.dart' not in touched:
                 v['design_widget_not_restyled'] += 1
         for r in code:
-            if r.startswith('lib/core/widgets/') and r.endswith('.dart'):
+            if r.startswith(WIDGETS) and r.endswith('.dart'):
                 v['design_raw_value_in_widget'] += count(
                     r'Color\(0x|\bColors\.(?!transparent)|Duration\(|Cubic\(|\bCurves\.|(?<![\w.])TextStyle\(', code[r])
 
 
 def skin_checks(v, task, new, touched, full, code, dart, ui):
-    """Tasks on the AppSkin fixture: colors come from context.skin, slots live in the skins."""
-    widgets = {r: t for r, t in dart.items()
-               if role(r) == 'ui' or (r.startswith('lib/core/widgets/') and r.endswith('.dart'))}
+    """Tasks on the skin fixture: colors come from tokens.skin, slots live in the skins, skins are a list."""
+    widgets = {r: t for r, t in dart.items() if role(r) == 'ui' or (r.startswith(WIDGETS) and r.endswith('.dart'))}
     for r, t in dart.items():
         if not r.startswith(SKIN_DIR):
             v['skin_app_colors_used'] += count(r'\bAppColors\b', t)
     for r, t in widgets.items():
-        v['skin_colorscheme_in_widget'] += count(r'Theme\.of\(\s*\w+\s*\)\s*\.\s*(?:colorScheme|brightness)|Theme\.of\(\s*\w+\s*\)\.\w+Theme', t)
+        v['skin_brightness_in_widget'] += count(r'Theme\.of\(\s*\w+\s*\)\s*\.\s*brightness|Theme\.of\(\s*\w+\s*\)\.\w+Theme', t)
         v['skin_mode_branch_for_color'] += count(
-            r'(?:ThemeMode\.dark|Brightness\.dark|\b(?:is)?[dD]ark\w*)\s*\?\s*(?:const\s+)?(?:context\.skin\.|skin\.|Color\(|Colors\.|AppColors\.)', t)
-        if r.startswith('lib/core/widgets/'):
+            r'(?:ThemeMode\.dark|Brightness\.dark|\b(?:is)?[dD]ark\w*)\s*\?\s*(?:const\s+)?(?:tokens\.skin\.|skin\.|Color\(|Colors\.|AppColors\.)', t)
+        if r.startswith(WIDGETS):
             v['raw_color_in_core_widget'] += count(r'Color\(0x|\bColors\.(?!transparent)', t)
         v['skin_theme_persisted_outside_cubit'] += count(r'\bCacheHelper\b|CacheKeys\.currentTheme|SharedPreferences', t)
     for r, t in dart.items():
         if r != 'lib/my_app.dart' and not r.startswith(SKIN_DIR):
-            v['skin_cubit_provided_again'] += count(r'(?<![\w.])SkinCubit\(\)|BlocProvider<SkinCubit>|registerFactory<SkinCubit>|registerLazySingleton<SkinCubit>', t)
+            v['skin_cubit_provided_again'] += count(
+                r'(?<![\w.])SkinCubit\(|BlocProvider<SkinCubit>|registerFactory<SkinCubit>|registerLazySingleton<SkinCubit>', t)
+    if re.search(r'\b(?:darkTheme|themeMode)\s*:', touched.get('lib/my_app.dart', '')):
+        v['skin_materialapp_dark_theme_or_mode'] += 1
     base = full.get(SKIN_DIR + 'app_skin.dart', '')
+    added_derived = []
     if SKIN_DIR + 'app_skin.dart' in touched:
         lines = base.splitlines()
         added = set(touched[SKIN_DIR + 'app_skin.dart'].splitlines())
@@ -558,14 +629,31 @@ def skin_checks(v, task, new, touched, full, code, dart, ui):
                     v['skin_slot_without_doc'] += 1
                 if re.match(r'\s*(?:double|int|num|bool|String|List<|Map<|BoxShadow|EdgeInsets|BorderRadius)', line):
                     v['skin_slot_not_color'] += 1
-    for name in re.findall(r'^\s*(?:Color|Gradient)\s+get\s+(\w+)\s*;', base, re.M):
+            m = re.match(r'\s*Color\s+get\s+(\w+)\s*=>', line)
+            if line in added and m:
+                added_derived.append(m.group(1))
+    abstract = re.findall(r'^\s*(?:Color|Gradient)\s+get\s+(\w+)\s*;', base, re.M)
+    json_skin = full.get(SKIN_DIR + 'json_skin.dart', '')
+    json_files = {r: t for r, t in full.items() if r.startswith('assets/skins/') and r.endswith('.json')}
+    for name in abstract:
         for sk in ('light_skin.dart', 'dark_skin.dart'):
             if not re.search(r'\bget\s+%s\b' % name, full.get(SKIN_DIR + sk, '')):
                 v['skin_abstract_slot_missing_in_a_skin'] += 1
+        # skins are a list: a new base slot must reach every JSON skin, or the parser rejects the file
+        if not re.search(r"'%s'" % name, base.split('derivedSlotNames')[0]):
+            v['skin_slot_not_in_name_list'] += 1
+        if not re.search(r'\bget\s+%s\b' % name, json_skin):
+            v['skin_slot_missing_in_json_skin_class'] += 1
+        v['skin_base_slot_missing_in_json_file'] += sum(1 for t in json_files.values() if '"%s"' % name not in t)
+    for name in added_derived:
+        if not re.search(r"'%s'" % name, base.split('derivedSlotNames')[-1]):
+            v['skin_slot_not_in_name_list'] += 1
+        if not re.search(r'\bget\s+%s\b' % name, json_skin):
+            v['skin_slot_missing_in_json_skin_class'] += 1
     if any(r.endswith('app_colors.dart') for r in new):
         v['skin_app_colors_file_created'] += 1
     ui_all = ' '.join(ui.values())
-    if task == 's1' and not re.search(r'\btoggleSkin\b|\bsetSkin\b', ui_all):
+    if task == 's1' and not re.search(r'\bselectSkin\b|SkinCubit>\(\)\s*\.\s*select\(', ui_all):
         v['s1_mode_not_switched_via_skin_cubit'] += 1
     if task == 's2':
         for sk, hexv in SKIN_GOLD.items():
@@ -580,13 +668,13 @@ def skin_checks(v, task, new, touched, full, code, dart, ui):
 
 
 def motion_checks(v, task, new, touched, full, dart):
-    """Skin fixture (it has AppMotion) and m2: animation timing comes from AppMotion tokens."""
-    # the skin fixture's file, or wherever an agent created one under app_themes/ (m2)
+    """Skin fixture (it has AppMotion) and m2: animation timing comes from tokens.motion."""
+    # the skin fixture's file, or wherever an agent created one under lib/core/theme/ (m2)
     MOTION_FILE = next((r for r in list(touched) + list(new)
-                        if r.startswith('lib/core/app_themes/') and r.endswith('app_motion.dart')), MOTION_FILE_DEFAULT)
+                        if r.startswith(THEME_DIR) and r.endswith('app_motion.dart')), MOTION_FILE_DEFAULT)
     not_animation = re.compile(r'Future\.delayed|\bTimer\b|timeout|debounce|Stream\.periodic|displayDuration|snack', re.I)
     for r, t in dart.items():
-        if r.startswith('lib/core/app_themes/') or role(r) == 'test':
+        if r.startswith(THEME_DIR) or role(r) == 'test':
             continue
         for line in t.splitlines():
             if not_animation.search(line):
@@ -596,18 +684,20 @@ def motion_checks(v, task, new, touched, full, dart):
             if re.search(r'\bindex\b', line) and re.search(r'\*', line) and re.search(r'Duration|milliseconds|staggerStep', line) \
                     and 'staggerAt' not in line:
                 v['motion_stagger_by_hand'] += 1
-        v['motion_token_outside_app_motion'] += count(r'static\s+const\s+(?:Duration|Curve|Motion)\b', t)
+        v['motion_token_outside_app_motion'] += count(
+            r'static\s+const\s+(?:Duration|Curve|Motion)\b|^\s*(?:Duration|Curve|Motion)\s+get\s+\w+\s*=>', t, re.M)
     if MOTION_FILE in touched or MOTION_FILE in new:
         lines = full.get(MOTION_FILE, '').splitlines()
         added = set((touched.get(MOTION_FILE) or new[MOTION_FILE]).splitlines())
+        token = re.compile(r'\s*(?:static\s+(?:const\s+|final\s+)?)?(?:Duration|Curve|Motion|double|int)\s+(?:get\s+\w+|\w+\s*(?:=|\())')
         for i, line in enumerate(lines):
-            if line in added and re.match(r'\s*static\s+(?:const\s+|final\s+)?[\w<>?]+\s+\w+\s*(?:=|\()', line):
+            if line in added and token.match(line):
                 prev = next((lines[j].strip() for j in range(i - 1, -1, -1) if lines[j].strip()), '')
                 if not prev.startswith('///'):
                     v['motion_token_without_doc'] += 1
     if task == 'm1':
         widgets = ' '.join(t for r, t in dart.items() if role(r) in ('ui', 'core'))
-        if not re.search(r'AppMotion\.(?:press|surface|exit|effects)Spring', widgets):
+        if not re.search(r'(?:motion|AppMotion\.standard)\.(?:press|surface|exit|effects)Spring', widgets):
             v['m1_press_not_spring'] += 1
     if task in ('m1', 'm2'):
         if not re.search(r'Duration\(\s*(?:milliseconds:\s*2000|seconds:\s*2)\s*\)', touched.get(MOTION_FILE) or new.get(MOTION_FILE, '')):
@@ -615,6 +705,8 @@ def motion_checks(v, task, new, touched, full, dart):
     if task == 'm2':
         if MOTION_FILE not in new:
             v['m2_no_app_motion_created'] += 1
+        elif not re.search(r'\bAppMotion\b', touched.get(TOKENS_FILE, '')):
+            v['m2_motion_group_not_added_to_tokens'] += 1
         if re.search(r'^\s*motor\s*:', touched.get('pubspec.yaml', ''), re.M):
             v['m2_added_motor_dependency'] += 1
         # the project ships design/prototype.html, so a new AppMotion should carry its durations (post hoc)

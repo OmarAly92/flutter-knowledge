@@ -45,16 +45,16 @@ description-based triggering only (see `CONTRIBUTING.md`).
 | Skill | Purpose | Loads |
 | --- | --- | --- |
 | **flutter-knowledge** | The map: always-on hard rules plus which skill to invoke before writing each kind of code. | Automatically |
-| **flutter-feature-structure** | Feature folder tree, `_screen` suffix, mirroring an existing equivalent file. | On demand, via `flutter-knowledge` or `/flutter-feature-structure` |
+| **flutter-feature-structure** | Feature folder tree, `_screen` suffix, the `lib/core/` folders, mirroring an existing equivalent file. | On demand, via `flutter-knowledge` or `/flutter-feature-structure` |
 | **flutter-data-layer** | Models, params, remote data sources, repositories, `EndPoints`, `Failure`. | On demand, via `flutter-knowledge` or `/flutter-data-layer` |
 | **flutter-cubit** | Cubit + state classes, per-method state naming, data and controller lifecycle. | On demand, via `flutter-knowledge` or `/flutter-cubit` |
-| **flutter-screen-ui** | Screen/Body split, widget structure, core wrappers, colors, text styles, spacing, localization, navigation. | On demand, via `flutter-knowledge` or `/flutter-screen-ui` |
-| **flutter-routing-di** | Routes, `BlocProvider` wiring, `get_it` service-locator setup. | On demand, via `flutter-knowledge` or `/flutter-routing-di` |
+| **flutter-screen-ui** | Screen/Body split, widget structure, core wrappers, design tokens through `context.tokens`, localization, navigation. | On demand, via `flutter-knowledge` or `/flutter-screen-ui` |
+| **flutter-routing-di** | Routes in `lib/core/router/`, `BlocProvider` wiring, per-feature `get_it` injection files. | On demand, via `flutter-knowledge` or `/flutter-routing-di` |
 | **drift-local-database** | Drift/SQLite local persistence: tables, DAOs, entities, migrations, local-only and hybrid repositories. | On demand, via `flutter-knowledge` or `/drift-local-database` |
 | **hive-local-database** | Hive (hive_ce) local persistence: boxes, storage↔model mapping, local-only and hybrid repositories. | On demand, via `flutter-knowledge` or `/hive-local-database` |
 | **flutter-testing** | Unit test conventions: mocktail mocks, bloc_test cubit tests, data source/repository/cubit coverage. | On demand, via `flutter-knowledge` or `/flutter-testing` |
 | **add-translation** | Add localization key(s) to `en.json` and `ar.json` in sync, then regenerate `locale_keys.g.dart`. | On demand, via `flutter-knowledge` or `/add-translation` |
-| **flutter-app-theme** | The theme layer: colors through an `AppSkin` (`context.skin`, adding slots, `SkinCubit`/`SkinScope`), `AppTextStyle`, `AppMotion` durations, curves, springs and stagger, shapes and radii, and `AppThemes.fromSkin` with the `ColorScheme` mapping. | On demand, via `flutter-knowledge` or `/flutter-app-theme` |
+| **flutter-app-theme** | The `lib/core/theme` layer: `AppTokens` read as `context.tokens` (skin colors, spacing, radii, text, elevation, motion, shapes), skins as a list (built-in + JSON, `SkinRegistry`, `SkinCubit.select`), and `AppTheme.of(skin)` with the `ColorScheme` mapping. | On demand, via `flutter-knowledge` or `/flutter-app-theme` |
 | **design-from-html-flutter** | Turn an HTML design prototype into skin colors, text styles, motion constants, core widgets, and per-screen design docs + implementation prompts. | On demand, via `flutter-knowledge` or `/design-from-html-flutter` |
 
 ## Install

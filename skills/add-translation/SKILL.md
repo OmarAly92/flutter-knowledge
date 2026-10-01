@@ -1,6 +1,6 @@
 ---
 name: add-translation
-description: Add one or more localization keys to both assets/translations/en.json and assets/translations/ar.json in sync, then regenerate lib/core/helpers/localization/locale_keys.g.dart. Use when the user asks to add a translation, add a string, add a new key, or wire up a new label/error message in the UI.
+description: Add one or more localization keys to both assets/translations/en.json and assets/translations/ar.json in sync, then regenerate lib/core/l10n/locale_keys.g.dart. Use when the user asks to add a translation, add a string, add a new key, or wire up a new label/error message in the UI.
 ---
 
 # Add translation key(s)
@@ -27,8 +27,10 @@ Argument: `$ARGUMENTS` = key + value, free-form. Examples:
 5. **Regenerate codegen.** Tell the user to run:
 
    ```
-   flutter pub run easy_localization:generate -S assets/translations -O lib/core/helpers/localization -f keys -o locale_keys.g.dart
+   dart run easy_localization:generate -S assets/translations -O lib/core/l10n -f keys -o locale_keys.g.dart
    ```
+
+   `-O` is the folder that already holds `locale_keys.g.dart` — `lib/core/l10n` in the standard layout.
 
    (or just `flutter pub get` if their setup regenerates on pub get). Do not run this yourself — leave it to the user, since it touches generated files and requires their toolchain.
 
@@ -42,6 +44,6 @@ Argument: `$ARGUMENTS` = key + value, free-form. Examples:
 
 - Do not stop to ask the user for the Arabic, and do not leave English placeholders in `ar.json` — translate it yourself.
 - Do not reference a `LocaleKeys.xxx` entry in code without adding `xxx` to both JSON files in the same change.
-- Do not edit `lib/core/helpers/localization/locale_keys.g.dart` by hand — it is generated.
+- Do not edit `lib/core/l10n/locale_keys.g.dart` by hand — it is generated.
 - Do not add keys to only one of the two JSON files.
 - Do not reorder or reformat unrelated entries in the JSON files.
