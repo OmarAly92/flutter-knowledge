@@ -2,11 +2,15 @@
 
 Measures whether agents follow the skills in this repo, so a skill change can be checked against `master` before it ships.
 
-Each run gives one agent a realistic Flutter project and one task. A static grader then counts which conventions the agent broke. The project has a real core layer (`ApiConsumer`, `GlobalResponse`, `NetworkStatus`, `Failure`/`Result`, `AppColors`, `AppTextStyle`, `LocaleKeys`, core widgets). It also contains legacy code that breaks the rules on purpose: `RoutesStrings._()`, an `orders` feature on Bloc with inline DI, and a `budget` feature whose params return a drift `Companion`. An agent that copies the code around it instead of following the skills gets caught.
+Each run gives one agent a realistic Flutter project and one task. A static grader then counts which conventions the agent broke. Every project is in the 2.0.0 shape the skills teach: design tokens read as `context.tokens` from `lib/core/theme/` (`AppSkin` with `LightSkin`/`DarkSkin`, `AppSpacing`, `AppRadius`, `AppTypography`, `AppElevation`, `AppTheme`), a data core in `lib/core/data/` (`ApiConsumer`, `GlobalResponse`, `Failure`/`Result`), `NetworkStatus` in `lib/core/services/`, `LocaleKeys` in `lib/core/l10n/`, the router library in `lib/core/router/`, the global `sl` in `lib/core/di/injection.dart`, one `<feature>_injection.dart` per feature wired through `lib/app_injection.dart`, a `test/app_injection_test.dart`, and core widgets grouped by role under `lib/core/widgets/`. Each project also contains legacy code that breaks the rules on purpose: `RoutesStrings._()`, an `orders` feature on Bloc whose injection file registers untyped `sl()` lookups, and (drift) a `budget` feature whose params return a drift `Companion` and whose data source core DI registers untyped. An agent that copies the code around it instead of following the skills gets caught.
 
-The newer tasks (f1, f2, t1, g1) run on a third project, `app`: the drift project plus a `trips` feature written the way the skills ask, shared email and phone validators, a legacy flat `test/` file that uses mockito, and a design prototype at `design/prototype.html`. The prototype is built like a standalone design export: its real CSS sits escaped inside a JS string, the page's own `<style>` holds a decoy `--primary`, and its font is embedded as compressed base64. Reading the file by eye gives the wrong values, so it tests whether an agent follows the design skill's extraction steps. Task m2 also runs here: `app` has no `AppMotion`, but the prototype defines motion tokens, so it checks that an agent creates one with documented tokens whose values come from the prototype.
+The newer tasks (f1, f2, t1, g1) run on a third project, `app`: the drift project plus a `trips` feature written the way the skills ask, shared email and phone validators, a legacy flat `test/` file that uses mockito, and a design prototype at `design/prototype.html`. The prototype is built like a standalone design export: its real CSS sits escaped inside a JS string, the page's own `<style>` holds a decoy `--primary`, and its font is embedded as compressed base64. Reading the file by eye gives the wrong values, so it tests whether an agent follows the design skill's extraction steps. Task m2 also runs here: `app` has no `AppMotion`, but the prototype defines motion tokens, so it checks that an agent creates one with documented tokens whose values come from the prototype, and adds it to `AppTokens` as the `motion` group.
 
-Tasks s1, s2 and m1 run on a fourth project, `skin`: the `app` project with `AppColors` replaced by an `AppSkin` layer (`LightSkin`/`DarkSkin`, `SkinScope` and `context.skin`, `SkinCubit` persisted through `CacheHelper`, `AppThemes.fromSkin`), plus an `AppMotion` token file with durations, curves, stagger helpers and `motor` springs. s1 and s2 check the skin part of the `flutter-app-theme` skill (called `flutter-app-skin` in 1.4.0): colors come from `context.skin`, a new color becomes a documented slot implemented in both skins, and the mode switch goes through `SkinCubit`. m1 checks its motion part: animation durations, curves, springs and stagger delays come from `AppMotion`, and a new timing becomes a documented token there. The legacy `orders` feature still uses raw colors, as a trap.
+Tasks s1, s2 and m1 run on a fourth project, `skin`: the `app` project with skins as a list (`SkinRegistry` holding the built-ins plus `assets/skins/ocean.json`, a `JsonSkin` with its parser, `SkinCubit.select` persisted through `CacheHelper`, `MaterialApp(theme: AppTheme.of(skin))`), plus an `AppMotion` token group with durations, curves, stagger helpers and `motor` springs. s1 and s2 check the skin part of the `flutter-app-theme` skill: colors come from `tokens.skin`, a new color becomes a documented slot implemented in both built-in skins and registered for JSON skins (the slot name lists, `JsonSkin`, every `assets/skins/*.json`), and the mode switch goes through `SkinCubit`. m1 checks its motion part: animation durations, curves, springs and stagger delays come from `tokens.motion`, and a new timing becomes a documented token there. The legacy `orders` feature still uses raw colors, as a trap.
+
+Task o1 runs on a fifth project, `older`: the `app` project on the pre-2.0 theme (a flat `AppColors` and a static `AppTextStyle` under `lib/core/app_themes/`, no `AppTokens`). It is f1 again, and checks the skills' older-project notes: the agent keeps the project's own theme classes and does not migrate it to `context.tokens` on the side.
+
+**The fixtures were ported to the 2.0.0 shape after the rounds below.** Those rounds ran on the pre-2.0 fixtures and grader (`lib/core/app_themes/`, `AppColors`/`context.skin`, `service_locator.dart` with `_xFeatureSetup`), so their numbers are not comparable with runs on the current fixtures. Run master and the branch on the same fixtures, as `prepare.py` does.
 
 ## Results so far (Sonnet 5.5, 2026-09-28)
 
@@ -73,7 +77,7 @@ Grader fixes from reading these runs: `created_new_wrapper` ignores effect widge
 
 | File | What it is |
 |---|---|
-| `build_fixtures.py` | Writes the drift, Hive and `app` fixture projects, plus a `-nowrap` copy of each with `PrimaryButton`, `AppTextField`, `AppLoader` and `AppErrorWidget` removed. |
+| `build_fixtures.py` | Writes the drift, Hive, `app`, `skin` and `older` fixture projects, plus a `-nowrap` copy of each with `PrimaryButton`, `AppTextField`, `AppLoader` and `AppErrorWidget` removed. |
 | `fixture_files/design/prototype.html` | The design prototype copied into the `app` fixture for task g1. |
 | `make_prototype.py` | Regenerates that prototype and its embedded font. It needs `fonttools`, and you only run it to change the prototype. |
 | `tasks.json` | The two agent prompt templates, the three modes, the tasks, and the default plan. |
@@ -101,6 +105,7 @@ Generated output goes to `benchmark/out/`, which git ignores.
 | s2 | skin | A "Premium" label in a new gold color that differs between light and dark mode |
 | m1 | skin | A staggered entrance for the trips list, a press that shrinks each card and springs back, and a slowly pulsing dot on upcoming trips |
 | m2 | app | The same as m1, on a project with no `AppMotion` yet |
+| o1 | older | f1 on a project that predates `context.tokens` |
 
 f1 and f2 cover what the first six tasks never reach: `EndPoints` methods that take an id, `registerFactoryParam` with `param1`, a bottom sheet given the cubit through `BlocProvider.value`, controllers and the form key on the cubit, prefilling through the initializer list, `dispose` in `close()`, and the shared validators. t1 checks the `flutter-testing` skill and g1 the `design-from-html-flutter` skill, including whether an agent in description-only mode reads them at all.
 
@@ -112,7 +117,7 @@ f1 and f2 cover what the first six tasks never reach: `EndPoints` methods that t
 | `desc` | Cursor, Kimi and `install.sh`, where the agent sees only skill descriptions |
 | `nowrap` | Forced mode on the project with four core widgets missing |
 
-The default plan is forced ×3 and desc ×1 on all ten tasks, plus nowrap ×2 on d1 and h1. That is 44 runs per version. To run only the newer tasks, use `--only forced:f1,f2,t1,g1:3 --only desc:f1,f2,t1,g1:1`.
+The default plan is forced ×3 and desc ×1 on d1–d4, h1, h2, f1, f2, t1, g1 and o1, plus nowrap ×2 on d1 and h1. That is 48 runs per version. To run only the newer tasks, use `--only forced:f1,f2,t1,g1:3 --only desc:f1,f2,t1,g1:1`.
 
 ## Running it
 
