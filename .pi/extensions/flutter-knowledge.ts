@@ -4,7 +4,7 @@ import { existsSync, readFileSync } from "node:fs";
 import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
 
 const extensionDir = dirname(fileURLToPath(import.meta.url));
-const skillsDir = resolve(extensionDir, "../..", "skills");
+const skillsDir = resolve(extensionDir, "../..", "plugins", "flutter-knowledge", "skills");
 const flutterSkillPath = join(skillsDir, "flutter-knowledge", "SKILL.md");
 
 function isFlutterProject(startDir: string): boolean {
@@ -26,7 +26,7 @@ function loadSkillBody(): string {
 /**
  * Flutter Knowledge extension for Pi.
  *
- * Registers this repo's skills/ directory so Pi discovers the flutter-knowledge
+ * Registers plugins/flutter-knowledge/skills/ so Pi discovers the flutter-knowledge
  * and add-translation SKILL.md files via description-based triggers, AND
  * force-injects the flutter-knowledge conventions into the system prompt
  * whenever the workspace has a pubspec.yaml — so the conventions apply even

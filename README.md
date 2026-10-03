@@ -1,5 +1,11 @@
 # Flutter Knowledge
 
+Two plugins for coding agents on Flutter apps: **`flutter-knowledge`**, the
+code conventions described first below, and **`flutter-design-handoff`**, which
+keeps the UI matching its design (see [below](#flutter-design-handoff)).
+`flutter-knowledge` works on its own; `flutter-design-handoff` needs
+`flutter-knowledge`, whose skills it builds on.
+
 Flutter/Dart skills for coding agents. Install once and your agent follows a
 consistent set of full-stack Flutter conventions — feature architecture, the
 data layer, Cubit state management, dependency injection, routing, the core UI
@@ -54,27 +60,51 @@ description-based triggering only (see `CONTRIBUTING.md`).
 | **hive-local-database** | Hive (hive_ce) local persistence: boxes, storage↔model mapping, local-only and hybrid repositories. | On demand, via `flutter-knowledge` or `/hive-local-database` |
 | **flutter-testing** | Unit test conventions: mocktail mocks, bloc_test cubit tests, data source/repository/cubit coverage. | On demand, via `flutter-knowledge` or `/flutter-testing` |
 | **add-translation** | Add localization key(s) to `en.json` and `ar.json` in sync, then regenerate `locale_keys.g.dart`. | On demand, via `flutter-knowledge` or `/add-translation` |
-| **flutter-app-theme** | The `lib/core/theme` layer: `AppTokens` read as `context.tokens` (skin colors, spacing, radii, text, elevation, motion, shapes), skins as a list (built-in + JSON, `SkinRegistry`, `SkinCubit.select`), and `AppTheme.of(skin)` with the `ColorScheme` mapping. | On demand, via `flutter-knowledge` or `/flutter-app-theme` |
+| **flutter-app-theme** | The `lib/core/theme` layer: `AppTokens` read as `context.tokens` (skin colors, spacing, radii, text, elevation, motion, shapes), skins as a list (built-in + JSON, `SkinRegistry`, `SkinCubit.select`), `AppTheme.of(skin)` with the `ColorScheme` mapping, when a design's value becomes a token, and `scripts/token_audit.py`, an audit that finds hardcoded values. | On demand, via `flutter-knowledge` or `/flutter-app-theme` |
 | **design-from-html-flutter** | Turn an HTML design prototype into skin colors, text styles, motion constants, core widgets, and per-screen design docs + implementation prompts. | On demand, via `flutter-knowledge` or `/design-from-html-flutter` |
+
+## flutter-design-handoff
+
+A second plugin for the step between a design and the app, built on the
+conventions above. It started as a copy of [Mohamed Draz's `flutter-design-fidelity`](https://github.com/draz26648/flutter_craft_skills)
+(MIT). It is written for projects on the current theme layer
+(`context.tokens`).
+
+| Skill | Purpose |
+| --- | --- |
+| **figma-to-widget** | Turns a Figma frame into widgets: Auto Layout to `Row`/`Column`, gaps to `VerticalSpace`, variables and styles to `context.tokens`, component instances to existing core widgets, `Stack` only where layers overlap. |
+| **html-to-widget** | Turns an HTML prototype into widgets: reads the computed CSS with `scripts/layout-tree.js`, then maps flex to `Row`/`Column`, gaps to `VerticalSpace`, values to `context.tokens`, and JS-toggled states to cubit states. |
+| **visual-verification** | Captures the screen headless as a golden and the design at the same size (750×1624), diffs them with `scripts/compare.py`, and fixes until it matches — four rounds of guesses, then only fixes whose cause is known. |
+| **golden-tests** | Locks the matched screen in plain `flutter_test` goldens through a shared harness (the app's theme, real fonts and shadows), across the other skin, Arabic, 2× text and a small phone. |
+
+It ships for Claude Code, Codex and `install.sh`. Its skills load from their
+descriptions; it has no hook.
 
 ## Install
 
-Install separately for each harness you use. Every method points at the same
-`skills/` directory, so updating is always "pull the latest."
+Install separately for each harness you use. Every method reads the skills
+straight from this repo (`plugins/<plugin>/skills/`), so updating is always
+"pull the latest." Gemini, OpenCode, Pi, Cursor and Kimi get
+`flutter-knowledge` only.
 
 ### Claude Code
 
 ```bash
 /plugin marketplace add OmarAly92/flutter-knowledge
 /plugin install flutter-knowledge@flutter-skills
+/plugin install flutter-design-handoff@flutter-skills
 ```
 
-Update: run both of these — the first refreshes the marketplace metadata, the second actually pulls the new version in.
+The last line is optional; it adds `flutter-design-handoff`.
+
+Update from a terminal — the first command refreshes the marketplace metadata, the second pulls the new version in:
 
 ```bash
-/plugin marketplace update flutter-skills
-/plugin install flutter-knowledge@flutter-skills
+claude plugin marketplace update flutter-skills
+claude plugin update flutter-knowledge@flutter-skills
 ```
+
+`claude plugin update flutter-design-handoff@flutter-skills` updates `flutter-design-handoff` the same way; `/plugin install flutter-design-handoff@flutter-skills` adds it to an existing install.
 
 ### Gemini CLI
 
@@ -112,25 +142,29 @@ Run these in your OS terminal/shell — not inside an active Codex chat session
 ```bash
 codex plugin marketplace add OmarAly92/flutter-knowledge
 codex plugin add flutter-knowledge@flutter-skills
+codex plugin add flutter-design-handoff@flutter-skills
 ```
 
 Then start a new Codex session to pick up the plugin. It reads
-`.codex-plugin/plugin.json`, which registers `./skills/` and — like Claude
+`plugins/flutter-knowledge/.codex-plugin/plugin.json`, which registers that
+plugin's `skills/` and — like Claude
 Code — wires up the `SessionStart` hook that force-loads `flutter-knowledge`
 for Flutter projects.
 
-Update: run both of these — the first refreshes the marketplace metadata, the second reinstalls the latest version.
+Update: run both of these — the first refreshes the marketplace snapshot, the second reinstalls the latest version.
 
 ```bash
-codex plugin marketplace add OmarAly92/flutter-knowledge
+codex plugin marketplace upgrade flutter-skills
 codex plugin add flutter-knowledge@flutter-skills
 ```
+
+`codex plugin add flutter-design-handoff@flutter-skills` updates or adds `flutter-design-handoff` the same way.
 
 ### Cursor / Kimi
 
 Add this repo through the harness's plugin/extension manager. Each reads its own
 manifest — `.cursor-plugin/plugin.json`, `.kimi-plugin/plugin.json` — which
-registers `./skills/`. Unlike Codex, these two are description-based triggering
+registers `./plugins/flutter-knowledge/skills/`. Unlike Codex, these two are description-based triggering
 only; no hook is wired up.
 
 ### Any other agent (universal fallback)
@@ -143,16 +177,21 @@ cd flutter-knowledge
 ./install.sh
 ```
 
-This symlinks each skill into `~/.claude/skills/` (override with
+This symlinks the skills of both plugins into `~/.claude/skills/`, skipping any name that already exists there as a real folder (override the target with
 `CLAUDE_SKILLS_DIR=/path ./install.sh`). Update with `git pull` and re-run
 `./install.sh`.
 
 ## Repo structure
 
-`skills/` is the single source of truth. Every harness manifest is a thin
-adapter that points at it — see [`CONTRIBUTING.md`](./CONTRIBUTING.md) for the full map and
-how to add a skill or cut a release.
+Each plugin lives in `plugins/<name>/` with its own Claude Code and Codex
+manifests and its `skills/` folder, the single source of truth for that
+plugin. The repo root holds the two marketplaces and the Cursor, Kimi,
+Gemini, OpenCode and Pi entry points, which point at
+`plugins/flutter-knowledge/skills/`. See [`CONTRIBUTING.md`](./CONTRIBUTING.md)
+for the full map and how to add a skill or cut a release.
 
 ## License
 
-MIT — see [`LICENSE`](./LICENSE).
+MIT — see [`LICENSE`](./LICENSE). `flutter-design-handoff` carries its own
+[`LICENSE`](./plugins/flutter-design-handoff/LICENSE), which keeps Mohamed
+Draz's copyright for the skills it was copied from.

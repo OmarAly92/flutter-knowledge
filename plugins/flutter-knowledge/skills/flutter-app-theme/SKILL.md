@@ -1,11 +1,11 @@
 ---
 name: flutter-app-theme
-description: Theme conventions for a Flutter app's lib/core/theme layer — the AppTokens ThemeExtension read as context.tokens (skin colors, space, radius, text, elevation, motion, shape), skins as a list (built-in LightSkin/DarkSkin plus JSON skins in a SkinRegistry, chosen with SkinCubit.select and a picker sheet), AppTypography text styles, AppMotion durations/curves/springs/stagger, AppSpacing/AppRadius/AppElevation, AppShapes, and ThemeData built by AppTheme.of(skin) with the ColorScheme mapping. Use before writing any animation, duration or curve; adding a color, spacing, radius, text style, shadow, motion or shape token; adding or switching a skin; touching ThemeData; or editing a file under lib/core/theme/.
+description: Theme conventions for a Flutter app's lib/core/theme layer — the AppTokens ThemeExtension read as context.tokens (skin colors, space, radius, text, elevation, motion, shape), skins as a list (built-in LightSkin/DarkSkin plus JSON skins in a SkinRegistry, chosen with SkinCubit.select and a picker sheet), AppTypography text styles, AppMotion durations/curves/springs/stagger, AppSpacing/AppRadius/AppElevation, AppShapes, ThemeData built by AppTheme.of(skin) with the ColorScheme mapping, when a design's value becomes a token, and an audit script for hardcoded values. Use before writing any animation, duration or curve; matching a design's values to tokens or deciding whether a value becomes a token; adding a color, spacing, radius, text style, shadow, motion or shape token; adding or switching a skin; touching ThemeData; auditing UI code for hardcoded values; or editing a file under lib/core/theme/.
 ---
 
 # App theme (`lib/core/theme`)
 
-Invoked by the `flutter-knowledge` skill (or directly via `/flutter-app-theme`). The theme layer holds every visual value the app shares — colors, spacing, radii, text styles, shadows, motion, shapes — and the `ThemeData` that hands them to Material. **Feature code never invents a visual value — it picks a token. A missing token is added to the theme layer, with a `///` doc comment saying what it is for and `Example:` naming a real place in the UI, and then picked.**
+Invoked by the `flutter-knowledge` skill (or directly via `/flutter-app-theme`). The theme layer holds every visual value the app shares — colors, spacing, radii, text styles, shadows, motion, shapes — and the `ThemeData` that hands them to Material. **Feature code never invents a visual value — it picks a token. When none fits, "When a value becomes a token" decides between the nearest step and a new token; a new one is added to the theme layer with a `///` doc comment saying what it is for and `Example:` naming a real place in the UI, and then picked.**
 
 **Follow the project first.** Before adding anything, read the theme files for the part you are touching and mirror them (names, which tokens exist, which helpers exist). If the project documents its theme (`lib/core/theme/README.md`, `lib/core/theme/skin/README.md`, `assets/skins/README.md`, `docs/design/*.md`), read the relevant doc first — it is that project's own reference. The shapes below are the default when you build a part from scratch, and the yardstick when the project's version is incomplete.
 
@@ -86,6 +86,31 @@ await tester.pumpWidget(
 );
 ```
 
+## When a value becomes a token
+
+Match a design's values by value — a name in the design is only a hint: a color to the `tokens.skin` slot that has it in the skin the design is drawn in, px to a `tokens.space` or `tokens.radius` step, a font size, weight and line height to a `tokens.text` style, a shadow to a `tokens.elevation`, a duration or easing to `tokens.motion`. List what does not match and report it before writing code. Then:
+
+| The design's value | Do |
+| --- | --- |
+| Equals a token | use it |
+| Between two steps of a scale (14 where spacing has 12 and 16) | build it with the nearest step, the smaller one on a tie, and report it — usually a slip in the design |
+| Beyond the scale's ends (48 when spacing stops at 32) | add a step, e.g. `double get huge => 48;` |
+| A new kind of value — a color, a text style, a shadow used in more than one place | add it; a color is a skin slot, with a value in every skin |
+| A one-off shadow | may stay inline; its color comes from the skin |
+| The user decided the design's values are the source of truth | add every value |
+
+A new token is named for its role or its place on the scale — `space.formGap`, `space.huge`, `text.fieldLabel`, a slot `success`, not `green` — and carries its `///` doc comment.
+
+## Audit
+
+Find hardcoded values in a feature (or `lib/core/widgets`) with the bundled script; resolve `<skill-directory>` from this `SKILL.md`'s path:
+
+```bash
+python3 "<skill-directory>/scripts/token_audit.py" lib/feature/<feature>/presentation
+```
+
+It prints `path:line: snippet` for each literal color, padding, gap, radius, text style, shadow and duration and each `Theme.of(context)` lookup, and exits 1 when it finds any. Each hit becomes a token per the table above, or is reported; an icon or avatar size stays, and so does a `Duration` that does not time an animation. Never audit `lib/core/theme/`, where the literals belong; the script skips it.
+
 ## Colors (the skin)
 
 ### The one rule
@@ -94,7 +119,7 @@ await tester.pumpWidget(
 
 - Never a raw `Color(0x…)` or `Colors.x` in presentation code (`Colors.transparent` is the one exception). Reaching for one means a slot is missing: add the slot (see "Adding a color").
 - Never `Theme.of(context).colorScheme.…` in the app's own widgets. The `ColorScheme` exists for Material's widgets and third-party packages.
-- Never pick a color by checking the mode in a widget (`themeMode == ThemeMode.dark ? … : …`). If skins need different colors, that difference belongs in the skins.
+- A widget never asks which skin is active — no `themeMode == ThemeMode.dark`, `Theme.of(context).brightness`, skin `id` or `isDark` check to pick a color. A color that differs between skins is a slot, and the skins decide.
 
 The only place a raw `Color(0x…)` is written is inside a built-in skin (and, for fixed design constants such as a brand gradient, inside an `AppSkin` default getter). JSON skins write hex strings.
 
@@ -109,7 +134,10 @@ class SectionChip extends StatelessWidget {
     final tokens = context.tokens;
     return Center(
       child: Container(
-        padding: EdgeInsets.symmetric(horizontal: tokens.space.md, vertical: tokens.space.xs),
+        padding: EdgeInsets.symmetric(
+          horizontal: tokens.space.md,
+          vertical: tokens.space.xs,
+        ),
         decoration: BoxDecoration(
           color: tokens.skin.card,
           borderRadius: tokens.radius.pill,
@@ -242,12 +270,8 @@ A **Dart** skin is only for a new built-in: extend `AppSkin` with a unique `id` 
 ```dart
 /// Uppercase section labels like 'PREFERENCES' — pair with
 /// toUpperCase() at the call site.
-TextStyle get overline => _textStyle(
-      11,
-      FontWeightHelper.medium,
-      height: 1.3,
-      tracking: 0.08,
-    );
+TextStyle get overline =>
+    _textStyle(11, FontWeightHelper.medium, height: 1.3, tracking: 0.08);
 ```
 
 The generator is the only place `flutter_screenutil` scales type, the only place a font fallback is attached (so Arabic still renders in a Latin display or mono family), and where tracking in `em` becomes `letterSpacing`:
@@ -277,12 +301,12 @@ The app-wide default family and its fallback are set once, in `AppTheme` (`fontF
 
 - **`tokens.space`** — gaps and padding: `VerticalSpace(tokens.space.sm)`, `EdgeInsets.all(tokens.space.lg)`, `padding: tokens.space.screenH`. Values are `double`s.
 - **`tokens.radius`** — `decoration: BoxDecoration(borderRadius: tokens.radius.card)`; for one corner, `Radius.circular(tokens.radius.xlValue)`. Prefer the semantic names (`card`, `input`, `button`, `sheet`) when they fit.
-- **`tokens.elevation`** — `boxShadow: tokens.elevation.high`; a glowing CTA uses `tokens.elevation.glow()` (pass `color: tokens.skin.dangerGlow` for destructive). A genuinely one-off shadow may stay inline, but its color still comes from the skin.
-- A missing step is a getter on the group's class with the exact value (`double get huge => 48;` in `AppSpacing`), documented — not a literal at the call site. Fixed sizes that are not spacing (an icon size, an avatar diameter) stay plain numbers at the call site.
+- **`tokens.elevation`** — `boxShadow: tokens.elevation.high`; a glowing CTA uses `tokens.elevation.glow()` (pass `color: tokens.skin.dangerGlow` for destructive).
+- A new step is a getter on the group's class (`AppSpacing`, `AppRadius`) with the exact value, documented — never a literal at the call site. Fixed sizes that are not spacing (an icon size, an avatar diameter) stay plain numbers at the call site.
 
 ## Motion — `tokens.motion`
 
-`AppMotion` (`lib/core/theme/motion/app_motion.dart`) is an `@immutable` class with `static const standard` and one getter per token. Every animation picks its timing from it: **no `Duration(milliseconds: …)`, `Curves.x` or `Cubic(…)` for an animation outside `lib/core/theme/`.** A value that is not there is a missing token.
+`AppMotion` (`lib/core/theme/motion/app_motion.dart`) is an `@immutable` class with `static const standard` and one getter per token. Every animation picks its timing from it: **no `Duration(milliseconds: …)`, `Curves.x` or `Cubic(…)` for an animation outside `lib/core/theme/`.**
 
 The tokens, by kind. This is the shape and naming to mirror; the numbers are one app's design, not defaults to copy (see "Adding a token" for where values come from):
 

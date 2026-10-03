@@ -24,15 +24,15 @@ Argument: `$ARGUMENTS` = key + value, free-form. Examples:
 
 4. **Edit both files.** Add the new entry in the same logical location in each file (group related keys together — e.g., put a new validation message near other `*IsRequired` keys). Preserve JSON formatting (2-space indent, trailing comma rules matching the existing file). Both files must remain in the same key order.
 
-5. **Regenerate codegen.** Tell the user to run:
+5. **Regenerate the keys.** Adding a key includes regenerating `locale_keys.g.dart` — code generation, not a build. If you can run commands and the project's `CLAUDE.md` / `AGENTS.md` does not forbid it, run this from the project root:
 
    ```
    dart run easy_localization:generate -S assets/translations -O lib/core/l10n -f keys -o locale_keys.g.dart
    ```
 
-   `-O` is the folder that already holds `locale_keys.g.dart` — `lib/core/l10n` in the standard layout.
+   `-O` is the folder that already holds `locale_keys.g.dart` — `lib/core/l10n` in the standard layout. It rewrites only that file, from the JSON; code that uses the new keys then passes `flutter analyze`.
 
-   (or just `flutter pub get` if their setup regenerates on pub get). Do not run this yourself — leave it to the user, since it touches generated files and requires their toolchain.
+   If you cannot run commands, or the project forbids it, give the user that command, and say that the code using the new keys compiles once it has run.
 
 6. **Show usage.** Print a one-liner showing how to use the new key in code, e.g.:
 
@@ -44,6 +44,7 @@ Argument: `$ARGUMENTS` = key + value, free-form. Examples:
 
 - Do not stop to ask the user for the Arabic, and do not leave English placeholders in `ar.json` — translate it yourself.
 - Do not reference a `LocaleKeys.xxx` entry in code without adding `xxx` to both JSON files in the same change.
+- Do not leave a user-facing string out — a placeholder, a hint, an empty-state line — because its key does not exist yet. Add the key.
 - Do not edit `lib/core/l10n/locale_keys.g.dart` by hand — it is generated.
 - Do not add keys to only one of the two JSON files.
 - Do not reorder or reformat unrelated entries in the JSON files.

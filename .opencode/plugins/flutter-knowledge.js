@@ -1,7 +1,7 @@
 /**
  * Flutter Knowledge plugin for OpenCode.ai
  *
- * Registers this repo's skills/ directory with OpenCode so its SKILL.md files
+ * Registers plugins/flutter-knowledge/skills/ with OpenCode so its SKILL.md files
  * are discovered via description-based triggers, AND force-injects the
  * flutter-knowledge conventions into the system prompt whenever the project
  * has a pubspec.yaml — so the conventions apply even if the model doesn't
@@ -13,7 +13,7 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const skillsDir = path.resolve(__dirname, '../../skills');
+const skillsDir = path.resolve(__dirname, '../../plugins/flutter-knowledge/skills');
 const flutterSkillPath = path.join(skillsDir, 'flutter-knowledge', 'SKILL.md');
 
 function isFlutterProject(startDir) {

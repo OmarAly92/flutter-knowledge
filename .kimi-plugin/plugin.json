@@ -1,6 +1,6 @@
 {
   "name": "flutter-knowledge",
-  "version": "2.0.0",
+  "version": "2.1.0",
   "description": "Full-stack Flutter/Dart conventions: a hard-rules map skill plus on-demand mini skills and helpers.",
   "author": {
     "name": "Omar Aly",
@@ -16,7 +16,7 @@
     "conventions",
     "localization"
   ],
-  "skills": "./skills/",
+  "skills": "./plugins/flutter-knowledge/skills/",
   "interface": {
     "displayName": "Flutter Knowledge",
     "shortDescription": "Flutter/Dart conventions and localization workflows",

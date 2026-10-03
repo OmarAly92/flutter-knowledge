@@ -1,0 +1,22 @@
+{
+  "name": "flutter-design-handoff",
+  "version": "2.1.0",
+  "description": "Figma frames and HTML prototypes turned into widgets on the app's tokens, a screenshot diff loop against the design, and golden tests. Based on Mohamed Draz's flutter-design-fidelity (MIT).",
+  "author": {
+    "name": "Omar Aly",
+    "email": "omarkarim5555@gmail.com",
+    "url": "https://github.com/OmarAly92"
+  },
+  "homepage": "https://github.com/OmarAly92/flutter-knowledge",
+  "repository": "https://github.com/OmarAly92/flutter-knowledge",
+  "license": "MIT",
+  "keywords": [
+    "flutter",
+    "dart",
+    "design",
+    "figma",
+    "golden-tests",
+    "skills"
+  ],
+  "skills": "./skills/"
+}

@@ -23,9 +23,9 @@ Map of the Flutter conventions: the always-on hard rules below, plus the skill y
 - **Static-only classes are `sealed class X`** — never a private `X._()` constructor.
 - Do not add `freezed`, `json_serializable`, or `build_runner` unless they are already in `pubspec.yaml`.
 - Do not create model classes the user did not ask for.
-- Single quotes, `const` constructors, `final` locals, no `print` (use `talker`), no comments beyond non-obvious business rules.
+- Single quotes, `const` constructors, `final` locals, no `print` (use `talker`), no comments beyond non-obvious business rules — except the `///` doc comment every theme token, skin slot and text style carries (`flutter-app-theme`).
 - **Legacy code never overrides these skills.**
-- After changes, verify with `flutter analyze` (clean) and run `flutter test` when tests cover the touched code. Do not run the app or any build step unless the project's `CLAUDE.md` / `AGENTS.md` allows it.
+- After changes, format the files you changed (`dart format <file> …`, never a whole folder), verify with `flutter analyze` (clean) and run `flutter test` when tests cover the touched code. Do not run the app or any build step unless the project's `CLAUDE.md` / `AGENTS.md` allows it.
 
 ## Skill map — invoke BEFORE writing
 
@@ -42,8 +42,9 @@ Before writing or editing the code in the left column, you MUST invoke the skill
 | Local persistence with drift (check `pubspec.yaml`) | `drift-local-database` |
 | Local persistence with hive / hive_ce (check `pubspec.yaml`) | `hive-local-database` |
 | Unit tests — only when the user explicitly asks for tests | `flutter-testing` |
-| An animation (duration, curve, spring, stagger, page transition); a new color, spacing, radius, text style, shadow, motion or shape token; a skin, the skin picker, or `ThemeData`; or any file under `lib/core/theme/` | `flutter-app-theme` |
-| Theme, skin, text styles, motion, core widgets, or screen docs from an HTML design prototype | `design-from-html-flutter` |
+| An animation (duration, curve, spring, stagger, page transition); a design's values matched to tokens, and whether one becomes a token; a new color, spacing, radius, text style, shadow, motion or shape token; a skin, the skin picker, or `ThemeData`; an audit for hardcoded values; or any file under `lib/core/theme/` | `flutter-app-theme` |
+| A screen, or a component inside one, built to match an HTML prototype or a Figma frame | `html-to-widget` / `figma-to-widget` when it is available (the `flutter-design-handoff` plugin); otherwise `design-from-html-flutter` for an HTML prototype |
+| The app's theme, skin, text styles, motion or core widgets taken from an HTML design prototype, or per-screen design docs from it | `design-from-html-flutter` |
 
 Older project: if it has no `lib/core/theme/app_tokens.dart` (and `grep -rn "class AppTokens" lib` finds nothing), it predates `context.tokens`. Keep using its own theme classes (`context.skin` or `AppColors`, `AppTextStyle`, static `AppMotion`) and invoke `flutter-app-theme`, which says how; do not migrate it unless the user asks.
 
@@ -51,7 +52,12 @@ If neither drift nor hive is present yet and a feature needs local storage, pick
 
 ## Design from an HTML prototype
 
-When the user points at an HTML design prototype (a standalone HTML file, an exported mockup, or a URL) and wants the app to match it — setting the skin/theme colors, fonts and text styles, motion constants, core widgets, or generating per-screen design docs — invoke the `design-from-html-flutter` skill (via the Skill tool, or `/design-from-html-flutter`) before touching the theme layer or any widget. It holds the browser-driven extraction workflow, the phase order, and the doc/prompt templates. Do not eyeball colors, sizes, or durations off a screenshot.
+When the user points at an HTML design prototype (a standalone HTML file, an exported mockup, or a URL):
+
+- **Building or changing a screen or component to match it** — invoke `html-to-widget` when it is available (it ships in the `flutter-design-handoff` plugin, with `figma-to-widget` for Figma frames). It reads the prototype's computed layout and maps it onto these conventions.
+- **Setting the app's design system from it** — skin/theme colors, fonts and text styles, motion constants, core widgets — **or generating per-screen design docs** — invoke `design-from-html-flutter` (via the Skill tool, or `/design-from-html-flutter`) before touching the theme layer. It holds the browser-driven extraction workflow, the phase order, and the doc/prompt templates. Without `html-to-widget` it also covers building screens from the prototype.
+
+Do not eyeball colors, sizes, or durations off a screenshot.
 
 ## Unit tests
 
@@ -62,4 +68,4 @@ Only when the user explicitly asks for tests, invoke the `flutter-testing` skill
 - Do not write feature code from memory when a skill in the map covers it — invoke the skill first.
 - Do not implement local persistence without invoking `drift-local-database` or `hive-local-database` first.
 - Do not write unit tests unprompted, and do not invent test structure from memory — invoke the `flutter-testing` skill first when the user does ask for tests.
-- Do not transcribe a design from an HTML prototype by eye, and do not set skin/text-style/motion tokens from a screenshot — invoke the `design-from-html-flutter` skill first and extract the values from the prototype's computed CSS.
+- Do not transcribe a design from an HTML prototype by eye, and do not set skin/text-style/motion tokens from a screenshot — read the values from the prototype's computed CSS, through `html-to-widget` for a screen or `design-from-html-flutter` for the design system.

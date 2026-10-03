@@ -19,9 +19,11 @@ if ! echo "$NEW" | grep -Eq '^[0-9]+\.[0-9]+\.[0-9]+$'; then
 fi
 
 FILES=(
-  ".claude-plugin/plugin.json"
   ".claude-plugin/marketplace.json"
-  ".codex-plugin/plugin.json"
+  "plugins/flutter-knowledge/.claude-plugin/plugin.json"
+  "plugins/flutter-knowledge/.codex-plugin/plugin.json"
+  "plugins/flutter-design-handoff/.claude-plugin/plugin.json"
+  "plugins/flutter-design-handoff/.codex-plugin/plugin.json"
   ".cursor-plugin/plugin.json"
   ".kimi-plugin/plugin.json"
   "gemini-extension.json"

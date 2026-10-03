@@ -5,7 +5,7 @@ Usage:
   prepare.py --version master=/path/to/master-checkout --version pr=/path/to/branch-checkout
              [--out benchmark/out] [--only MODE:TASKS:REPS ...] [--fresh]
 
-Each --version is NAME=PATH, where PATH is a checkout of this repo (it must contain skills/).
+Each --version is NAME=PATH, where PATH is a checkout of this repo (plugins/flutter-knowledge/skills/, or skills/ before the split).
 NAME becomes the first part of every run name, so it must not contain '-'.
 Without --only, the default_plan in tasks.json runs (forced x3, desc x1, nowrap x2 on d1/h1).
 --only forced:d1,d2:3 runs just that slice; repeat it to add more slices.
@@ -31,6 +31,13 @@ def frontmatter(path):
         if v:
             fields[k.strip()] = v.strip().strip('"\'')
     return fields
+
+
+def skills_root(checkout):
+    for root in (os.path.join(checkout, 'plugins', 'flutter-knowledge'), checkout):
+        if os.path.isfile(os.path.join(root, 'skills', 'flutter-knowledge', 'SKILL.md')):
+            return root
+    return None
 
 
 def skill_index(version_path, out_file):
@@ -61,10 +68,10 @@ def main():
     versions = []
     for v in a.version:
         name, _, path = v.partition('=')
-        path = os.path.abspath(path)
-        if not name or '-' in name or not os.path.isdir(os.path.join(path, 'skills')):
-            sys.exit(f'bad --version {v!r}: need NAME=PATH, NAME without "-", PATH containing skills/')
-        versions.append((name, path))
+        root = skills_root(os.path.abspath(path))
+        if not name or '-' in name or root is None:
+            sys.exit(f'bad --version {v!r}: need NAME=PATH, NAME without "-", PATH a checkout of this repo')
+        versions.append((name, root))
 
     if a.only:
         plan = []

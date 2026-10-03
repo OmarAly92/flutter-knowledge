@@ -5,7 +5,7 @@ description: Flutter screen and widget UI conventions — Screen/Body split with
 
 # Flutter screen & UI
 
-Invoked by the `flutter-knowledge` skill (or directly via `/flutter-screen-ui`) before writing or editing any screen, body, widget, bottom sheet, dialog, or styling code. Related skills: `add-translation` whenever a needed `LocaleKeys` entry is missing, `flutter-cubit` for the cubit the UI reads, `flutter-routing-di` for where the `BlocProvider` lives, `flutter-feature-structure` for where widget files go, and `design-from-html-flutter` when the UI must match an HTML prototype.
+Invoked by the `flutter-knowledge` skill (or directly via `/flutter-screen-ui`) before writing or editing any screen, body, widget, bottom sheet, dialog, or styling code. Related skills: `add-translation` whenever a needed `LocaleKeys` entry is missing, `flutter-cubit` for the cubit the UI reads, `flutter-routing-di` for where the `BlocProvider` lives, `flutter-feature-structure` for where widget files go, and `html-to-widget` when the UI must match an HTML prototype (`design-from-html-flutter` for the design system, or for screens when `html-to-widget` is not available).
 
 **These conventions are the source of truth.** Existing codebases may be old and inconsistent — where legacy code contradicts this skill, follow the skill and do NOT copy the legacy pattern.
 
@@ -135,4 +135,4 @@ Widget build(BuildContext context) {
 - Do not inline raw string literals into widgets shown to the user. Every user-facing string is `LocaleKeys.xxx.tr()`.
 - Do not write raw `TextStyle(fontSize: …, fontWeight: …, …)`, a `Color(0x…)`, a literal radius or spacing number, or `Theme.of(context).colorScheme` in presentation widgets. Read `context.tokens` (`.text`, `.skin`, `.radius`, `.space`).
 - Do not use `flutter_screenutil` extensions (`.h`, `.w`, `.r`, `.sp`, `.spMin`, `.dm`) in feature presentation code. Spacing and radii come from `context.tokens.space` / `.radius`; fonts from `context.tokens.text`. (Existing code that did this is legacy; do not copy it.)
-- Do not transcribe a design from an HTML prototype by eye, and do not set skin/text-style/motion tokens from a screenshot — invoke the `design-from-html-flutter` skill first and extract the values from the prototype's computed CSS.
+- Do not transcribe a design from an HTML prototype by eye, and do not set skin/text-style/motion tokens from a screenshot — read the values from the prototype's computed CSS, through `html-to-widget` for a screen (when it is available) or `design-from-html-flutter` for the design system.
