@@ -1,0 +1,42 @@
+# HTML source extraction
+
+This reference owns HTML foundation extraction. For per-screen geometry use `scripts/layout-tree.js` from the parent skill. The [workflow](../../flutter-knowledge/references/workflows.md) decides whether facts become planning briefs or implementation; the theme skill owns all token/code changes. [set-theme-from-html](../../set-theme-from-html/SKILL.md) orchestrates whole-design foundation application after core and owns original asset import; it uses this same extraction owner and the shared layout script.
+
+## Explore the requested scope
+
+Open the actual source at its intended viewport. Drive its navigation and states, including requested sheets/dialogs and available themes. For whole-app planning or `/set-theme-from-html`, inventory every reachable screen/view, shared component, supplied theme and relevant state; a single-screen task inspects only that screen and relevant shared foundations. Confirm behavior through DOM state and interaction rather than appearance. Record the source path, root selector/state, dimensions, assets and broken dependencies.
+
+Use the available browser's supported controls. If permitted headless browser tooling is needed, use an installed browser rather than silently downloading another. Wait for fonts and entrance animations before reference capture. Source capture profiles and PNG comparisons belong to `visual-verification`.
+
+## Capture boundary and visible composition
+
+A screen subtree is not necessarily what the reference PNG shows. App shells, drawer handles, fixed navigation, toasts and overlays can sit outside the screen root yet inside the captured pixels. Use `captureComposition(screenSelector, { captureTarget: '<selector>' })` from `scripts/layout-tree.js` once the requested state is settled. `layoutTree` keeps its existing output; the companion returns:
+
+- `screen.tree` (identical to `layoutTree`) and `capture.tree` for the actual capture boundary, with viewport width/height, DPR, scroll and visual-viewport facts.
+- `visible`: rendered element candidates and generated `::before`/`::after` boxes with border box, clipped visible bounds, relation to the screen (`screen`, `ancestor`, `outside`), role, computed paint facts, control/hit-testing flags and capture inclusion. Coordinates are viewport-relative CSS pixels; `screen.tree` retains its root-relative coordinates.
+- `outsideScreen`: candidates outside the screen subtree, including ancestor backgrounds and sibling app-shell content. Carry relevant painted content into the implementation. `capture.omittedSelectors` and `hasOutsideScreenOmissions` flag these candidates when their visible bounds are partly or wholly outside the selected capture boundary; they describe capture loss, not everything missing from `screen.tree`. Decide whether to expand the capture or explicitly exclude that content. A viewport capture omits `captureTarget` and has `capture.tree: null`.
+- `unresolvedDecorations`: pseudo elements whose geometry the helper cannot compute (non-fixed, transformed or auto-sized). Inspect the PNG and styles for those.
+
+`display:none`, `visibility:hidden`, zero-opacity ancestry, hidden content-visibility and fully clipped nodes are not reported. Children that override inherited visibility can still be reported. Ancestor overflow and paint containment clip descendants; fixed boxes escape overflow until an ancestor establishes their containing block. Controls with pointer events are sampled for exposure; this can miss a small exposed fragment, and decorative elements can remain candidates behind another element. A missing capture target raises instead of silently measuring other pixels. The record is geometry, not pixel proof: shadows, complex clips, iframes and shadow roots need PNG inspection. Preserve computed stacking contexts, paint order and gradient geometry: a foreground decoration can tint an otherwise solid control, while a higher-z sibling stays above it.
+
+Record the expected state, animation frame, pointer position, focus, scroll position, viewport and DPR in the capture profile before screenshotting. Hover and focus rings must be intentional. Wait for fonts and entrance animations, then capture; a drawer or sheet screenshot taken mid-transition is not a settled state.
+
+## Computed values and themes
+
+Standalone HTML often embeds escaped CSS in JavaScript; raw-file grepping alone misses the rendered design. Inspect `document.styleSheets` and the computed styles of actual components. Traverse grouping rules such as media queries; cross-origin sheets can reject cssRules access, so record unavailable rules and inspect accessible computed styles rather than claiming a complete dump.
+
+For each actual theme, record CSS custom properties and computed color, border, shadow, radius and spacing values. Cross-check token values against component usage. Retain exact fractional typography, direct rich text runs and each span style; constrain roles by observed max-width, per-side padding, gaps and border/content/paint geometry rather than nearest scale steps. Record component variants separately when icons, loading or Material overlays can change effective geometry. For composition/effects retain gradient stops/center/extent/shape, opacity, clipping, blend/stacking context, inset/rim shadows, transforms/origins and controlled motion frames; preserve each supplied mode’s values. Pass measurements and unmatched values to `flutter-app-theme` for mappings. For whole-design application, the optional `set-theme-from-html/scripts/foundation-snapshot.js` companion records computed foundation/resource facts per observed profile without replacing this procedure or navigating unvisited states. Do not delete template slots or invent a new token scale as part of extraction.
+
+## Fonts and typography
+
+Inspect `@font-face` declarations and `document.fonts` to distinguish declared from loaded fonts. Embedded sources can be direct data URLs or UUID references to an asset map containing base64 data, sometimes compressed. Decode the source format when needed and verify font bytes before using it; retain family, weight/style, provenance and glyph coverage. Repeated weight declarations can reference the same font asset, so compare their actual sources. Retain structured CSS family/weight-range/style/unicode-range declarations and each visible node’s ordered family chain, locale and variable-axis settings. A loaded font set or union of subset cmaps is not evidence that the selected Flutter registration covers those strings; set-theme-from-html owns the effective registration audit.
+
+Record computed family, size, line-height, letter spacing and weight. Convert CSS line-height to the Flutter text-height ratio and em letter spacing to font-size-relative pixels. Keep Arabic fallback coverage explicit. Do not silently substitute another font when extraction fails; report the missing source. Font conversion/instancing must be justified by the installed Flutter APIs and actual asset format, not applied automatically to every variable font.
+
+Native controls paint text outside DOM text nodes. Inspect ordinary input/textarea values, visible `::placeholder` styles and closed-select labels, using the owning composition's ancestor/clipping/capture facts to distinguish visible usage from hidden inventory. Do not export raw masked/password values or invent a universal mask glyph. Native formatting, internal scrolling, partial/complex clipping and platform glyph selection need rendered evidence and explicit uncertainty; source cmap coverage cannot certify them. The foundation helper's scoped [native-text contract](../../set-theme-from-html/references/helpers.md#browser-snapshot) records these facts and gaps.
+
+## Motion and component states
+
+Inspect duration/easing custom properties, transition/animation declarations and keyframe bodies from accessible CSSOM rules. Record curves, offsets, scale, stagger and settled states. `flutter-app-theme` decides their token representation; `flutter-screen-ui` and performance guidance decide widget composition.
+
+Use the layout-tree script on the requested screen roots and stateful overlays after making them visible. Compare selected, disabled, loading and error variants where supplied. Identify reusable component roles and existing project APIs before proposing new widgets. Briefs link the extracted facts without duplicating the architecture or package recipes.

@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="en" dir="ltr">
+<style>
+* { box-sizing: border-box; }
+body { margin: 0; }
+.sa-appwrap { width: 360px; height: 640px; position: relative; background: #eef; }
+[data-screen-label] { position: absolute; top: 40px; left: 0; width: 360px; height: 600px; }
+#drawer-handle { position: fixed; top: 8px; left: 12px; width: 40px; height: 24px; }
+#nav { position: absolute; bottom: 0; left: 0; width: 360px; height: 30px; }
+#overlay { position: fixed; top: 120px; left: 40px; width: 240px; height: 80px; background: white; z-index: 20; }
+#overlay button { width: 80px; height: 30px; }
+#clip { position: absolute; top: 250px; left: 10px; width: 50px; height: 40px; overflow: hidden; }
+#clipped { position: absolute; top: 70px; width: 40px; height: 20px; }
+#partial { position: absolute; top: 30px; width: 40px; height: 20px; }
+#offscreen { position: fixed; left: 500px; top: 20px; }
+#transparent { opacity: 0; }
+#hidden { visibility: hidden; }
+#hidden button { visibility: visible; }
+#decoration { position: fixed; top: 0; left: 0; width: 0; height: 0; }
+#decoration::before { content: ""; position: fixed; top: 70px; right: 8px; width: 8px; height: 40px; background: red; }
+#invisible-decoration::before { content: ""; position: fixed; top: 70px; right: 20px; width: 8px; height: 40px; background: red; opacity: 0; }
+#paint-clip { position: absolute; top: 350px; left: 10px; width: 50px; height: 40px; contain: paint; }
+#paint-clipped { position: absolute; top: 70px; width: 40px; height: 20px; background: red; }
+#fixed-escape { position: fixed; top: 400px; left: 10px; width: 40px; height: 20px; background: green; }
+#fixed-parent { position: absolute; top: 600px; left: 10px; width: 50px; height: 40px; overflow: hidden; }
+#transformed-clip { position: absolute; top: 450px; left: 10px; width: 50px; height: 40px; overflow: hidden; transform: translateX(0); }
+#fixed-clipped { position: fixed; top: 70px; width: 40px; height: 20px; background: red; }
+#unresolved-decoration::after { content: "*"; position: absolute; width: 10px; height: 10px; }
+</style>
+<div class="sa-appwrap">
+  <button id="drawer-handle">Chat</button>
+  <main data-screen-label="Chat"><h1>Chat</h1><button id="screen-action">Send</button></main>
+  <nav id="nav">Navigation</nav>
+  <div id="overlay" role="dialog"><button id="overlay-action">Close</button></div>
+  <div id="clip"><button id="clipped">Clipped</button><button id="partial">Partial</button></div>
+  <button id="offscreen">Offscreen</button>
+  <div id="transparent"><button id="transparent-child">Transparent</button></div>
+  <button id="display-none" style="display:none">Hidden</button>
+  <div id="hidden"><button id="visibility-override">Visible override</button></div>
+  <div id="decoration"></div>
+  <div id="invisible-decoration"></div>
+  <div id="paint-clip"><span id="paint-clipped"></span></div>
+  <div id="fixed-parent"><span id="fixed-escape"></span></div>
+  <div id="transformed-clip"><span id="fixed-clipped"></span></div>
+  <div id="unresolved-decoration"></div>
+</div>
+<button id="external" style="position:fixed;left:380px;top:8px">Outside</button>
+</html>

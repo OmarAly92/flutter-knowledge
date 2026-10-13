@@ -1,0 +1,13 @@
+<!doctype html>
+<html lang="en" data-theme="light">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><link rel="stylesheet" href="css/app.css"><title>Orchard library</title></head>
+<body>
+<nav><button id="mode" onclick="document.documentElement.dataset.theme=document.documentElement.dataset.theme==='light'?'dark':'light'">Theme</button><button onclick="showView('library')">Library</button><button onclick="showView('settings')">Settings</button></nav>
+<div id="shell-glow" aria-hidden="true"></div><main id="library" class="view">
+<h1>Orchard library</h1><p id="legal">Original <strong id="legal-span">terms</strong></p><div id="ambient" aria-hidden="true"></div><button id="icon-action" class="primary"><svg viewBox="0 0 24 24"><path d="M0 0h24v24z"/></svg><span>Save</span></button><img id="hero" src="assets/hero.png" alt="Orchard"><section class="card"><svg id="bookmark" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><defs><linearGradient id="ink"><stop stop-color="currentColor"/><stop offset="1" stop-color="#5b73bf"/></linearGradient></defs><path fill="url(#ink)" d="M5 3h14v19l-7-5-7 5z"/></svg><h2>A useful collection</h2><p>Keep your favorite books together.</p><button id="save" class="primary" onclick="this.setAttribute('aria-pressed', this.getAttribute('aria-pressed')!=='true')">Save</button><button class="secondary" disabled>Unavailable</button><label>Collection<input id="collection" placeholder="Collection name"></label><div class="error">A name is required</div></section>
+</main>
+<main id="settings" class="view" hidden><h1>Collection settings</h1><section class="card patterned"><button class="chip" aria-selected="true">Personal</button><button class="chip" aria-selected="false">Shared</button><button class="primary" onclick="document.querySelector('#sheet').hidden=false">Details</button><span class="loading" aria-label="Loading">◌</span></section></main>
+<aside id="sheet" role="dialog" hidden><h2>Collection details</h2><p>Shared controls use the same foundations.</p><button class="primary" onclick="this.parentElement.hidden=true">Close</button></aside>
+<svg id="unresolved" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><use href="#outside-symbol"/></svg><svg style="display:none"><symbol id="outside-symbol" viewBox="0 0 24 24"><path d="M0 0h24v24z"/></symbol></svg>
+<script>function showView(id){document.querySelectorAll('.view').forEach(view=>view.hidden=view.id!==id)}</script>
+</body></html>

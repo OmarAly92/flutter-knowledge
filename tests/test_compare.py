@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+import json
 import os
 import re
 import subprocess
@@ -9,7 +10,7 @@ import numpy as np
 from PIL import Image, ImageDraw, ImageFont
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-COMPARE = os.path.join(ROOT, 'plugins', 'flutter-design-handoff', 'skills', 'visual-verification', 'scripts', 'compare.py')
+COMPARE = os.path.join(ROOT, 'plugins', 'flutter-knowledge', 'skills', 'visual-verification', 'scripts', 'compare.py')
 SIZE = (750, 1624)
 SUPER = 4
 LINES = [
@@ -92,6 +93,47 @@ def main():
     print(f"{'ok  ' if ok else 'FAIL'} two logical pixels of whole-scene offset show red (differing {share}%, red {red})")
     if not ok:
         print('     ' + out.strip().replace('\n', '\n     '))
+    expected_colors = np.zeros((24, 24, 3), dtype=np.uint8)
+    expected_colors[:, ::2] = (255, 0, 0)
+    expected_colors[:, 1::2] = (0, 0, 255)
+    actual_colors = np.zeros_like(expected_colors)
+    actual_colors[:, 1::2] = (255, 0, 255)
+    code, out = run(Image.fromarray(actual_colors), Image.fromarray(expected_colors))
+    failures += code != 1
+    print(f"{'ok  ' if code == 1 else 'FAIL'} new colors cannot match independent channel ranges (exit {code}, want 1)")
+    with tempfile.TemporaryDirectory() as tmp:
+        actual_path, expected_path = os.path.join(tmp, 'actual.png'), os.path.join(tmp, 'expected.png')
+        ref.save(expected_path)
+        for actual in (ref, scene(button=(40, 120, 220))):
+            actual.save(actual_path)
+            overlays = [os.path.join(tmp, 'text.png'), os.path.join(tmp, 'json.png')]
+            commands = [[sys.executable, COMPARE, '--actual', actual_path, '--expected', expected_path, '--output', output]
+                        for output in overlays]
+            plain = subprocess.run(commands[0], capture_output=True, text=True)
+            structured = subprocess.run(commands[1] + ['--json'], capture_output=True, text=True)
+            try:
+                result = json.loads(structured.stdout)
+                plain_share = float(re.search(r'Differing pixels: ([0-9.]+)%', plain.stdout)[1])
+                plain_cluster = float(re.search(r'Worst region:     ([0-9.]+)%', plain.stdout)[1])
+                ok = (plain.returncode == structured.returncode and result['overall_percent'] == plain_share
+                      and result['worst_region_percent'] == plain_cluster
+                      and result['settings']['threshold'] == 0.02 and result['settings']['max_cluster'] == 0.25
+                      and result['settings']['tolerance'] == 12 and result['settings']['shift'] == 2
+                      and np.array_equal(np.asarray(Image.open(overlays[0])), np.asarray(Image.open(overlays[1]))))
+            except (ValueError, KeyError, OSError):
+                ok = False
+            failures += not ok
+            print(f"{'ok  ' if ok else 'FAIL'} JSON output preserves exit, percentages, thresholds and overlay pixels")
+        mismatch = Image.new('RGB', (100, 100))
+        mismatch.save(actual_path)
+        error = subprocess.run(commands[1] + ['--json'], capture_output=True, text=True)
+        try:
+            result = json.loads(error.stdout)
+            ok = error.returncode == 2 and result['status'] == 'ERROR' and 'overall_percent' not in result
+        except ValueError:
+            ok = False
+        failures += not ok
+        print(f"{'ok  ' if ok else 'FAIL'} JSON capture errors never contain invented percentages")
     bad_size = Image.new('RGB', (100, 100))
     code, _ = run(bad_size, ref)
     print(f"{'ok  ' if code == 2 else 'FAIL'} a size mismatch cannot run (exit {code}, want 2)")
