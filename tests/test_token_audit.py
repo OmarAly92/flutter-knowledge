@@ -166,6 +166,10 @@ def main():
         code, out, err = audit(tmp, f'{presentation}/demo_screen/ui/demo_screen.dart')
         check(code == 1 and len(out.splitlines()) == len(lines), 'a single file path is audited too', out + err)
 
+        write(tmp, 'lib/wrapper_gaps.dart', 'VerticalSpace(14); HorizontalSpace(22); VerticalSpace(tokens.space.md);')
+        code, out, err = audit(tmp, 'lib/wrapper_gaps.dart')
+        check(code == 1 and len(out.splitlines()) == 2, 'literal wrapper gaps are flagged; token gaps are not', out + err)
+
         code, out, err = audit(tmp)
         check(code == 2, f'exit 2 with no path (got {code})', out + err)
 
