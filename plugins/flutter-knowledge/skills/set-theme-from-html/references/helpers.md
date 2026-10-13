@@ -41,4 +41,4 @@ Verified bytes are copied with exclusive creation under assets directories, neve
 
 ## Application audits
 
-Read [foundation-proof.md](foundation-proof.md) for the font-plan and role-ledger contracts and commands. `audit_fonts.py` checks actual selected original registrations and direct coverage. `audit_handoff.py` binds extracted roles to runtime consumers and revalidates the owning visual runner evidence at its default settings, writing a new immutable theme-stage proof. Neither helper infers semantic roles, engine font selection, unvisited states or performs PNG inspection.
+Read [foundation-proof.md](foundation-proof.md) for the font-plan contract and command. `audit_fonts.py` checks actual selected original registrations and direct coverage. The optional `audit_handoff.py` ([strict handoff gate](strict-handoff-gate.md)) binds extracted roles to runtime consumers and revalidates the owning visual runner evidence at its default settings, writing a new immutable theme-stage proof. Neither helper infers semantic roles, engine font selection, unvisited states or performs PNG inspection.
