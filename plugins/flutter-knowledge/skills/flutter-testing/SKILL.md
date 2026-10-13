@@ -5,9 +5,11 @@ description: Unit test conventions for a Flutter feature — mocktail mocks, blo
 
 # Unit tests
 
+For implementation, read the [project configuration contract](../flutter-init/references/configuration.md) before applying package-specific instructions. Keep its conventions and naming; adapt package-specific examples through the selected mechanics.
+
 Invoked by the `flutter-knowledge` skill (or directly via `/flutter-testing`) only when the user explicitly asks for tests — never generate test files as a side effect of scaffolding a feature.
 
-Tooling: `mocktail` for mocks, `bloc_test` for cubit tests. Add both to `dev_dependencies` in `pubspec.yaml` if not already present.
+Tooling comes from `packages.mocking` and `packages.state_testing`. The examples below use the default `mocktail` / `bloc_test` combination. Add only the selected dependencies needed for explicitly requested tests; for another state backend, verify a compatible observation harness.
 
 **Layout**: tests mirror the `lib/` feature tree under `test/`, one `_test.dart` per source file:
 
@@ -109,8 +111,8 @@ void main() {
 ## What NOT to do
 
 - Do not write unit tests unprompted. Only add them when the user explicitly asks.
-- Do not use `mockito`/`@GenerateMocks` or hand-rolled fakes for new tests — use `mocktail`.
-- Do not test a cubit with plain `test()` + manual `cubit.stream` listening — use `blocTest` from `bloc_test`.
+- Use the configured mocking mechanism; `mocktail` is the default. If `mockito` is selected, use its verified generation/mocking workflow rather than introducing mocktail alongside it.
+- For the Bloc backend with configured `bloc_test`, use `blocTest` rather than hand-written stream subscriptions. For another backend use its verified state observation/lifecycle through the configured test runner.
 - Do not drop test files in a flat `test/` dir — mirror the `lib/feature/<feature>/...` tree under `test/`.
 - Do not skip the offline branch when testing a repository method — assert `Result.failure(ServerFailure.noNetwork())` is returned and the data source is never called.
 - Do not expect the constructor fetch's `...LoadingState` in `blocTest` — it is emitted inside `build()`, before `blocTest` listens. Assert a loading state only for a call made from `act:`.

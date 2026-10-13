@@ -5,11 +5,15 @@ description: Theme conventions for a Flutter app's lib/core/theme layer — the 
 
 # App theme (`lib/core/theme`)
 
+For implementation, read the [project configuration contract](../flutter-init/references/configuration.md) before applying package-specific instructions. Keep its conventions and naming; adapt package-specific examples through the selected mechanics.
+
 Invoked by the `flutter-knowledge` skill (or directly via `/flutter-app-theme`). The theme layer holds every visual value the app shares — colors, spacing, radii, text styles, shadows, motion, shapes — and the `ThemeData` that hands them to Material. **Feature code never invents a visual value — it picks a token. When none fits, "When a value becomes a token" decides between the nearest step and a new token; a new one is added to the theme layer with a `///` doc comment saying what it is for and `Example:` naming a real place in the UI, and then picked.**
 
 **Follow the project first.** Before adding anything, read the theme files for the part you are touching and mirror them (names, which tokens exist, which helpers exist). If the project documents its theme (`lib/core/theme/README.md`, `lib/core/theme/skin/README.md`, `assets/skins/README.md`, `docs/design/*.md`), read the relevant doc first — it is that project's own reference. The shapes below are the default when you build a part from scratch, and the yardstick when the project's version is incomplete.
 
 **Older project.** The project uses this layer if `lib/core/theme/app_tokens.dart` exists or `grep -rn "class AppTokens" lib` finds one. If not, it predates `context.tokens`: keep its own theme classes and mirror them — colors from `context.skin` (an `AppSkin` with `SkinScope`) or a flat `AppColors`, text from `AppTextStyle`, motion from a static `AppMotion`, radii as raw numbers — and apply the rules below with those names. Do not migrate it, or half-migrate a few widgets, unless the user asks; when they do, build the layer described here.
+
+For `/set-theme-from-html <html-design-path>`, [set-theme-from-html](../set-theme-from-html/SKILL.md) handles whole-source exploration, original asset import and scoped completion after `/flutter-core`; this skill remains the token/slot/API authority. That invocation uses the existing source-of-truth policy for measured semantic tokens. Keep unprovided modes/roles explicitly provisional, derived or unchanged rather than inventing source evidence.
 
 ## The layer
 
@@ -100,6 +104,14 @@ Match a design's values by value — a name in the design is only a hint: a colo
 | The user decided the design's values are the source of truth | add every value |
 
 A new token is named for its role or its place on the scale — `space.formGap`, `space.huge`, `text.fieldLabel`, a slot `success`, not `green` — and carries its `///` doc comment.
+
+## Early design decision
+
+Before building, record a short unmatched-value table: source value, existing token/nearest mapping, expected visual consequence and decision. Reuse it through the task; revisit only when source, tokens or authorization changes. Exact existing matches need no question.
+
+If the user explicitly makes design values authoritative (for example, an exact/pixel-perfect match), apply the existing source-of-truth row above: add role-based tokens with measured values. This retains token access, architecture and naming; it never permits presentation literals or requires another approval for already-authorized work.
+
+Otherwise keep the scale-preserving policy and disclose differences early. If mappings conflict with requested fidelity, ask one bundled question with the concrete table/consequences before dependent styling; continue independent work. Do not silently decide to snap, create arbitrary one-off tokens, change references or raise comparison thresholds. Changed exact-source authorization supersedes earlier snapped mappings; visual verification then fixes those values through tokens rather than treating the old mapping as unavoidable.
 
 ## Audit
 
@@ -411,7 +423,7 @@ An `AnimationController` created in `initState`, or a cubit driving a `PageContr
 - Durations that are not animations — timeouts, debounce, polling, `Future.delayed`, how long a snackbar stays up — are not motion tokens; they stay at the call site or in the class that owns them.
 - Route transitions are set once, in `ThemeData.pageTransitionsTheme` (for example `FadeForwardsPageTransitionsBuilder` on Android, while iOS keeps its platform back-swipe) — not per route. A `PageView` uses `physics: const SpringPagePhysics()` when the project has it.
 
-**Adding a token:** reuse a role token (`fast`, `base`, `slow`, `emphasis`, the curves, the stagger helpers) whenever it fits; add a new getter only for a genuinely new timing, curve or distance. Name it for what it is for (`shimmerLoop`, `slideUpOffset`), not after one screen, and give it a `///` comment saying what it is for, what it pairs with, and `Example:` naming the real place. Values come from the project's design: an HTML prototype's CSS motion tokens and `@keyframes` (extract them the way `design-from-html-flutter` describes), a motion doc such as `docs/design/motion.md`, or the user. Only when the project has no design source, use the numbers in the reference set above. If the project has a `lib/core/theme/` layer without `app_motion.dart`, create it in this shape with only the tokens this change needs, add the `motion` group to `AppTokens` (see "Adding a token group"), and do not sweep existing inline durations into it unless the user asks. If the project has a test over the tokens, update it in the same change.
+**Adding a token:** reuse a role token (`fast`, `base`, `slow`, `emphasis`, the curves, the stagger helpers) whenever it fits; add a new getter only for a genuinely new timing, curve or distance. Name it for what it is for (`shimmerLoop`, `slideUpOffset`), not after one screen, and give it a `///` comment saying what it is for, what it pairs with, and `Example:` naming the real place. Values come from the project's design: an HTML prototype's CSS motion tokens and `@keyframes` (extract through [HTML source extraction](../html-to-widget/references/source-extraction.md)), a motion doc such as `docs/design/motion.md`, or the user. Only when the project has no design source, use the numbers in the reference set above. If the project has a `lib/core/theme/` layer without `app_motion.dart`, create it in this shape with only the tokens this change needs, add the `motion` group to `AppTokens` (see "Adding a token group"), and do not sweep existing inline durations into it unless the user asks. If the project has a test over the tokens, update it in the same change.
 
 ## Shapes — `tokens.shape`
 

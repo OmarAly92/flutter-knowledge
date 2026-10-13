@@ -5,11 +5,15 @@ description: Flutter screen and widget UI conventions — Screen/Body split with
 
 # Flutter screen & UI
 
-Invoked by the `flutter-knowledge` skill (or directly via `/flutter-screen-ui`) before writing or editing any screen, body, widget, bottom sheet, dialog, or styling code. Related skills: `add-translation` whenever a needed `LocaleKeys` entry is missing, `flutter-cubit` for the cubit the UI reads, `flutter-routing-di` for where the `BlocProvider` lives, `flutter-feature-structure` for where widget files go, and `html-to-widget` when the UI must match an HTML prototype (`design-from-html-flutter` for the design system, or for screens when `html-to-widget` is not available).
+For implementation, read the [project configuration contract](../flutter-init/references/configuration.md) before applying package-specific instructions. Keep its conventions and naming; adapt package-specific examples through the selected mechanics.
+
+Invoked by the `flutter-knowledge` skill (or directly via `/flutter-screen-ui`) before writing or editing any screen, body, widget, bottom sheet, dialog, or styling code. Related skills: `add-translation` whenever a needed `LocaleKeys` entry is missing, `flutter-state-management` for the cubit the UI reads, `flutter-routing-di` for where the `BlocProvider` lives, `flutter-feature-structure` for where widget files go, and `html-to-widget` when the UI must match an HTML prototype (or `figma-to-widget` for Figma; `flutter-app-theme` owns token decisions).
 
 **These conventions are the source of truth.** Existing codebases may be old and inconsistent — where legacy code contradicts this skill, follow the skill and do NOT copy the legacy pattern.
 
-## Screens & BlocProvider
+## Screen composition
+
+The Bloc API names in this section describe the default implementation. Another configured backend must provide the same route-owned state owner, Screen effects and Body rebuilding through its own verified APIs; it does not change the widget/file split.
 
 - Screens are `StatelessWidget` and contain NO `BlocProvider` — the provider is supplied by the router. The only reason to use `StatefulWidget` for a screen is when the widget itself owns a native resource a cubit can't hold (e.g., a `MapController`).
 - **The screen file is a thin shell, split from its content.** The `<Screen>` widget's only job is: wrap `BlocListener` (for one-off side effects — snackbars, navigation, dialogs) around an `AppScaffold` whose `body` is a separate `<Screen>Body` widget. All the actual display logic — `BlocBuilder`, layout, child widgets — lives in `<Screen>Body`, in its own file under the sibling `ui/widgets/` dir. This split is consistent across every screen: the body widget is always named `<Screen>Body` (e.g. `EditProfileBody`, `OrderHistoryBody`) — never named after its content (`EditProfileForm`, `OrderHistoryList`, ...).
@@ -52,21 +56,31 @@ class XBody extends StatelessWidget {
 }
 ```
 
+## Reuse and asset discovery
+
+Read the config's discovered locations and real project contracts. Before creating a component or falling back to a raw widget, search by role/suffix, then by the request's nouns, then in shared and feature widget/component locations. Read the found API and report whether reuse, a parameter extension or a separate component fits. A saved component inventory or one failed exact-name search is not evidence that nothing exists.
+
+Use the target asset helper constants (`AppAssets` in `core/helpers/app_assets.dart`, or its existing equivalent) in presentation callers. Before referencing an asset, verify the literal file or supported resolution variant and its pubspec declaration; inspect dynamic/constants-based paths rather than inventing them. Keep the existing loader and package selection. Discovery supplies search locations, not permission to adopt observed naming that conflicts with these conventions.
+
+Invoke `flutter-accessibility-rtl` for user-facing semantics/direction/text scaling and `flutter-responsive-layout` for constraint/overflow work. Invoke `flutter-performance` for relevant lists, images, animation cost or expensive builds. These add implementation responsibilities without changing Screen/Body, ownership or token rules.
+
 ## UI conventions
 
-**Widget structure**: NEVER extract widgets as methods (`Widget _buildHeader()`) — ALWAYS create a separate `StatelessWidget` class in its own file. One widget class per file — NEVER put two or more widget classes in the same file. The main screen widget lives in `ui/`; every section/child widget lives in its own file under the sibling `ui/widgets/` dir and gets imported. Name each widget file/class clearly and simply after what it renders (e.g. `order_summary_card.dart` → `OrderSummaryCard`, not `widget1.dart` / `CustomWidget`). Keep UI files under ~150 lines — split into section widgets when they grow. Prefer `StatelessWidget`; use `StatefulWidget` only for pure UI controllers (`AnimationController`, `TabController`). Bottom sheets / dialogs are `StatelessWidget`s that take the cubit as a constructor parameter — the opening screen reads the cubit once, passes it down, and wraps the sheet in `BlocProvider.value(value: cubit, …)`.
+**Widget structure**: NEVER extract widgets as methods (`Widget _buildHeader()`) — ALWAYS create a separate `StatelessWidget` class in its own file. One widget class per file, except the ordinary/sliver spacing family in `core/widgets/layout/space_widgets.dart` (see [core API contracts](../flutter-core/references/core-contracts.md#core-api-alignment)). The main screen widget lives in `ui/`; every section/child widget lives in its own file under the sibling `ui/widgets/` dir and gets imported. Name each widget file/class clearly and simply after what it renders (e.g. `order_summary_card.dart` → `OrderSummaryCard`, not `widget1.dart` / `CustomWidget`). Keep UI files under ~150 lines — split into section widgets when they grow. Prefer `StatelessWidget`; use `StatefulWidget` only for pure UI controllers (`AnimationController`, `TabController`). Bottom sheets / dialogs are `StatelessWidget`s that take the cubit as a constructor parameter — the opening screen reads the cubit once, passes it down, and wraps the sheet in `BlocProvider.value(value: cubit, …)`.
 
 Splitting into a file is for genuine sections — a form, a card, a list item, anything with its own layout or composition. Don't extract a widget file for a trivial single-line wrapper around one core widget (a lone `AppTextField`, a lone `PrimaryButton` with nothing but an `onPressed`) — write it inline as a widget expression in the parent instead; a dedicated file for it is ceremony without payoff. The line is composition: if a "widget" is just one core-wrapper call with static args, inline it; extract it once it has its own logic, layout, or is reused elsewhere.
 
 **Threading data to child widgets**: only two kinds of widgets take data via constructor parameters — the `<Screen>Body` (via `BlocBuilder`) and true leaf/item widgets (e.g. a list row). Intermediate structural widgets (a list wrapper, a section container) should read the cubit directly via `context.read<XCubit>()` rather than having its data threaded through as a constructor argument one layer at a time. Keep the cubit reference itself, and read its fields off that reference at each use site — `final cubit = context.read<XCubit>(); ...cubit.items.length... cubit.items[index]...` — rather than extracting a field into a separately-defaulted local (`final items = cubit.items ?? const [];`); the local copy can drift from the live cubit field and adds a redundant fallback. Leaf/item widget constructors take plain primitive values (`String id, String status, DateTime date, ...`), never the whole model object — passing the model directly couples the widget to that specific type and makes it unusable anywhere else; primitives keep it reusable.
 
-**Static-only helper classes** (`EndPoints`, `RoutesStrings`, `AppFonts`, `AppAsset`, and similar constants holders) are declared `sealed class X { ... }` — never add a private constructor (`X._()`) to block instantiation; `sealed` already prevents it.
+**Static-only helper classes** (`EndPoints`, `RoutesStrings`, `AppFonts`, `AppAssets`, and similar constants holders) are declared `sealed class X { ... }` — never add a private constructor (`X._()`) to block instantiation; `sealed` already prevents it.
 
 **Snackbars**: show them through the `BuildContext` extension in `lib/core/helpers/extensions/snackbar_extensions.dart` — `context.showSnackBar(message)` for notices, `context.showErrorSnackBar(message)` for failures — never call `ScaffoldMessenger.of(context).showSnackBar(...)` directly in feature code. Mirror whatever extension name the project already uses if it differs.
 
+**Field actions**: `AppTextField.textInputAction` is a required constructor argument; callers explicitly choose the keyboard action.
+
 **Form validation**: check for an existing shared validators helper (e.g. `AppFormValidations` in `lib/core/helpers/`) before writing a field's `validator:`. If one exists, use its static validators (email, phone, password, username, ...) instead of an inline validation closure — this keeps validation rules (and their `LocaleKeys` messages) consistent across every form in the app. Only write an inline validator when the field doesn't match any case the shared helper already covers.
 
-**Localization**: every user-facing string (in `AppText`, `PrimaryButton.text`, `GlobalAppbar.titleText`, dialog messages, snackbars, validator messages, etc.) MUST be `LocaleKeys.xxx.tr()` from `easy_localization`. NEVER inline a raw `'...'` literal into a widget shown to the user. If a needed key doesn't exist, invoke the `add-translation` skill (via the Skill tool, or tell the user to run `/add-translation`) which adds the key to both `assets/translations/ar.json` and `en.json` in sync, writing the English and the Arabic itself. Exceptions: debug-only strings (`talker` logs), asset paths, hex colors, route names, regex patterns — anything not shown to the user.
+**Localization**: every user-facing string (in `AppText`, `PrimaryButton.text`, `GlobalAppbar.titleText`, dialog messages, snackbars, validator messages, etc.) MUST use the configured generated/localized accessor (`LocaleKeys.xxx.tr()` for `easy_localization`). NEVER inline a raw `'...'` literal into a widget shown to the user. If a needed key doesn't exist, invoke the `add-translation` skill (via the Skill tool, or tell the user to run `/add-translation`) which adds the key to both `assets/translations/ar.json` and `en.json` in sync, writing the English and the Arabic itself. Exceptions: debug-only strings (`talker` logs), asset paths, hex colors, route names, regex patterns — anything not shown to the user.
 
 **Widgets — use the core wrappers from `lib/core/widgets/` instead of raw Flutter widgets**:
 - `AppText(...)` instead of `Text(...)`
@@ -115,7 +129,7 @@ Widget build(BuildContext context) {
 - Fixed widths/heights that are not spacing (an icon size, an avatar diameter) are plain numbers at the call site.
 - The only place `flutter_screenutil` is allowed is inside the theme layer (`AppTypography`). Feature code should not even import `package:flutter_screenutil/flutter_screenutil.dart`.
 
-**General style**: single quotes, `const` constructors wherever possible, full 8-digit hex for colors, `final` locals. No `print` — use the `talker` logger. Don't write comments — use self-explanatory names; only comment non-obvious business rules, external constraints, or workarounds.
+**General style**: single quotes, `const` constructors wherever possible, full 8-digit hex for colors, `final` locals. No `print` — use the configured logger (`talker` by default). Don't write comments — use self-explanatory names; only comment non-obvious business rules, external constraints, or workarounds.
 
 **Navigation**: `context.pushNamed(...)`, `context.pushReplacementNamed(...)`, `context.pushNamedAndRemoveUntil(name, (_) => false)`, `context.pop()`, `context.popToRoot()` — the `Navigation` extension and `RoutesStrings` both come from importing `lib/core/router/app_router.dart`. Never raw `Navigator.of(context)` calls.
 
@@ -135,4 +149,6 @@ Widget build(BuildContext context) {
 - Do not inline raw string literals into widgets shown to the user. Every user-facing string is `LocaleKeys.xxx.tr()`.
 - Do not write raw `TextStyle(fontSize: …, fontWeight: …, …)`, a `Color(0x…)`, a literal radius or spacing number, or `Theme.of(context).colorScheme` in presentation widgets. Read `context.tokens` (`.text`, `.skin`, `.radius`, `.space`).
 - Do not use `flutter_screenutil` extensions (`.h`, `.w`, `.r`, `.sp`, `.spMin`, `.dm`) in feature presentation code. Spacing and radii come from `context.tokens.space` / `.radius`; fonts from `context.tokens.text`. (Existing code that did this is legacy; do not copy it.)
-- Do not transcribe a design from an HTML prototype by eye, and do not set skin/text-style/motion tokens from a screenshot — read the values from the prototype's computed CSS, through `html-to-widget` for a screen (when it is available) or `design-from-html-flutter` for the design system.
+- Do not transcribe a design from an HTML prototype by eye, and do not set skin/text-style/motion tokens from a screenshot — read the values from the prototype's computed CSS, through `html-to-widget`; `flutter-app-theme` owns token decisions.
+
+After design-driven implementation, invoke `visual-verification` and complete its [per-screen verification contract](../visual-verification/SKILL.md#required-completion-contract) for every affected screen and supplied state in scope. This is part of implementation, including the required golden capture, without a separate test request.

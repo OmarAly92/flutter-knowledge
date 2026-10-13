@@ -5,6 +5,8 @@ description: Hive (hive_ce) local persistence conventions for a Flutter feature 
 
 # Local database (Hive)
 
+For implementation, read the [project configuration contract](../flutter-init/references/configuration.md) before applying package-specific instructions. Keep its conventions and naming; adapt package-specific examples through the selected mechanics.
+
 Invoked by the `flutter-knowledge` skill (or directly via `/hive-local-database`) whenever a Hive-backed feature needs local persistence — use this skill when the project's local storage is Hive, and the `drift-local-database` skill when it is drift (check `pubspec.yaml`).
 
 **Follow the project first.** If the codebase already uses Hive with its own conventions, read an existing Hive feature and mirror it — names, box setup, mapping. Only depart from it where its shape is genuinely weak (storage types leaking above the data source, boxes opened mid-feature, no failure translation), and improve just that. The conventions below are the greenfield default when there is nothing to follow, and the yardstick for what "weak" means.
@@ -34,10 +36,12 @@ lib/
 
 ## Boxes and initialization
 
-`Hive.initFlutter()` runs once at bootstrap, before `runApp`, and every box a feature needs is opened there and registered into the locator (`initHive(sl)`, awaited in `main()` next to `registerAppDependencies(sl)`) — features never call `Hive.openBox` themselves, exactly as drift features never open the database. One box per feature (or per stored type); its opened `Box` is what gets injected, mirroring how drift injects the one `AppDatabase`.
+On the default get_it stack, the initializer imports the canonical `lib/core/di/injection.dart` and uses global `sl` directly, following `flutter-routing-di`.
+
+`Hive.initFlutter()` runs once at bootstrap, before `runApp`, and every box a feature needs is opened there and registered into the locator (`initHive()`, awaited in `main()` next to `registerAppDependencies()`) — features never call `Hive.openBox` themselves, exactly as drift features never open the database. One box per feature (or per stored type); its opened `Box` is what gets injected, mirroring how drift injects the one `AppDatabase`.
 
 ```dart
-Future<void> initHive(GetIt sl) async {
+Future<void> initHive() async {
   await Hive.initFlutter();
   final budgetBox = await Hive.openBox<Map>('budgets');
   sl.registerSingleton<Box<Map>>(budgetBox, instanceName: 'budgets');
@@ -135,7 +139,7 @@ class BudgetLocalDataSourceImp implements BudgetLocalDataSource {
 Two registrations per feature, in its own `<feature>_injection.dart` (see `flutter-routing-di`) — no DAO layer, so the LocalDataSource takes the injected `Box` directly:
 
 ```dart
-// lib/feature/budget/budget_injection.dart — registerBudgetDependencies(GetIt sl)
+// lib/feature/budget/budget_injection.dart — registerBudgetDependencies()
 sl.registerLazySingleton<BudgetRepository>(
   () => BudgetRepositoryImp(sl<BudgetLocalDataSource>()),
 );
@@ -187,7 +191,7 @@ FutureResult<GlobalResponse<List<XModel>>> getX(XParams params) async {
 ## What NOT to do
 
 - Do not let a stored `Map` or a `@HiveType XHiveModel` cross past the LocalDataSource — no `hive_ce` import, no `Box`, no stored type in a repository, cubit, or widget. Map to `XModel`/params at the data source.
-- Do not open a box inside a feature or data source. Boxes are opened once at bootstrap by `initHive(sl)` and registered into the locator; features receive the injected `Box`.
+- Do not open a box inside a feature or data source. Boxes are opened once at bootstrap by `initHive()` and registered into the locator; features receive the injected `Box`.
 - Do not skip `handleLocalFailure()` / `handleLocalFailureSync()` on a box call — it is how Hive exceptions become `LocalFailure`, which is why nothing above the data source needs a local `try/catch`.
 - Do not give a local write Params class `toJson()` or blanket-nullable fields like an API model — expose `toDb()` and make fields required/nullable by what the write needs.
 - Do not have `watchX()` return the raw `Stream<BoxEvent>` — map each event to a full re-read so it yields `Stream<List<XModel>>`, matching the drift contract.

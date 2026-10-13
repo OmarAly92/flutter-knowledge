@@ -1,20 +1,24 @@
 ---
 name: flutter-feature-structure
-description: Folder layout for a Flutter project — the lib/feature/<feature>/ tree (data/ vs presentation/, the `_screen` directory suffix, logic/ui/widgets placement, `<feature>_injection.dart`), the lib/core/ folders (theme, l10n, layout, router, data, di, helpers, services, widgets), and the "read an existing equivalent file first and mirror it" rule. Use before creating a new Flutter feature, screen, or file, or when deciding where a Dart file belongs.
+description: Folder layout for a Flutter project — feature directories under lib/feature/ (data/ vs presentation/, the `_screen` directory suffix, logic/ui/widgets placement, feature injection files), the lib/core/ folders (theme, l10n, layout, router, data, di, helpers, services, widgets), and the "read an existing equivalent file first and mirror it" rule. Use before creating a new Flutter feature, screen, or file, or when deciding where a Dart file belongs.
 ---
 
 # Flutter feature structure
 
-Invoked by the `flutter-knowledge` skill (or directly via `/flutter-feature-structure`) before creating a feature, a screen, or any new file in one. Related skills: `flutter-data-layer` for `data/`, `flutter-cubit` for `logic/`, `flutter-screen-ui` for `ui/`, `flutter-routing-di` for wiring, and `drift-local-database` / `hive-local-database` for local persistence.
+For implementation, read the [project configuration contract](../flutter-init/references/configuration.md) before applying package-specific instructions. Keep its conventions and naming; adapt package-specific examples through the selected mechanics.
+
+Invoked by the `flutter-knowledge` skill (or directly via `/flutter-feature-structure`) before creating a feature, a screen, or any new file in one. Related skills: `flutter-data-layer` for `data/`, `flutter-state-management` for `logic/`, `flutter-screen-ui` for `ui/`, `flutter-routing-di` for wiring, and `drift-local-database` / `hive-local-database` for local persistence.
 
 **These conventions are the source of truth.** Existing codebases may be old and inconsistent — where legacy code contradicts this skill, follow the skill and do NOT copy the legacy pattern.
 
 ## Feature architecture
 
+The file tree and naming stay fixed. Package API names in examples (GetIt, Cubit base classes, Equatable) follow the configuration contract; do not replace the selected package to imitate an example.
+
 Features live under `lib/feature/<feature>/` (snake_case — singular `feature`, NOT `features`). Every feature follows this tree — the presentation screen directory MUST be suffixed `_screen`:
 
 ```
-<feature>_injection.dart                  # register<Feature>Dependencies(GetIt sl) — see flutter-routing-di
+<feature>_injection.dart                  # register<Feature>Dependencies() — see flutter-routing-di
 data/
   data_source/<feature>_remote_data_source.dart
   data_source/<feature>_local_data_source.dart   # only for local-only / hybrid features
@@ -47,8 +51,8 @@ The main screen widget lives in `ui/`; every section/child widget lives in its o
 | `router/` | `app_router.dart` + its `routes_strings.dart` part — see `flutter-routing-di` |
 | `data/` | `api/` (`ApiConsumer`, `EndPoints`, `GlobalResponse`), `cache/`, `database/`, `error_handling/` (`Failure`, `Result`) |
 | `di/` | `injection.dart` — the global `sl` and `registerCoreDependencies` |
-| `helpers/` | small tools (`AppAsset`, validators, logger) plus `extensions/` |
-| `services/` | session-long singletons (network, session, …) |
+| `helpers/` | small tools (`AppAssets`, validators, logger) plus `extensions/` |
+| `services/` | shared services (NetworkStatus, session, …) and their composition-owned state (`network/logic/NetworkCubit` follows the core ownership contract) |
 | `widgets/` | core widgets grouped by role (`buttons/`, `inputs/`, `text/`, `layout/`, `sheets/`, `feedback/`, …) — put a new one in the folder for what it does, never at the root |
 
 **A subfolder exists only once it holds two or more files** — a lone helper or service sits loose in its parent (`helpers/app_assets.dart`, not `helpers/assets/app_assets.dart`). `test/core/` mirrors the same layout. A new shared file goes in the folder for what it is; do not recreate `config/`, `utils/` or `app_themes/`.
@@ -61,7 +65,7 @@ Before writing each file, read the equivalent file from an existing feature in t
 - Remote data source: an existing `*_remote_data_source.dart` (abstract + `*Imp` using `ApiConsumer`).
 - Repository: an existing repository (abstract + `*Imp` returning `FutureResult<T>` — the typedef wrapping the failure/success result — gated on `NetworkStatus`).
 
-Where the existing file contradicts the conventions in `flutter-data-layer`, `flutter-cubit`, `flutter-screen-ui`, or `flutter-routing-di`, those skills win — mirror style and import order, not legacy patterns.
+Where the existing file contradicts the conventions in `flutter-data-layer`, `flutter-state-management`, `flutter-screen-ui`, or `flutter-routing-di`, those skills win — mirror style and import order, not legacy patterns.
 
 ## What NOT to do
 

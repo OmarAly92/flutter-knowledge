@@ -19,11 +19,15 @@ import argparse
 import os
 import re
 import sys
+from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).resolve().parents[2] / 'flutter-init/scripts'))
+from dart_source import scan_dart
 
 NUMBER = re.compile(r'^-?(\d+(\.\d+)?|\.\d+)(\.(w|h|r|sp|sw|sh))?$')
 CALL = re.compile(
     r'\b(?P<name>EdgeInsets(?:Directional)?\.\w+|BorderRadius\.circular|Radius\.circular'
-    r'|TextStyle|BoxShadow|Duration|SizedBox|Color(?:\.from(?:ARGB|RGBO))?)\s*\('
+    r'|VerticalSpace|HorizontalSpace|TextStyle|BoxShadow|Duration|SizedBox|Color(?:\.from(?:ARGB|RGBO))?)\s*\('
 )
 COLORS = re.compile(r'\bColors\.(?!transparent\b)\w+')
 THEME = re.compile(r'\bTheme\.of\(\s*context\s*\)\s*\.\s*(colorScheme|textTheme|brightness)\b')
@@ -81,7 +85,7 @@ def numeric(value: str) -> bool:
 def hardcoded(name: str, args: list[tuple[str | None, str]], inner: str) -> bool:
     if name.startswith('EdgeInsets') or name == 'Duration':
         return any(numeric(v) for _, v in args)
-    if name in ('BorderRadius.circular', 'Radius.circular'):
+    if name in ('BorderRadius.circular', 'Radius.circular', 'VerticalSpace', 'HorizontalSpace'):
         return bool(args) and args[0][0] is None and numeric(args[0][1])
     if name == 'SizedBox':
         return any(k in ('height', 'width') and numeric(v) for k, v in args)
@@ -98,20 +102,24 @@ def collapse(text: str) -> str:
     return text if len(text) <= SNIPPET else text[: SNIPPET - 3] + '...'
 
 
-def audit(path: str) -> list[tuple[int, str]]:
-    with open(path, encoding='utf-8', errors='replace') as f:
-        text = f.read()
+def audit_text(text: str) -> list[tuple[int, str]]:
+    code, _ = scan_dart(text)
     hits = []
-    for m in CALL.finditer(text):
+    for m in CALL.finditer(code):
         open_at = m.end() - 1
-        close_at = closing(text, open_at)
-        inner = text[open_at + 1 : close_at]
+        close_at = closing(code, open_at)
+        inner = code[open_at + 1 : close_at]
         if hardcoded(m.group('name'), arguments(inner), inner):
             hits.append((m.start(), collapse(text[m.start() : close_at + 1])))
     for pattern in (COLORS, THEME):
-        for m in pattern.finditer(text):
-            hits.append((m.start(), collapse(m.group(0))))
+        for m in pattern.finditer(code):
+            hits.append((m.start(), collapse(text[m.start():m.end()])))
     return sorted((text.count('\n', 0, pos) + 1, snippet) for pos, snippet in hits)
+
+
+def audit(path: str) -> list[tuple[int, str]]:
+    with open(path, encoding='utf-8', errors='replace') as stream:
+        return audit_text(stream.read())
 
 
 def skipped(path: str) -> bool:

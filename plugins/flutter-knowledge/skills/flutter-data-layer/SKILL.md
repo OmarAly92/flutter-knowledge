@@ -5,11 +5,15 @@ description: Flutter data layer conventions — XModel/XParams classes (nullable
 
 # Flutter data layer
 
+For implementation, read the [project configuration contract](../flutter-init/references/configuration.md) before applying package-specific instructions. Keep its conventions and naming; adapt package-specific examples through the selected mechanics.
+
 Invoked by the `flutter-knowledge` skill (or directly via `/flutter-data-layer`) before writing or editing any model, params class, remote data source, repository, or `EndPoints` entry. Related skills: `flutter-feature-structure` for where these files live, `flutter-routing-di` for registering the data source and repository, and `drift-local-database` / `hive-local-database` for any local persistence (do not build that from these rules).
 
 **These conventions are the source of truth.** Existing codebases may be old and inconsistent — where legacy code contradicts this skill, follow the skill and do NOT copy the legacy pattern.
 
 ## Data layer
+
+Package-specific equality/serialization calls are default examples. Keep the model/params names, nullable model fields, authored member order and API/result contracts when applying the configured mechanisms.
 
 - **Naming suffixes**: models → `XModel` in `data/model/` (extend `Equatable`, `fromJson`/`toJson` as needed); params → `XParams` in `data/model/params/` (extend `Equatable`, implement `toJson()`). **Model fields are always nullable** (`String? name`, `int? total`, ...) — API responses can omit or null out any field, so never declare a model field as required/non-null.
 - **One params class per method**: every data source / repository method that takes parameters gets its own dedicated `XParams` class — never share one params class across two methods, even if their fields happen to overlap. If two methods need overlapping fields, that's two separate params classes with duplicated fields, not one shared class.
@@ -37,12 +41,12 @@ FutureResult<GlobalResponse<XModel>> getX(XParams params) async {
 
 ## Local database
 
-When a feature needs local persistence — offline storage, caching a remote response locally, or a local-only (no API) feature — invoke the local-database skill that matches the project's storage engine before writing any local data source or storage code. Check `pubspec.yaml`:
+When a feature needs local persistence — offline storage, caching a remote response locally, or a local-only (no API) feature — invoke the local-database skill that matches the project's storage engine before writing any local data source or storage code. Read `packages.local_database` in the project config and verify it against `pubspec.yaml`:
 
 - **drift** in the project → invoke `drift-local-database` (via the Skill tool, or `/drift-local-database`). It holds the DAO → LocalDataSource → Repository layering, `Entity`/`Companion` naming, migrations, and the local-only/hybrid repository patterns.
 - **hive / hive_ce** in the project → invoke `hive-local-database` (via the Skill tool, or `/hive-local-database`). It holds the Box → LocalDataSource → Repository layering, storage↔model mapping, and the local-only/hybrid repository patterns.
 
-If neither is present yet, pick the one the feature calls for (or ask the user) and follow that skill. Either way, do not invent the persistence layer from memory — each is a distinct, validated set of conventions, not something to reconstruct from the general Data layer rules above.
+If the selection is missing or ambiguous, invoke `flutter-init` and resolve it before storage work. A missing recommended dependency is only added when this feature needs it. Either way, do not invent the persistence layer from memory — each is a distinct, validated set of conventions, not something to reconstruct from the general Data layer rules above.
 
 ## What NOT to do
 
@@ -54,3 +58,5 @@ If neither is present yet, pick the one the feature calls for (or ask the user) 
 - Do not mix up model member order. Fields, then constructor, then `fromJson`, then `toJson` — every model file in the same order.
 - Do not interpolate `EndPoints` constants with runtime params at the call site (no `'${EndPoints.trip}/$tripId'`). Use a static method on `EndPoints`.
 - Do not add a private constructor (`X._()`) to a static-only constants class (`EndPoints`, `RoutesStrings`, `AppFonts`, ...) to block instantiation — declare it `sealed class X` instead.
+
+For core consumer/error/logger setup, apply the [core API contracts](../flutter-core/references/core-contracts.md#core-api-alignment); transport errors remain owned by the shared handler rather than feature code.

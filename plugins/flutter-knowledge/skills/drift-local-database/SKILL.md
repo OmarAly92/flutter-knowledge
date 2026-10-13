@@ -5,6 +5,8 @@ description: Drift/SQLite local persistence conventions for a Flutter feature �
 
 # Local database (drift)
 
+For implementation, read the [project configuration contract](../flutter-init/references/configuration.md) before applying package-specific instructions. Keep its conventions and naming; adapt package-specific examples through the selected mechanics.
+
 Invoked by the `flutter-knowledge` skill (or directly via `/drift-local-database`) whenever a feature needs local persistence — these are the validated conventions; do not invent this layer from memory.
 
 Uses `drift` + `drift_flutter`, with `drift_dev` + `build_runner` in `dev_dependencies` — this pair is the one sanctioned codegen exception to the "no freezed/json_serializable/build_runner" rule, and only when a feature actually needs local storage. The layering is **DAO → LocalDataSource → Repository → Cubit**, one direction only — each layer knows just the one below it, and drift types (`XEntity`, `XsCompanion`, table classes) never cross past the LocalDataSource.
@@ -172,14 +174,14 @@ Use `XsCompanion.insert(...)` for adds (required columns are named params, match
 
 ## DI
 
-The DAO is its own injectable, sitting between `AppDatabase` and the local data source. `AppDatabase` and every DAO are core types, so they register in `registerCoreDependencies`; the local data source and repository register in the feature's own injection file (see `flutter-routing-di`):
+The DAO is its own injectable, sitting between `AppDatabase` and the local data source. `AppDatabase` and every DAO are core types, so they register in `registerCoreDependencies`; the local data source and repository register in the feature's own injection file, importing `core/di/injection.dart` to access global `sl` (see `flutter-routing-di`):
 
 ```dart
-// lib/core/di/injection.dart — registerCoreDependencies(GetIt sl)
+// lib/core/di/injection.dart — registerCoreDependencies()
 sl.registerLazySingleton<AppDatabase>(() => AppDatabase());
 sl.registerLazySingleton<BudgetDao>(() => sl<AppDatabase>().budgetDao);
 
-// lib/feature/budget/budget_injection.dart — registerBudgetDependencies(GetIt sl)
+// lib/feature/budget/budget_injection.dart — registerBudgetDependencies()
 sl.registerLazySingleton<BudgetRepository>(
   () => BudgetRepositoryImp(sl<BudgetLocalDataSource>()),
 );

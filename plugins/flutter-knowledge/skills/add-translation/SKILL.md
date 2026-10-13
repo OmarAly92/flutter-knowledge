@@ -5,6 +5,8 @@ description: Add one or more localization keys to both assets/translations/en.js
 
 # Add translation key(s)
 
+For implementation, read the [project configuration contract](../flutter-init/references/configuration.md) before applying package-specific instructions. Keep its conventions and naming; adapt package-specific examples through the selected mechanics.
+
 Argument: `$ARGUMENTS` = key + value, free-form. Examples:
 - `welcomeBack "Welcome back" "مرحبا بعودتك"` — single key with both translations.
 - `welcomeBack "Welcome back"` — English only; write the Arabic yourself.
@@ -13,6 +15,10 @@ Argument: `$ARGUMENTS` = key + value, free-form. Examples:
 ## Critical rule
 
 **Both `en.json` and `ar.json` must always contain the same set of keys.** A key in one but not the other causes the missing locale to display the raw key string and may break `locale_keys.g.dart` codegen. Never edit one file without the other.
+
+## Configured localization
+
+The steps and generator command below are the easy_localization implementation. For another configured library, preserve key naming, complete English/Arabic meaning, collision handling and generated-file ownership; use its actual resource format, accessor and generator from the [localization adaptation contract](../flutter-init/references/package-adaptation.md#localization). Do not create JSON files or LocaleKeys alongside an existing different localization mechanism.
 
 ## Steps
 
