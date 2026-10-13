@@ -7,7 +7,7 @@ The prototype imitates a standalone design export: the real CSS and markup sit i
 string with '#', '<' and '>' escaped, and are injected at load time, so grepping the file
 finds only the template's decoy tokens. Its font, "Nordvik Sans" (a small pixel font drawn
 here, weights 400 and 700), is embedded as zlib-compressed base64 in an asset map keyed by
-uuid, the second layout the design-from-html-flutter playbook describes.
+uuid, the asset-map layout documented by the HTML source-extraction reference.
 Output is deterministic; only rebuild it on purpose, since runs on different prototypes
 are not comparable.
 """

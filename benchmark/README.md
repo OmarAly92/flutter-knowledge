@@ -87,6 +87,12 @@ Grader fixes from reading these runs: `created_new_wrapper` ignores effect widge
 
 Generated output goes to `benchmark/out/`, which git ignores.
 
+The grader requires PyYAML. Unit-test mocking checks follow `packages.mocking`
+when a configuration exists and check the dependencies actually imported by new
+tests. Mockito is permitted when selected; an undeclared import or a mismatch
+with the configured mechanism remains a violation. Historical results using the
+former unconditional Mockito check are not directly comparable with this rule.
+
 ### Tasks
 
 | Task | Storage | What the agent builds |
@@ -107,7 +113,7 @@ Generated output goes to `benchmark/out/`, which git ignores.
 | m2 | app | The same as m1, on a project with no `AppMotion` yet |
 | o1 | older | f1 on a project that predates `context.tokens` |
 
-f1 and f2 cover what the first six tasks never reach: `EndPoints` methods that take an id, `registerFactoryParam` with `param1`, a bottom sheet given the cubit through `BlocProvider.value`, controllers and the form key on the cubit, prefilling through the initializer list, `dispose` in `close()`, and the shared validators. t1 checks the `flutter-testing` skill and g1 the `design-from-html-flutter` skill, including whether an agent in description-only mode reads them at all.
+f1 and f2 cover what the first six tasks never reach: `EndPoints` methods that take an id, `registerFactoryParam` with `param1`, a bottom sheet given the cubit through `BlocProvider.value`, controllers and the form key on the cubit, prefilling through the initializer list, `dispose` in `close()`, and the shared validators. t1 checks `flutter-testing`; g1 checks `html-to-widget` and its source-extraction reference. The grader also accepts the former design skill/playbook for historical master baselines, so removing the old entry point does not penalize historical runs.
 
 ### Modes
 

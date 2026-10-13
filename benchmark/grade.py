@@ -18,6 +18,7 @@ The checks are regexes: spot-check every rule hit by reading the flagged code.
 """
 import difflib, json, os, re, sys
 from collections import defaultdict
+import yaml
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 TASKS = json.load(open(os.path.join(HERE, 'tasks.json'), encoding='utf-8'))['tasks']
@@ -32,7 +33,7 @@ ARABIC = re.compile(r'[؀-ۿ]')
 SCREEN_TASKS = {'d1', 'd2', 'd3', 'h1', 'h2'}   # a new feature with its own screen
 TRIP_SCREEN_TASKS = {'f1', 'f2', 'o1'}          # a new screen inside the existing trips feature
 DETAILS_TASKS = {'f1', 'o1'}                    # o1 is f1 on the older-project fixture
-TASK_SKILL = {'t1': 'flutter-testing', 'g1': 'design-from-html-flutter'}
+TASK_SKILL = {'t1': 'flutter-testing', 'g1': 'html-to-widget'}
 THEME_DIR = 'lib/core/theme/'
 SKIN_DIR = THEME_DIR + 'skin/'
 SKIN_GOLD = {'light_skin.dart': 'C8A24A', 'dark_skin.dart': 'E3C77A'}   # task s2
@@ -81,6 +82,16 @@ def files(root):
             if rel.startswith(('lib/', 'assets/', 'test/')) or rel == 'pubspec.yaml':
                 out[rel] = p
     return out
+
+
+def mocking_selection(run_dir):
+    path = os.path.join(run_dir, 'flutter-knowledge.yaml')
+    if not os.path.isfile(path):
+        return None
+    config = yaml.safe_load(read(path))
+    if not isinstance(config, dict) or not isinstance(config.get('packages'), dict):
+        raise ValueError('Package configuration must contain a packages mapping')
+    return config['packages'].get('mocking')
 
 
 def added_lines(old, new):
@@ -535,7 +546,15 @@ def new_task_checks(v, task, run_dir, new, touched, full, code, dart, ui, cubits
                     'test/feature/trips/data/repository/trips_repository_test.dart',
                     'test/feature/trips/presentation/trips_screen/logic/trips_cubit_test.dart']
         v['tests_not_mirroring_lib'] += sum(1 for m in mirrored if m not in tests)
-        v['tests_use_mockito'] += sum(1 for t in tests.values() if re.search(r'package:mockito|@GenerateMocks', t))
+        used_mocking = {package for text in tests.values()
+                        for package in re.findall(r'package:(mocktail|mockito)/', text)}
+        try:
+            selected_mocking = mocking_selection(run_dir)
+        except (ValueError, yaml.YAMLError):
+            v['invalid_package_config'] += 1
+            selected_mocking = None
+        if selected_mocking is not None:
+            v['test_mocking_package_mismatch'] += len(used_mocking - {selected_mocking})
         of = lambda kind: [t for r, t in tests.items() if kind in os.path.basename(r)]
         if of('cubit') and not any(re.search(r'\bblocTest\b', t) for t in of('cubit')):
             v['cubit_test_without_blocTest'] += 1
@@ -552,7 +571,7 @@ def new_task_checks(v, task, run_dir, new, touched, full, code, dart, ui, cubits
         if of('data_source') and not any('queryParameters' in t for t in of('data_source')):
             v['ds_test_params_not_verified'] += 1
         dev = re.search(r'^dev_dependencies:\n(.*?)(?=^\S|\Z)', full.get('pubspec.yaml', ''), re.M | re.S)
-        v['test_deps_missing'] += sum(1 for pkg in ('mocktail', 'bloc_test')
+        v['test_deps_missing'] += sum(1 for pkg in used_mocking | {'bloc_test'}
                                       if not (dev and re.search(r'^\s+%s:' % pkg, dev.group(1), re.M)))
     if task == 'g1':
         core = ' '.join(full[r] for r in code if r.startswith('lib/core/') and r.endswith('.dart'))
@@ -725,9 +744,9 @@ def main():
         fixture = os.path.join(B, 'fixture-' + t.get('fixture', t['engine']) + ('-nowrap' if mode == 'nowrap' else ''))
         v, info = grade(os.path.join(RUNS, name), fixture, task)
         sr = read(os.path.join(RUNS, name, 'SKILLS_READ.txt'))
-        if task in TASK_SKILL and f'skills/{TASK_SKILL[task]}/SKILL.md' not in sr:
+        if task in TASK_SKILL and f'skills/{TASK_SKILL[task]}/SKILL.md' not in sr and not (task == 'g1' and 'skills/design-from-html-flutter/SKILL.md' in sr):
             v['task_skill_not_read'] = 1
-        if task == 'g1' and 'design-from-html-flutter/playbook.md' not in sr:
+        if task == 'g1' and not any(path in sr for path in ('html-to-widget/references/source-extraction.md', 'design-from-html-flutter/playbook.md')):
             v['design_playbook_not_read'] = 1
         info['skills_read'] = len(set(re.findall(r'skills/([\w-]+)/', sr)))
         info['tokens'] = TOKENS.get(name)
