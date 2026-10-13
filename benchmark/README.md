@@ -73,6 +73,29 @@ m1 is saturated. The fixture's documented `AppMotion` guides master agents too, 
 
 Grader fixes from reading these runs: `created_new_wrapper` ignores effect widgets in `lib/core/widgets/animation/`, `multiple_widgets_per_file` no longer counts `State` classes, an animated leaf widget may be stateful on m1 and m2, and a `SizedBox` with both a width and a height is a size, not a spacer.
 
+### 2.5.0: one plugin, core/init/theme skills (2026-10-13)
+
+The full default plan, 48 runs per version on Sonnet 5.5: master (2.1.0) against the branch before the routing fix (v250).
+
+| | master | v250 |
+|---|---|---|
+| Rule breaks | 34 | 37 |
+| Runs editing legacy orders code | 1 | 24 |
+| Other rule breaks | 33 | 13 |
+| Runs hand-editing `locale_keys.g.dart` | 18 | 10 |
+| Mean skill files read | 6.7 | 8.0 |
+| Mean tokens | 83.1k | 99.7k |
+
+Permutation test p = 0.79. Almost all of v250's extra breaks came from one sentence in `flutter-routing-di`: "registration functions take no container parameter" led agents to rewrite the project's existing app, core and orders registration functions. The skill now keeps existing signatures and has new features use global `sl`. A first wording (v251) overcorrected, and 6/10 runs kept `RoutesStrings._()` in files they edited, so the exception now names only the registration signatures. On forced d1, d2, d3, h1 and h2 ×2:
+
+| | master | v250 | v251 | v252 (shipped) |
+|---|---|---|---|---|
+| Rule breaks (10 runs) | 7 | 12 | 13 | 4 |
+| Runs editing legacy orders code | 0 | 9 | 1 | 1 |
+| Mean tokens | 91.5k | 109.8k | 107.2k | 110.0k |
+
+Grader fixes from reading these runs: an argument-free `registerXDependencies()` call counts as wired, g1 accepts `set-theme-from-html` as the task skill, and the d4 checks find the budget files wherever the agent moved them.
+
 ## Files
 
 | File | What it is |
