@@ -8,19 +8,9 @@
   "plugins": [
     {
       "name": "flutter-knowledge",
-      "description": "Full-stack Flutter/Dart conventions: a hard-rules map skill plus on-demand mini skills and helpers.",
-      "version": "2.1.0",
+      "description": "Flutter/Dart conventions and design workflows: feature architecture, data, Cubit, routing, themes, localization, HTML/Figma implementation, visual verification and golden tests.",
+      "version": "2.5.0",
       "source": "./plugins/flutter-knowledge",
-      "author": {
-        "name": "Omar Aly",
-        "email": "omarkarim5555@gmail.com"
-      }
-    },
-    {
-      "name": "flutter-design-handoff",
-      "description": "Figma frames and HTML prototypes turned into widgets on the app's tokens, a screenshot diff loop against the design, and golden tests. Based on Mohamed Draz's flutter-design-fidelity (MIT).",
-      "version": "2.1.0",
-      "source": "./plugins/flutter-design-handoff",
       "author": {
         "name": "Omar Aly",
         "email": "omarkarim5555@gmail.com"

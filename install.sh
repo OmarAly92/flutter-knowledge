@@ -11,8 +11,17 @@ TARGET="${CLAUDE_SKILLS_DIR:-$HOME/.claude/skills}"
 
 mkdir -p "$TARGET"
 
+for retired_skill in flutter-cubit design-from-html-flutter; do
+  legacy_link="$TARGET/$retired_skill"
+  if [ -L "$legacy_link" ]; then
+    case "$(readlink "$legacy_link")" in
+      "$REPO_DIR/plugins/flutter-knowledge/skills/$retired_skill"|"$REPO_DIR/skills/$retired_skill") rm -f "$legacy_link" ;;
+    esac
+  fi
+done
+
 count=0
-for dir in "$REPO_DIR"/plugins/*/skills/*/; do
+for dir in "$REPO_DIR"/plugins/flutter-knowledge/skills/*/; do
   [ -d "$dir" ] || continue
   name="$(basename "$dir")"
   link="$TARGET/$name"

@@ -1,26 +1,22 @@
 # Flutter Knowledge
 
-Two plugins for coding agents on Flutter apps: **`flutter-knowledge`**, the
-code conventions described first below, and **`flutter-design-handoff`**, which
-keeps the UI matching its design (see [below](#flutter-design-handoff)).
-`flutter-knowledge` works on its own; `flutter-design-handoff` needs
-`flutter-knowledge`, whose skills it builds on.
+One **`flutter-knowledge`** plugin for Flutter code conventions, design implementation,
+visual verification and golden tests. All 22 skills live in one plugin.
 
 Flutter/Dart skills for coding agents. Install once and your agent follows a
 consistent set of full-stack Flutter conventions — feature architecture, the
 data layer, Cubit state management, dependency injection, routing, the core UI
 wrappers, and localization. `flutter-knowledge` is a small map of hard rules
 that routes the agent to five core mini skills (`flutter-feature-structure`,
-`flutter-data-layer`, `flutter-cubit`, `flutter-screen-ui`,
-`flutter-routing-di`) before it writes each kind of code — plus six on-demand
+`flutter-data-layer`, `flutter-state-management`, `flutter-screen-ui`,
+`flutter-routing-di`) before it writes each kind of code — plus on-demand
 helpers: `add-translation`
 for keeping `en.json` / `ar.json` in sync, `drift-local-database` and
 `hive-local-database` for local persistence (drift/SQLite or Hive),
 `flutter-testing` for mocktail/bloc_test unit tests, `flutter-app-theme` for
 the theme layer (skin colors with light/dark switching, text styles, motion,
-shapes and `ThemeData`), and
-`design-from-html-flutter` for building the app's design system from an HTML
-prototype.
+shapes and `ThemeData`). HTML/Figma source readers handle both immediate screen
+implementation and whole-app planning through the shared workflow.
 
 `flutter-knowledge` triggers automatically from its `description` — whenever
 Flutter or Dart comes up, the agent loads it. Nothing to invoke by hand. The
@@ -46,14 +42,31 @@ mechanism from the other two's one-time injection. Gemini already gets this
 for free since `GEMINI.md` is always loaded. Cursor and Kimi rely on
 description-based triggering only (see `CONTRIBUTING.md`).
 
+## Project package configuration
+
+Run `/flutter-init` in a Flutter project to create `flutter-knowledge.yaml`
+from its `pubspec.yaml` and authored `lib/` source. It detects the existing stack and fills missing
+categories using the skill package catalog. Existing selections are preserved;
+ambiguous alternatives are reported with unresolved choices. The helper requires
+Python 3.10+ and PyYAML (requirements are bundled with `flutter-init`). Recommendations do not install packages.
+
+All task skills read the [configuration contract](plugins/flutter-knowledge/skills/flutter-init/references/configuration.md).
+Source evidence also records shared widget/component locations, custom contract
+entry points and asset declarations without creating a component inventory.
+Package mechanics adapt while naming, layer ownership and other conventions
+stay fixed. The renamed `flutter-state-management` skill keeps the existing
+Cubit/state naming and uses Cubit for the default Bloc stack.
+
 ## What's inside
 
 | Skill | Purpose | Loads |
 | --- | --- | --- |
+| **flutter-init** | Detect project packages and create or refresh flutter-knowledge.yaml; default recommendations fill absent categories. | On request or before package-dependent work when config is absent |
+| **flutter-core** | Create or complete shared core and app-root wiring while preserving existing contracts and selected packages; initializes config when absent. | Only on `/flutter-core` or an explicit core setup request |
 | **flutter-knowledge** | The map: always-on hard rules plus which skill to invoke before writing each kind of code. | Automatically |
 | **flutter-feature-structure** | Feature folder tree, `_screen` suffix, the `lib/core/` folders, mirroring an existing equivalent file. | On demand, via `flutter-knowledge` or `/flutter-feature-structure` |
 | **flutter-data-layer** | Models, params, remote data sources, repositories, `EndPoints`, `Failure`. | On demand, via `flutter-knowledge` or `/flutter-data-layer` |
-| **flutter-cubit** | Cubit + state classes, per-method state naming, data and controller lifecycle. | On demand, via `flutter-knowledge` or `/flutter-cubit` |
+| **flutter-state-management** | Cubit + state classes, per-method state naming, data and controller lifecycle. | On demand, via `flutter-knowledge` or `/flutter-state-management` |
 | **flutter-screen-ui** | Screen/Body split, widget structure, core wrappers, design tokens through `context.tokens`, localization, navigation. | On demand, via `flutter-knowledge` or `/flutter-screen-ui` |
 | **flutter-routing-di** | Routes in `lib/core/router/`, `BlocProvider` wiring, per-feature `get_it` injection files. | On demand, via `flutter-knowledge` or `/flutter-routing-di` |
 | **drift-local-database** | Drift/SQLite local persistence: tables, DAOs, entities, migrations, local-only and hybrid repositories. | On demand, via `flutter-knowledge` or `/drift-local-database` |
@@ -61,41 +74,46 @@ description-based triggering only (see `CONTRIBUTING.md`).
 | **flutter-testing** | Unit test conventions: mocktail mocks, bloc_test cubit tests, data source/repository/cubit coverage. | On demand, via `flutter-knowledge` or `/flutter-testing` |
 | **add-translation** | Add localization key(s) to `en.json` and `ar.json` in sync, then regenerate `locale_keys.g.dart`. | On demand, via `flutter-knowledge` or `/add-translation` |
 | **flutter-app-theme** | The `lib/core/theme` layer: `AppTokens` read as `context.tokens` (skin colors, spacing, radii, text, elevation, motion, shapes), skins as a list (built-in + JSON, `SkinRegistry`, `SkinCubit.select`), `AppTheme.of(skin)` with the `ColorScheme` mapping, when a design's value becomes a token, and `scripts/token_audit.py`, an audit that finds hardcoded values. | On demand, via `flutter-knowledge` or `/flutter-app-theme` |
-| **design-from-html-flutter** | Turn an HTML design prototype into skin colors, text styles, motion constants, core widgets, and per-screen design docs + implementation prompts. | On demand, via `flutter-knowledge` or `/design-from-html-flutter` |
+| **flutter-accessibility-rtl** | Semantics, logical direction, large text, focus, targets and Arabic/RTL behavior. | Before affected user-facing UI work |
+| **flutter-responsive-layout** | Parent constraints, breakpoints, overflow, keyboard/safe-area behavior and target sizes. | Before affected layout work |
+| **flutter-performance** | Lazy lists, image decoding, rebuild/animation costs and evidence-based profiling. | When those mechanisms or performance concerns are touched |
+| **flutter-review** | Read-only mechanical checks and manual architectural review, including app-relative untracked files. | Before substantial work is handed off, committed or reviewed |
 
-## flutter-design-handoff
+## Design implementation and visual testing
 
-A second plugin for the step between a design and the app, built on the
-conventions above. It started as a copy of [Mohamed Draz's `flutter-design-fidelity`](https://github.com/draz26648/flutter_craft_skills)
-(MIT). It is written for projects on the current theme layer
+Five skills cover the step between a design and the app, built on the
+conventions above. The Figma, verification and golden skills were adapted from [Mohamed Draz's `flutter-design-fidelity`](https://github.com/draz26648/flutter_craft_skills)
+(MIT). These design skills target projects on the current theme layer
 (`context.tokens`).
 
 | Skill | Purpose |
 | --- | --- |
 | **figma-to-widget** | Turns a Figma frame into widgets: Auto Layout to `Row`/`Column`, gaps to `VerticalSpace`, variables and styles to `context.tokens`, component instances to existing core widgets, `Stack` only where layers overlap. |
+| **set-theme-from-html** | Applies the whole HTML design to an existing core after `/flutter-core`: original asset/font import, all seven token groups and AppTheme/component mappings, with scoped source-backed foundation checks. Invoke `/set-theme-from-html <html-design-path>` before later screen implementation. |
 | **html-to-widget** | Turns an HTML prototype into widgets: reads the computed CSS with `scripts/layout-tree.js`, then maps flex to `Row`/`Column`, gaps to `VerticalSpace`, values to `context.tokens`, and JS-toggled states to cubit states. |
-| **visual-verification** | Captures the screen headless as a golden and the design at the same size (750×1624), diffs them with `scripts/compare.py`, and fixes until it matches — four rounds of guesses, then only fixes whose cause is known. |
+| **visual-verification** | Requires per-screen reference/Flutter/diff evidence and overall/worst-region percentages. Captures at matching viewport/DPR (default 750×1624), diffs them with `scripts/compare.py`, and fixes until it matches — four rounds of guesses, then only fixes whose cause is known. |
 | **golden-tests** | Locks the matched screen in plain `flutter_test` goldens through a shared harness (the app's theme, real fonts and shadows), across the other skin, Arabic, 2× text and a small phone. |
 
-It ships for Claude Code, Codex and `install.sh`. Its skills load from their
-descriptions; it has no hook.
+These skills ship with `flutter-knowledge` on every supported harness.
+They load from their descriptions or workflow handoffs; Gemini includes them
+in its always-loaded context file.
 
 ## Install
 
 Install separately for each harness you use. Every method reads the skills
-straight from this repo (`plugins/<plugin>/skills/`), so updating is always
-"pull the latest." Gemini, OpenCode, Pi, Cursor and Kimi get
-`flutter-knowledge` only.
+straight from this repo (`plugins/flutter-knowledge/skills/`). All supported
+harnesses receive the same 22 skills.
+
+If you previously installed the separate `flutter-design-handoff` plugin, update
+`flutter-knowledge` and remove the old plugin through your harness's plugin manager
+to avoid loading duplicate skills.
 
 ### Claude Code
 
 ```bash
 /plugin marketplace add OmarAly92/flutter-knowledge
 /plugin install flutter-knowledge@flutter-skills
-/plugin install flutter-design-handoff@flutter-skills
 ```
-
-The last line is optional; it adds `flutter-design-handoff`.
 
 Update from a terminal — the first command refreshes the marketplace metadata, the second pulls the new version in:
 
@@ -103,8 +121,6 @@ Update from a terminal — the first command refreshes the marketplace metadata,
 claude plugin marketplace update flutter-skills
 claude plugin update flutter-knowledge@flutter-skills
 ```
-
-`claude plugin update flutter-design-handoff@flutter-skills` updates `flutter-design-handoff` the same way; `/plugin install flutter-design-handoff@flutter-skills` adds it to an existing install.
 
 ### Gemini CLI
 
@@ -142,7 +158,6 @@ Run these in your OS terminal/shell — not inside an active Codex chat session
 ```bash
 codex plugin marketplace add OmarAly92/flutter-knowledge
 codex plugin add flutter-knowledge@flutter-skills
-codex plugin add flutter-design-handoff@flutter-skills
 ```
 
 Then start a new Codex session to pick up the plugin. It reads
@@ -157,8 +172,6 @@ Update: run both of these — the first refreshes the marketplace snapshot, the 
 codex plugin marketplace upgrade flutter-skills
 codex plugin add flutter-knowledge@flutter-skills
 ```
-
-`codex plugin add flutter-design-handoff@flutter-skills` updates or adds `flutter-design-handoff` the same way.
 
 ### Cursor / Kimi
 
@@ -177,21 +190,36 @@ cd flutter-knowledge
 ./install.sh
 ```
 
-This symlinks the skills of both plugins into `~/.claude/skills/`, skipping any name that already exists there as a real folder (override the target with
+This symlinks all 22 skills into `~/.claude/skills/`, skipping any name that already exists there as a real folder (override the target with
 `CLAUDE_SKILLS_DIR=/path ./install.sh`). Update with `git pull` and re-run
 `./install.sh`.
 
 ## Repo structure
 
-Each plugin lives in `plugins/<name>/` with its own Claude Code and Codex
-manifests and its `skills/` folder, the single source of truth for that
-plugin. The repo root holds the two marketplaces and the Cursor, Kimi,
-Gemini, OpenCode and Pi entry points, which point at
-`plugins/flutter-knowledge/skills/`. See [`CONTRIBUTING.md`](./CONTRIBUTING.md)
-for the full map and how to add a skill or cut a release.
+The plugin lives in `plugins/flutter-knowledge/` with Claude Code and Codex
+manifests and one `skills/` folder. Every harness points at this folder.
+See [`CONTRIBUTING.md`](./CONTRIBUTING.md) for the full map and how to add a
+skill or cut a release.
 
 ## License
 
-MIT — see [`LICENSE`](./LICENSE). `flutter-design-handoff` carries its own
-[`LICENSE`](./plugins/flutter-design-handoff/LICENSE), which keeps Mohamed
-Draz's copyright for the skills it was copied from.
+MIT — see [`LICENSE`](./LICENSE). The plugin's
+[`LICENSE`](./plugins/flutter-knowledge/LICENSE) preserves Mohamed Draz's
+copyright for the adapted design skills.
+
+## Checking changes to the skill implementation
+
+Run `python3 tests/test_flutter_init.py`, `python3 tests/test_flutter_review.py`,
+`python3 tests/test_token_audit.py` and `python3 tests/test_compare.py` for helper changes.
+The state recipes are assembled from their reference code into an isolated temporary
+Flutter fixture by `python3 tests/check_state_references.py`; use
+`--riverpod-version 2.6.1` to exercise the older checked API. Resolution is offline by
+default; `--fetch` explicitly permits dependency downloads for that fixture. The
+fixture requires Dart 3.9+ and never writes code into an application checkout.
+Run the full agent benchmark before integration as described in `benchmark/README.md`.
+
+Single-screen design requests build immediately and verify against the original HTML/Figma reference. Whole-app design planning produces foundation and per-screen briefs; explicit implementation continues through them. Every implemented design-backed screen/state gets its own comparison report, including overall pixel difference, worst-region difference and artifact links. Missing references or capture blockers are reported as not verified. See the [completion contract](plugins/flutter-knowledge/skills/visual-verification/SKILL.md#required-completion-contract).
+
+Task routing and completion are defined once in [task workflows](plugins/flutter-knowledge/skills/flutter-knowledge/references/workflows.md). Source inspection belongs to HTML/Figma readers; conventions to implementation skills; comparison to visual verification; capture/regression to golden tests; and findings to review.
+
+The workflow reuses source facts/references only after dependency/profile/renderer fingerprint checks, resolves source-versus-token decisions early, retains full logs with concise summaries, and batches final checks. Required comparisons, variant inspection and review remain unchanged. See [cache safety](plugins/flutter-knowledge/skills/visual-verification/references/design-cache.md).
