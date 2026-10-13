@@ -355,7 +355,7 @@ def grade(run_dir, fixture_dir, task):
     if task in SCREEN_TASKS:
         if not any(feature_di.match(r) for r in new):
             v['di_no_feature_injection_file'] += 1
-        if not re.search(r'register\w+Dependencies\(\s*sl\s*\)', touched.get(APP_DI, '')):
+        if not re.search(r'register\w+Dependencies\(\s*(?:sl)?\s*\)', touched.get(APP_DI, '')):
             v['di_not_wired_in_app_injection'] += 1
         if DI_TEST not in touched:
             v['di_registration_test_not_updated'] += 1
@@ -460,10 +460,12 @@ def grade(run_dir, fixture_dir, task):
     if task == 'd4':
         if 'nullable()' not in full.get(DB_DIR + 'tables/budgets/budgets_table.dart', ''):
             v['d4_column_not_nullable'] += 1
-        if not re.search(r'String\?\s+description', full.get('lib/feature/budget/data/models/budget_model.dart', '')):
+        def budget_file(name):
+            return ''.join(t for r, t in full.items() if r.startswith('lib/feature/budget/') and r.endswith('/' + name))
+        if not re.search(r'String\?\s+description', budget_file('budget_model.dart')):
             v['d4_model_field_missing_or_non_nullable'] += 1
-        if 'description' not in full.get('lib/feature/budget/data/data_source/local/budget_local_data_source.dart', '') \
-                and 'description' not in full.get('lib/feature/budget/domain/params/add_budget_params.dart', ''):
+        if 'description' not in budget_file('budget_local_data_source.dart') \
+                and 'description' not in budget_file('add_budget_params.dart'):
             v['d4_description_not_written'] += 1
     new_task_checks(v, task, run_dir, new, touched, full, code, dart, ui, cubits, di_add)
     if TASKS[task].get('fixture') == 'skin':
@@ -744,7 +746,7 @@ def main():
         fixture = os.path.join(B, 'fixture-' + t.get('fixture', t['engine']) + ('-nowrap' if mode == 'nowrap' else ''))
         v, info = grade(os.path.join(RUNS, name), fixture, task)
         sr = read(os.path.join(RUNS, name, 'SKILLS_READ.txt'))
-        if task in TASK_SKILL and f'skills/{TASK_SKILL[task]}/SKILL.md' not in sr and not (task == 'g1' and 'skills/design-from-html-flutter/SKILL.md' in sr):
+        if task in TASK_SKILL and f'skills/{TASK_SKILL[task]}/SKILL.md' not in sr and not (task == 'g1' and any(f'skills/{k}/SKILL.md' in sr for k in ('design-from-html-flutter', 'set-theme-from-html'))):
             v['task_skill_not_read'] = 1
         if task == 'g1' and not any(path in sr for path in ('html-to-widget/references/source-extraction.md', 'design-from-html-flutter/playbook.md')):
             v['design_playbook_not_read'] = 1
