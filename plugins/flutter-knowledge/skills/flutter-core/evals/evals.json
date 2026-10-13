@@ -1,0 +1,41 @@
+{
+  "skill_name": "flutter-core",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "Use /flutter-core in the supplied minimal Flutter project. It has a pubspec and an entry widget, but no Flutter Knowledge config or shared core. Create and wire the essential shared core, retain the entry widget, and add focused tests for actual DI resolution, API/error behavior, skins, localization and wrappers. No code comments, business features, backend URL invention or optional database/toolkit installation.",
+      "expected_output": "Automatic flutter-init followed by a usable selected-package core and root wiring. An explicit missing backend value, generated localization, meaningful executed tests, and preserved original entry behavior.",
+      "files": [],
+      "assertions": [
+        "Initial configuration absence is preserved as evidence and flutter-init runs before package-dependent implementation.",
+        "Actual app registration resolves transport/consumer, network, preferences, logger, skin registry and root owners.",
+        "All seven token groups, built-in/JSON skins, persisted selection and localized tokenized wrappers work through the app root.",
+        "API forwarding and success/validation/timeout/cancellation/connection/mapping failures are exercised without a live backend.",
+        "No supplied reference-app core, incidental database/toolkit packages, auth policy, insecure TLS or credential logging is introduced."
+      ]
+    },
+    {
+      "id": 2,
+      "prompt": "Use /flutter-core to complete the supplied partial Flutter core. The app has a custom API contract path, its own entry route, feature registrations, a custom palette, assets, locale keys and preference keys. Complete missing essentials and then invoke it again. Keep the existing contracts and behavior; no theme migration or parallel competing infrastructure. No code comments.",
+      "expected_output": "Only missing or incomplete responsibilities are completed; original routes, registrations, values and custom contracts remain intact. The second invocation produces an empty edit plan, with before/after preservation evidence.",
+      "files": [],
+      "assertions": [
+        "Existing custom API and partial core are read and completed without competing replacements.",
+        "Original entry route, registrations, palette, assets, locale and cache keys retain their values and behavior.",
+        "The rerun adds no duplicate registrations, providers, declarations or translations.",
+        "Inspector presence is reported as evidence only and not a completeness certificate."
+      ]
+    },
+    {
+      "id": 3,
+      "prompt": "Use /flutter-core in a minimal Flutter project whose config selects package:http for transport. Keep that choice and the Flutter Knowledge ApiConsumer/GlobalResponse/Result/Failure responsibilities. Use the installed package API, forward real method/body/query/header options, translate transport and decoding failures, and exercise the resulting core through tests. No code comments or Dio installation.",
+      "expected_output": "A working package:http adaptation with preserved selected mechanics, naming and owner lifetimes; actual forwarding/error tests and an honest report of unsupported or missing project decisions.",
+      "files": [],
+      "assertions": [
+        "The selected HTTP package remains in configuration and the default transport is not installed to bypass adaptation.",
+        "Real request forwarding and Failure boundaries are tested against an injected client.",
+        "Adaptation integrates with actual dependency registration and app startup rather than isolated sample code."
+      ]
+    }
+  ]
+}

@@ -1,0 +1,762 @@
+{
+  "schema_version": 1,
+  "contracts": [
+    {
+      "id": "app_root",
+      "paths": [
+        "lib/my_app.dart"
+      ],
+      "symbols": [
+        "MyApp"
+      ],
+      "fixed_path": true,
+      "get_it_checks": {
+        "const_root": "\\bconst\\s+MyApp\\s*\\(\\s*\\{\\s*super\\.key\\s*\\}\\s*\\)"
+      },
+      "get_it_absent_checks": {
+        "no_widget_locator": "\\bGetIt\\b|\\blocator\\b"
+      },
+      "conditional_checks": [
+        {
+          "only_when": {
+            "state_management": [
+              "flutter_bloc",
+              "bloc"
+            ]
+          },
+          "checks": {
+            "network_provider_create": "\\bBlocProvider\\s*<\\s*NetworkCubit\\s*>\\s*\\(\\s*create\\s*:",
+            "network_provider_eager": "\\bBlocProvider\\s*<\\s*NetworkCubit\\s*>\\s*\\([^;]*?\\blazy\\s*:\\s*false\\b"
+          },
+          "absent_checks": {
+            "no_network_provider_value": "\\bBlocProvider\\s*<\\s*NetworkCubit\\s*>\\s*\\.\\s*value\\b|\\bBlocProvider\\s*\\.\\s*value\\s*\\([^;]*?\\bNetworkCubit\\b"
+          }
+        },
+        {
+          "only_when": {
+            "routing": [
+              "navigator"
+            ]
+          },
+          "checks": {
+            "router_initial_route": "\\binitialRoute\\s*:\\s*AppRouter\\.initialRoute\\b"
+          },
+          "absent_checks": {
+            "no_root_route_getter": "\\bString\\s+get\\s+_?initialRoute\\b"
+          }
+        }
+      ]
+    },
+    {
+      "id": "main",
+      "paths": [
+        "lib/main.dart"
+      ],
+      "symbols": [
+        "main"
+      ],
+      "fixed_path": true,
+      "checks": {
+        "binding": "\\bWidgetsFlutterBinding\\.ensureInitialized\\s*\\(",
+        "preferences": "\\bCacheHelper\\.init\\s*\\(",
+        "registration": "\\bregisterAppDependencies\\s*\\(",
+        "skin_load": "\\bawait\\s+\\w+\\s*<\\s*SkinRegistry\\s*>\\s*\\(\\s*\\)\\.load\\s*\\(",
+        "root": "\\bMyApp\\s*\\("
+      },
+      "command_block": true,
+      "get_it_checks": {
+        "no_arg_registration": "\\bregisterAppDependencies\\s*\\(\\s*\\)",
+        "const_root": "\\bconst\\s+MyApp\\s*\\(\\s*\\)"
+      }
+    },
+    {
+      "id": "bloc_observer",
+      "paths": [
+        "lib/main.dart"
+      ],
+      "symbols": [
+        "main"
+      ],
+      "category": "state_management",
+      "only_when": {
+        "state_management": [
+          "flutter_bloc",
+          "bloc"
+        ]
+      },
+      "checks": {
+        "observer_assignment": "\\bBloc\\.observer\\s*=",
+        "shared_talker": "\\b\\w+\\s*<\\s*Talker\\s*>\\s*\\("
+      }
+    },
+    {
+      "id": "router",
+      "paths": [
+        "lib/core/router/app_router.dart"
+      ],
+      "symbols": [
+        "AppRouter"
+      ],
+      "category": "routing",
+      "contract_key": "router",
+      "checks": {
+        "initial_route_getter": "\\bstatic\\s+String\\s+get\\s+initialRoute\\b"
+      }
+    },
+    {
+      "id": "route_names",
+      "paths": [
+        "lib/core/router/routes_strings.dart"
+      ],
+      "symbols": [
+        "RoutesStrings"
+      ],
+      "category": "routing"
+    },
+    {
+      "id": "navigation",
+      "paths": [
+        "lib/core/helpers/extensions/router_extensions.dart"
+      ],
+      "symbols": [
+        "Navigation"
+      ],
+      "category": "routing",
+      "checks": {
+        "pushNamed": "\\bpushNamed\\s*(?:<[^>]+>)?\\s*\\(",
+        "pushReplacementNamed": "\\bpushReplacementNamed\\s*(?:<[^>]+>)?\\s*\\(",
+        "pushNamedAndRemoveUntil": "\\bpushNamedAndRemoveUntil\\s*(?:<[^>]+>)?\\s*\\(",
+        "pop": "\\bpop\\s*(?:<[^>]+>)?\\s*\\(",
+        "popUntil": "\\bpopUntil\\s*(?:<[^>]+>)?\\s*\\(",
+        "popToRoot": "\\bpopToRoot\\s*(?:<[^>]+>)?\\s*\\(",
+        "root_navigator": "\\brootNavigator\\s*:\\s*true\\b"
+      }
+    },
+    {
+      "id": "core_injection",
+      "paths": [
+        "lib/core/di/injection.dart"
+      ],
+      "symbols": [
+        "registerCoreDependencies"
+      ],
+      "category": "dependency_injection",
+      "get_it_checks": {
+        "global_sl": "\\bfinal\\s+GetIt\\s+sl\\s*=\\s*GetIt\\.instance\\s*;",
+        "no_arg_registration": "\\bvoid\\s+registerCoreDependencies\\s*\\(\\s*\\)"
+      },
+      "conditional_checks": [
+        {
+          "only_when": {
+            "state_management": [
+              "flutter_bloc",
+              "bloc"
+            ],
+            "dependency_injection": [
+              "get_it"
+            ]
+          },
+          "checks": {
+            "network_factory": "\\bsl\\.registerFactory\\s*<\\s*NetworkCubit\\s*>\\s*\\("
+          },
+          "absent_checks": {
+            "no_network_singleton": "\\bsl\\.register(?:Lazy)?Singleton\\s*<\\s*NetworkCubit\\s*>\\s*\\("
+          }
+        }
+      ]
+    },
+    {
+      "id": "app_injection",
+      "paths": [
+        "lib/app_injection.dart"
+      ],
+      "symbols": [
+        "registerAppDependencies"
+      ],
+      "category": "dependency_injection",
+      "get_it_checks": {
+        "no_arg_registration": "\\bvoid\\s+registerAppDependencies\\s*\\(\\s*\\)",
+        "core_registration": "\\bregisterCoreDependencies\\s*\\(\\s*\\)"
+      }
+    },
+    {
+      "id": "tokens",
+      "paths": [
+        "lib/core/theme/app_tokens.dart"
+      ],
+      "symbols": [
+        "AppTokens"
+      ],
+      "category": "state_management",
+      "contract_key": "theme"
+    },
+    {
+      "id": "theme",
+      "paths": [
+        "lib/core/theme/app_theme.dart"
+      ],
+      "symbols": [
+        "AppTheme"
+      ]
+    },
+    {
+      "id": "skin",
+      "paths": [
+        "lib/core/theme/skin/app_skin.dart"
+      ],
+      "symbols": [
+        "AppSkin"
+      ]
+    },
+    {
+      "id": "light_skin",
+      "paths": [
+        "lib/core/theme/skin/light_skin.dart"
+      ],
+      "symbols": [
+        "LightSkin"
+      ]
+    },
+    {
+      "id": "dark_skin",
+      "paths": [
+        "lib/core/theme/skin/dark_skin.dart"
+      ],
+      "symbols": [
+        "DarkSkin"
+      ]
+    },
+    {
+      "id": "json_skin",
+      "paths": [
+        "lib/core/theme/skin/json_skin.dart"
+      ],
+      "symbols": [
+        "JsonSkin"
+      ]
+    },
+    {
+      "id": "skin_registry",
+      "paths": [
+        "lib/core/theme/skin/loading/skin_registry.dart"
+      ],
+      "symbols": [
+        "SkinRegistry"
+      ]
+    },
+    {
+      "id": "skin_source",
+      "paths": [
+        "lib/core/theme/skin/loading/skin_source.dart"
+      ],
+      "symbols": [
+        "SkinSource"
+      ]
+    },
+    {
+      "id": "asset_skin_source",
+      "paths": [
+        "lib/core/theme/skin/loading/asset_skin_source.dart"
+      ],
+      "symbols": [
+        "AssetSkinSource"
+      ]
+    },
+    {
+      "id": "skin_parser",
+      "paths": [
+        "lib/core/theme/skin/loading/skin_parser.dart"
+      ],
+      "symbols": [
+        "SkinParser"
+      ]
+    },
+    {
+      "id": "skin_owner",
+      "paths": [
+        "lib/core/theme/skin/logic/skin_cubit.dart"
+      ],
+      "symbols": [
+        "SkinCubit"
+      ],
+      "category": "state_management"
+    },
+    {
+      "id": "app_spacing",
+      "paths": [
+        "lib/core/theme/app_spacing.dart"
+      ],
+      "symbols": [
+        "AppSpacing"
+      ]
+    },
+    {
+      "id": "app_radius",
+      "paths": [
+        "lib/core/theme/app_radius.dart"
+      ],
+      "symbols": [
+        "AppRadius"
+      ]
+    },
+    {
+      "id": "app_elevation",
+      "paths": [
+        "lib/core/theme/app_elevation.dart"
+      ],
+      "symbols": [
+        "AppElevation"
+      ]
+    },
+    {
+      "id": "app_shapes",
+      "paths": [
+        "lib/core/theme/app_shapes.dart"
+      ],
+      "symbols": [
+        "AppShapes"
+      ]
+    },
+    {
+      "id": "typography",
+      "paths": [
+        "lib/core/theme/typography/app_typography.dart"
+      ],
+      "symbols": [
+        "AppTypography"
+      ]
+    },
+    {
+      "id": "fonts",
+      "paths": [
+        "lib/core/theme/typography/app_fonts.dart"
+      ],
+      "symbols": [
+        "AppFonts"
+      ]
+    },
+    {
+      "id": "motion",
+      "paths": [
+        "lib/core/theme/motion/app_motion.dart"
+      ],
+      "symbols": [
+        "AppMotion"
+      ]
+    },
+    {
+      "id": "api",
+      "paths": [
+        "lib/core/data/api/api_consumer.dart"
+      ],
+      "symbols": [
+        "ApiConsumer"
+      ],
+      "category": "http_client",
+      "contract_key": "api"
+    },
+    {
+      "id": "http_transport",
+      "paths": [
+        "lib/core/data/api/dio_consumer.dart"
+      ],
+      "symbols": [
+        "DioConsumer"
+      ],
+      "category": "http_client",
+      "checks": {
+        "direct_error_handler": "\\berror\\.getFailure\\s*\\("
+      }
+    },
+    {
+      "id": "response",
+      "paths": [
+        "lib/core/data/api/global_response.dart"
+      ],
+      "symbols": [
+        "GlobalResponse"
+      ],
+      "contract_key": "response"
+    },
+    {
+      "id": "endpoints",
+      "paths": [
+        "lib/core/data/api/end_points.dart"
+      ],
+      "symbols": [
+        "EndPoints"
+      ],
+      "category": "http_client"
+    },
+    {
+      "id": "result",
+      "paths": [
+        "lib/core/data/error_handling/result.dart"
+      ],
+      "symbols": [
+        "Result",
+        "FutureResult"
+      ],
+      "contract_key": "result"
+    },
+    {
+      "id": "failure",
+      "paths": [
+        "lib/core/data/error_handling/failures/failure.dart"
+      ],
+      "symbols": [
+        "Failure"
+      ],
+      "contract_key": "failure"
+    },
+    {
+      "id": "error_mapping",
+      "paths": [
+        "lib/core/data/error_handling/dio_error_handler/dio_error_handler.dart"
+      ],
+      "symbols": [
+        "DioErrorExtension"
+      ],
+      "category": "http_client"
+    },
+    {
+      "id": "network",
+      "paths": [
+        "lib/core/services/network/network_status.dart"
+      ],
+      "symbols": [
+        "NetworkStatus"
+      ],
+      "category": "network_status",
+      "contract_key": "network_status"
+    },
+    {
+      "id": "network_owner",
+      "paths": [
+        "lib/core/services/network/logic/network_cubit.dart"
+      ],
+      "symbols": [
+        "NetworkCubit"
+      ],
+      "category": "state_management",
+      "conditional_checks": [
+        {
+          "only_when": {
+            "state_management": [
+              "flutter_bloc",
+              "bloc"
+            ]
+          },
+          "checks": {
+            "initial_state": "\\bsuper\\s*\\(\\s*const\\s+NetworkInitialState\\s*\\(",
+            "online_getter": "\\bbool\\s+get\\s+isOnline\\b",
+            "restored_stream": "\\bStream\\s*<\\s*void\\s*>\\s+get\\s+onRestored\\b",
+            "close": "\\bFuture\\s*<\\s*void\\s*>\\s+close\\s*\\("
+          }
+        }
+      ]
+    },
+    {
+      "id": "network_state",
+      "paths": [
+        "lib/core/services/network/logic/network_state.dart"
+      ],
+      "symbols": [
+        "NetworkState",
+        "NetworkInitialState",
+        "NetworkOnlineState",
+        "NetworkOfflineState"
+      ],
+      "category": "state_management"
+    },
+    {
+      "id": "breakpoints",
+      "paths": [
+        "lib/core/layout/breakpoints.dart"
+      ],
+      "symbols": [
+        "Breakpoints",
+        "WindowSize"
+      ]
+    },
+    {
+      "id": "screen_extensions",
+      "paths": [
+        "lib/core/layout/screen_extensions.dart",
+        "lib/core/layout/layout_extensions.dart"
+      ],
+      "symbols": []
+    },
+    {
+      "id": "locales",
+      "paths": [
+        "lib/core/l10n/app_locales.dart"
+      ],
+      "symbols": [
+        "AppLocales"
+      ],
+      "category": "localization"
+    },
+    {
+      "id": "locale_extensions",
+      "paths": [
+        "lib/core/l10n/locale_extensions.dart"
+      ],
+      "symbols": [],
+      "category": "localization"
+    },
+    {
+      "id": "preferences",
+      "paths": [
+        "lib/core/data/cache/cache_helper.dart"
+      ],
+      "symbols": [
+        "CacheHelper"
+      ],
+      "category": "preferences",
+      "contract_key": "cache"
+    },
+    {
+      "id": "logger",
+      "paths": [
+        "lib/core/helpers/app_logger.dart"
+      ],
+      "symbols": [
+        "AppLogger"
+      ],
+      "category": "logging"
+    },
+    {
+      "id": "app_text",
+      "paths": [
+        "lib/core/widgets/text/app_text.dart"
+      ],
+      "symbols": [
+        "AppText"
+      ]
+    },
+    {
+      "id": "app_scaffold",
+      "paths": [
+        "lib/core/widgets/layout/app_scaffold.dart"
+      ],
+      "symbols": [
+        "AppScaffold"
+      ]
+    },
+    {
+      "id": "app_container",
+      "paths": [
+        "lib/core/widgets/layout/app_container.dart"
+      ],
+      "symbols": [
+        "AppContainer"
+      ]
+    },
+    {
+      "id": "vertical_space",
+      "paths": [
+        "lib/core/widgets/layout/space_widgets.dart"
+      ],
+      "symbols": [
+        "VerticalSpace"
+      ]
+    },
+    {
+      "id": "horizontal_space",
+      "paths": [
+        "lib/core/widgets/layout/space_widgets.dart"
+      ],
+      "symbols": [
+        "HorizontalSpace"
+      ]
+    },
+    {
+      "id": "global_appbar",
+      "paths": [
+        "lib/core/widgets/layout/global_appbar.dart"
+      ],
+      "symbols": [
+        "GlobalAppbar"
+      ]
+    },
+    {
+      "id": "primary_button",
+      "paths": [
+        "lib/core/widgets/buttons/primary_button.dart"
+      ],
+      "symbols": [
+        "PrimaryButton"
+      ]
+    },
+    {
+      "id": "secondary_button",
+      "paths": [
+        "lib/core/widgets/buttons/secondary_button.dart"
+      ],
+      "symbols": [
+        "SecondaryButton"
+      ]
+    },
+    {
+      "id": "app_icon_button",
+      "paths": [
+        "lib/core/widgets/buttons/app_icon_button.dart"
+      ],
+      "symbols": [
+        "AppIconButton"
+      ]
+    },
+    {
+      "id": "app_ink_well",
+      "paths": [
+        "lib/core/widgets/buttons/app_ink_well.dart"
+      ],
+      "symbols": [
+        "AppInkWell"
+      ]
+    },
+    {
+      "id": "app_text_field",
+      "paths": [
+        "lib/core/widgets/inputs/app_text_field.dart"
+      ],
+      "symbols": [
+        "AppTextField"
+      ],
+      "checks": {
+        "required_input_action": "\\brequired\\s+this\\.textInputAction\\b"
+      }
+    },
+    {
+      "id": "app_bottom_sheet",
+      "paths": [
+        "lib/core/widgets/sheets/app_bottom_sheet.dart"
+      ],
+      "symbols": [
+        "AppBottomSheet"
+      ]
+    },
+    {
+      "id": "theme_sheet",
+      "paths": [
+        "lib/core/widgets/sheets/theme_sheet.dart"
+      ],
+      "symbols": [
+        "ThemeSheet"
+      ]
+    },
+    {
+      "id": "app_loader",
+      "paths": [
+        "lib/core/widgets/feedback/app_loader.dart"
+      ],
+      "symbols": [
+        "AppLoader"
+      ],
+      "checks": {
+        "center_constructor": "\\bAppLoader\\.center\\s*\\("
+      }
+    },
+    {
+      "id": "app_error_widget",
+      "paths": [
+        "lib/core/widgets/errors/app_error_widget.dart"
+      ],
+      "symbols": [
+        "AppErrorWidget"
+      ]
+    },
+    {
+      "id": "assets",
+      "paths": [
+        "lib/core/helpers/app_assets.dart"
+      ],
+      "symbols": [
+        "AppAssets"
+      ],
+      "literal_checks": {
+        "images": "static\\s+const\\s+String\\s+_images\\s*=\\s*'assets/images'",
+        "icons": "static\\s+const\\s+String\\s+_icons\\s*=\\s*'assets/icons'",
+        "translations": "static\\s+const\\s+String\\s+_translations\\s*=\\s*'assets/translations'"
+      },
+      "checks": {
+        "translations_getter": "\\bstatic\\s+String\\s+get\\s+translations\\s*=>\\s*_translations\\b"
+      }
+    },
+    {
+      "id": "interceptor_logger",
+      "paths": [
+        "lib/core/data/api/app_interceptor_logger.dart"
+      ],
+      "symbols": [
+        "AppInterceptorLogger"
+      ],
+      "category": "logging",
+      "checks": {
+        "talker_interceptor": "\\bAppInterceptorLogger\\s+extends\\s+TalkerDioLogger\\b"
+      }
+    },
+    {
+      "id": "asset_image",
+      "paths": [
+        "lib/core/widgets/images/app_assets_image.dart"
+      ],
+      "symbols": [
+        "AppAssetsImage"
+      ]
+    },
+    {
+      "id": "network_image",
+      "paths": [
+        "lib/core/widgets/images/app_network_image.dart"
+      ],
+      "symbols": [
+        "AppNetworkImage"
+      ]
+    },
+    {
+      "id": "svg_image",
+      "paths": [
+        "lib/core/widgets/images/app_svg_image.dart"
+      ],
+      "symbols": [
+        "AppSvgImage"
+      ]
+    },
+    {
+      "id": "sliver_vertical_space",
+      "paths": [
+        "lib/core/widgets/layout/space_widgets.dart"
+      ],
+      "symbols": [
+        "SliverVerticalSpace"
+      ]
+    },
+    {
+      "id": "sliver_horizontal_space",
+      "paths": [
+        "lib/core/widgets/layout/space_widgets.dart"
+      ],
+      "symbols": [
+        "SliverHorizontalSpace"
+      ]
+    },
+    {
+      "id": "refresh_indicator",
+      "paths": [
+        "lib/core/widgets/feedback/app_refresh_indicator.dart"
+      ],
+      "symbols": [
+        "AppRefreshIndicator"
+      ]
+    }
+  ],
+  "local_ui_packages": {
+    "expressive_sheet": "sheet",
+    "expressive_refresh_indicator": "refresh",
+    "expressive_loading_indicator": "loader",
+    "expressive_snack": "snackbar",
+    "material_shapes": "shapes"
+  }
+}

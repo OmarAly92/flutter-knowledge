@@ -1,0 +1,19 @@
+{
+  "state_management": {"default": "flutter_bloc", "families": [["flutter_bloc", "bloc"], ["hooks_riverpod", "flutter_riverpod", "riverpod", "riverpod_annotation"], ["provider"], ["get"], ["flutter_mobx", "mobx"], ["signals_flutter", "signals"]]},
+  "dependency_injection": {"default": "get_it", "families": [["get_it", "injectable"], ["hooks_riverpod", "flutter_riverpod", "riverpod", "riverpod_annotation"], ["provider"], ["get"]]},
+  "routing": {"default": "navigator", "families": [["go_router", "go_router_builder"], ["auto_route", "auto_route_generator"], ["get"]]},
+  "http_client": {"default": "dio", "families": [["dio", "retrofit"], ["http"], ["chopper"]]},
+  "localization": {"default": "easy_localization", "families": [["easy_localization"], ["slang_flutter", "slang"]], "fallback_families": [["flutter_localizations", "intl"]]},
+  "local_database": {"default": "drift", "families": [["drift", "drift_flutter"], ["hive_ce", "hive_ce_flutter"], ["hive", "hive_flutter"], ["sqflite", "sqflite_common_ffi"], ["isar", "isar_community"], ["objectbox"], ["sembast"]]},
+  "equality": {"default": "equatable", "families": [["equatable"], ["freezed_annotation", "freezed"], ["built_value"]]},
+  "serialization": {"default": "manual", "families": [["freezed", "freezed_annotation", "json_serializable", "json_annotation"], ["built_value", "built_value_generator"], ["dart_mappable"]]},
+  "mocking": {"default": "mocktail", "families": [["mocktail"], ["mockito"]]},
+  "state_testing": {"default": "bloc_test", "families": [["bloc_test"]]},
+  "test_runner": {"default": "flutter_test", "families": [["flutter_test"], ["test"]]},
+  "logging": {"default": "talker", "families": [["talker", "talker_flutter"], ["logger"], ["logging"]]},
+  "preferences": {"default": "shared_preferences", "families": [["shared_preferences"], ["get_storage"]]},
+  "network_status": {"default": "connectivity_plus", "families": [["connectivity_plus"], ["internet_connection_checker_plus", "internet_connection_checker"]]},
+  "typography_scaling": {"default": "flutter_screenutil", "families": [["flutter_screenutil"], ["sizer"], ["responsive_framework"]]},
+  "motion": {"default": "motor", "families": [["motor"], ["flutter_animate"]]},
+  "shapes": {"default": "material_shapes", "families": [["material_shapes"]]}
+}

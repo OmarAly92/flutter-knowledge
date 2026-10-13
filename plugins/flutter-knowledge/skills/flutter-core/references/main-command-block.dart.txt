@@ -1,0 +1,25 @@
+/// To Generate Native Splash from [flutter_native_splash] package
+/// dart run flutter_native_splash:create --path=flutter_native_splash.yaml
+
+/// To Generate App Icon from [icons_launcher] package
+/// dart run icons_launcher:create --path icons_launcher.yaml
+
+/// To Run Build Runner
+/// flutter pub run build_runner build --delete-conflicting-outputs
+
+/// To Generate Localizations
+/// dart run easy_localization:generate -S assets/translations -O lib/core/l10n -o locale_keys.g.dart -f keys
+
+/// on release the app on stores build the app with the following command
+/// flutter build appbundle --release --obfuscate --split-debug-info=build/debug-info
+
+/// Cleaning IOS Libraries Commands
+/// rm -rf ios/Pods
+/// rm -rf ios/Podfile.lock
+/// rm -rf ~/Library/Developer/Xcode/DerivedData
+/// flutter clean
+/// cd ios
+/// pod install --repo-update
+///
+/// Opening Xcode project in IOS
+/// open ios/Runner.xcworkspace
