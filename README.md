@@ -42,6 +42,20 @@ mechanism from the other two's one-time injection. Gemini already gets this
 for free since `GEMINI.md` is always loaded. Cursor and Kimi rely on
 description-based triggering only (see `CONTRIBUTING.md`).
 
+## Use ordinary requests
+
+Describe the result you want; skill names and slash commands are optional:
+
+```text
+Build the login screen from ./design/app.html.
+The login UI changed in the design. Update the existing screen.
+Apply the updated shared colors and fonts from ./design/app.html to the app theme.
+```
+
+The workflow selects the source reader, relevant conventions, visual comparison and review. Existing-screen updates preserve working logic and use the screen's known design source; if that source or screen is unclear, the agent asks for the missing identity. A local UI update stays scoped to that screen. App-wide theme requests use the foundation workflow after core exists. Design comparisons report measured differences and unresolved gaps; passing an old Flutter golden does not prove a match to the updated design.
+
+Explicit commands remain available. Creating shared core still requires asking to bootstrap it or invoking `/flutter-core`; an ordinary screen update does not create core automatically.
+
 ## Project package configuration
 
 Run `/flutter-init` in a Flutter project to create `flutter-knowledge.yaml`
@@ -223,3 +237,9 @@ Single-screen design requests build immediately and verify against the original 
 Task routing and completion are defined once in [task workflows](plugins/flutter-knowledge/skills/flutter-knowledge/references/workflows.md). Source inspection belongs to HTML/Figma readers; conventions to implementation skills; comparison to visual verification; capture/regression to golden tests; and findings to review.
 
 The workflow reuses source facts/references only after dependency/profile/renderer fingerprint checks, resolves source-versus-token decisions early, retains full logs with concise summaries, and batches final checks. Required comparisons, variant inspection and review remain unchanged. See [cache safety](plugins/flutter-knowledge/skills/visual-verification/references/design-cache.md).
+
+Before a design capture matrix, [calibration](plugins/flutter-knowledge/skills/visual-verification/references/preflight.md#reusable-component-calibration) checks effective typography, layout-versus-crop scaling, painted field bounds and shared composition through the real core/camera. Matching inspected inputs can reuse that scoped calibration; they never verify current screens.
+
+[State coverage and baseline handoff](plugins/flutter-knowledge/skills/golden-tests/references/coverage-handoff.md) keep supplied design comparisons separate from unprovided-state regression/behavior checks. Inspected eligible candidates are promoted with prior PNG/profile/review backups, checked by ordinary golden tests without updating, and recovered through a resumable transaction if interrupted or rejected. Declared coverage does not prove that unvisited states were discovered.
+
+[Stage measurements](plugins/flutter-knowledge/skills/visual-verification/references/stage-usage.md) record local timings/command counts and available provider counters without estimating missing tokens. Workload-matched comparisons preserve required coverage; these helpers do not promise a percentage reduction or establish provider billing. These steps are selected by the agent during authorized design work, without new user commands.

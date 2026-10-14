@@ -1,6 +1,6 @@
 ---
 name: html-to-widget
-description: The translation contract from an HTML/CSS design prototype to Flutter widgets — computed styles read in a browser with scripts/layout-tree.js, CSS flex to Row and Column, gap to VerticalSpace/HorizontalSpace, every value through context.tokens, existing core widgets reused, JS-toggled states as cubit states. Use whenever an HTML prototype, mockup file or URL is the design for a screen or component you are asked to build, even when the request is casual ("build this screen from the prototype", "make it match the HTML"). Also use for whole-app HTML design planning and source inspection; use set-theme-from-html to apply complete foundations/assets after shared core exists. For a Figma frame use figma-to-widget instead.
+description: Build or update Flutter screens/components from an HTML/CSS prototype using browser-computed layout, project tokens and existing core widgets. Use for casual requests such as "the login UI changed in the HTML", "update this existing screen" or "make it match the prototype" when an HTML source is supplied or already associated with the screen; no slash command is needed. Also handles whole-app HTML planning and source inspection. Use set-theme-from-html for whole-design foundations/assets and figma-to-widget for Figma.
 ---
 
 # HTML to Widget
@@ -21,6 +21,8 @@ Treat a quoted path as one argument. Resolve relative paths from the current pro
 If the argument is omitted, use an unambiguous HTML source already supplied in the current request or conversation; otherwise ask for its path. If the supplied path is missing or unreadable, report that exact path and request a correction. For a single-screen HTML file, proceed with implementation. For a multi-screen prototype, use the requested screen/task or established scope; if neither selects a scope, ask which screen to build before implementing the whole prototype.
 
 For implementation, read the [project configuration contract](../flutter-init/references/configuration.md) before applying package-specific instructions. Keep its conventions and naming; adapt package-specific examples through the selected mechanics.
+
+Natural-language requests use the same route as this command. For an existing screen, follow [natural-language design updates](../flutter-knowledge/references/workflows.md#natural-language-design-updates): resolve its known source, inspect and preserve its logic, modify the existing UI and verify against the updated HTML. The user need not provide a selector, name the specialist skills or repeat a source path that is already unambiguous.
 
 The failure mode this prevents: eyeballing a screenshot of the prototype, or copying pixel positions, and rebuilding it with `Stack`, fixed sizes and literal colors. The CSS already says how the layout behaves — flex direction, gaps, growth, alignment. Read it and map it.
 

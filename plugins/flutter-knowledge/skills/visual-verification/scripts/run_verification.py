@@ -5,6 +5,7 @@ import os
 import re
 import subprocess
 import sys
+import time
 import uuid
 from argparse import Namespace
 from datetime import datetime, timezone
@@ -275,6 +276,7 @@ def preserve_uncompared(actual, candidate, artifacts):
 
 
 def run_manifest(manifest_path, out_dir, project=None):
+    elapsed_start = time.perf_counter()
     manifest_path = Path(manifest_path).resolve()
     manifest, project, batch, entries, base = parse_manifest(manifest_path, Path(project) if project else None)
     manifest_identity = identity(manifest_path)
@@ -296,9 +298,15 @@ def run_manifest(manifest_path, out_dir, project=None):
             candidates[entry['id']] = path
     attempt.mkdir(parents=True)
     shared = None
+    capture_seconds = 0.0
+    comparison_seconds = 0.0
+    capture_commands = 0
     if batch is not None:
         argv = camera_argv(batch['command'], values)
+        command_start = time.perf_counter()
         done = execute(argv, project)
+        capture_seconds += time.perf_counter() - command_start
+        capture_commands += 1
         shared = {'mode': 'batch', 'argv': argv, 'exit_code': done.returncode,
                   'stdout': save_log(attempt, 'capture.stdout.log', done.stdout),
                   'stderr': save_log(attempt, 'capture.stderr.log', done.stderr)}
@@ -311,7 +319,10 @@ def run_manifest(manifest_path, out_dir, project=None):
         capture = shared
         if shared is None:
             argv = camera_argv(row['capture']['command'], dict(values, actual=str(actual), profile=str(entry['profile_path'])))
+            command_start = time.perf_counter()
             done = execute(argv, project)
+            capture_seconds += time.perf_counter() - command_start
+            capture_commands += 1
             capture = {'mode': 'row', 'argv': argv, 'exit_code': done.returncode,
                        'stdout': save_log(row_dir, 'capture.stdout.log', done.stdout),
                        'stderr': save_log(row_dir, 'capture.stderr.log', done.stderr)}
@@ -353,7 +364,9 @@ def run_manifest(manifest_path, out_dir, project=None):
             record['compare'] = None
         else:
             diff = row_dir / 'diff.png'
+            command_start = time.perf_counter()
             payload, done, argv = compare_row(actual, entry['reference'], diff)
+            comparison_seconds += time.perf_counter() - command_start
             record['compare'] = {'argv': argv, 'exit_code': done.returncode}
             artifacts['compare_stdout'] = save_log(row_dir, 'compare.stdout.log', done.stdout)
             artifacts['compare_stderr'] = save_log(row_dir, 'compare.stderr.log', done.stderr)
@@ -372,6 +385,11 @@ def run_manifest(manifest_path, out_dir, project=None):
                 'manifest': manifest_identity, 'project': str(project),
                 'capture': shared and {key: shared[key] for key in ('mode', 'argv', 'exit_code', 'stdout', 'stderr')},
                 'rows': results, 'summary': summary, 'exit_code': code}
+    document['metrics'] = {'elapsed_seconds': time.perf_counter() - elapsed_start,
+        'capture_commands': capture_commands, 'capture_seconds': capture_seconds,
+        'comparison_commands': sum(record['compare'] is not None for record in results),
+        'comparison_seconds': comparison_seconds, 'rows': len(results),
+        'provider_tokens': None, 'provider_tokens_reason': 'Local capture/comparison does not expose agent token counters.'}
     write_json(attempt / 'results.json', document)
     (attempt / 'verification.md').write_text(render(document, attempt, None), encoding='utf-8')
     return attempt, code

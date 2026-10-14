@@ -103,13 +103,13 @@ Match a design's values by value — a name in the design is only a hint: a colo
 | A one-off shadow | may stay inline; its color comes from the skin |
 | The user decided the design's values are the source of truth | add every value |
 
-A new token is named for its role or its place on the scale — `space.formGap`, `space.huge`, `text.fieldLabel`, a slot `success`, not `green` — and carries its `///` doc comment.
+A new token is named for its role or its place on the scale — `space.formGap`, `space.huge`, `text.fieldLabel`, a slot `success`, not `green` — and carries its `///` doc comment unless the project's instructions prohibit comments; record the explanation in the design mapping instead.
 
 ## Early design decision
 
 Before building, record a short unmatched-value table: source value, existing token/nearest mapping, expected visual consequence and decision. Reuse it through the task; revisit only when source, tokens or authorization changes. Exact existing matches need no question.
 
-If the user explicitly makes design values authoritative (for example, an exact/pixel-perfect match), apply the existing source-of-truth row above: add role-based tokens with measured values. This retains token access, architecture and naming; it never permits presentation literals or requires another approval for already-authorized work.
+Requests to reproduce a supplied design, such as "match this design" or "update the existing screen to the new HTML UI", make its measured values authoritative within the requested scope; users do not need to say "pixel-perfect" or name a skill. Apply the existing source-of-truth row above: add role-based tokens with measured values. This retains token access, architecture and naming; it never permits presentation literals, changes to unrelated shared defaults or another approval for already-authorized work. A request to adapt a design to the project's existing scale retains that scale-preserving policy instead.
 
 Otherwise keep the scale-preserving policy and disclose differences early. If mappings conflict with requested fidelity, ask one bundled question with the concrete table/consequences before dependent styling; continue independent work. Do not silently decide to snap, create arbitrary one-off tokens, change references or raise comparison thresholds. Changed exact-source authorization supersedes earlier snapped mappings; visual verification then fixes those values through tokens rather than treating the old mapping as unavoidable.
 

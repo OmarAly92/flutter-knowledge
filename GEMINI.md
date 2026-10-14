@@ -49,4 +49,6 @@ them as the source of truth over legacy patterns in the codebase.
 
 @./plugins/flutter-knowledge/skills/visual-verification/references/design-cache.md
 @./plugins/flutter-knowledge/skills/visual-verification/references/preflight.md
+@./plugins/flutter-knowledge/skills/golden-tests/references/coverage-handoff.md
+@./plugins/flutter-knowledge/skills/visual-verification/references/stage-usage.md
 @./plugins/flutter-knowledge/skills/visual-verification/references/runner.md

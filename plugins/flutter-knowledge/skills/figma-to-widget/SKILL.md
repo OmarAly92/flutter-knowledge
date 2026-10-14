@@ -1,6 +1,6 @@
 ---
 name: figma-to-widget
-description: The translation contract from a Figma frame to Flutter widgets — Auto Layout to Row and Column, gaps to VerticalSpace/HorizontalSpace, Hug and Fill to MainAxisSize.min and Expanded, Figma variables and styles to context.tokens, component instances to existing core widgets, absolute positioning to Stack only where layers overlap. Use whenever a Figma link, frame or file is the design for a screen or component you are asked to build, even when the request is casual ("build this screen from Figma", "make it look like the design"). Also use for whole-app Figma design planning and extracting foundation values. For an HTML prototype use html-to-widget instead.
+description: Build or update Flutter screens/components from a Figma frame using Auto Layout, variables, project tokens and existing core widgets. Use for casual requests such as "the login design changed in Figma", "update this existing screen" or "make it look like the design" when a Figma source is supplied or already associated with the screen; no slash command is needed. Also handles whole-app Figma planning and foundation extraction. For HTML use html-to-widget.
 ---
 
 # Figma to Widget
@@ -12,6 +12,8 @@ The failure mode this prevents: reading pixel positions off the frame and rebuil
 ## Task route
 
 Follow the [task workflow](../flutter-knowledge/references/workflows.md): build a requested single screen immediately, produce briefs for whole-app planning, and continue through every screen for explicit whole-app implementation. Planning uses the [shared design briefs](../flutter-knowledge/references/design-briefs.md) and does not require configuration creation or Flutter tooling. This skill owns source inspection; convention skills own implementation and `visual-verification` owns source comparison.
+
+Existing-screen updates follow [natural-language design updates](../flutter-knowledge/references/workflows.md#natural-language-design-updates). Resolve the associated frame and current revision, preserve the working logic and update the existing UI. Users do not need to name skills or repeat an unambiguous frame identity.
 
 ## Reusable source inputs
 

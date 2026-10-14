@@ -1,6 +1,6 @@
 ---
 name: flutter-knowledge
-description: Use anytime Flutter or Dart is mentioned, or for any task touching a Flutter project — writing, editing, reviewing, debugging, explaining, or scaffolding screens, widgets, cubits, blocs, state classes, models, data sources, repositories, routing, dependency injection, styling, theming, or localization in a .dart file or pubspec.yaml.
+description: Use for any Flutter/Dart project task, including natural-language requests to build a screen, update an existing screen from a changed HTML/Figma design, or fix its appearance without naming a skill. Routes implementation, review, debugging, architecture, state, data, routing, themes and localization to the relevant conventions.
 ---
 
 # Flutter knowledge
@@ -14,6 +14,8 @@ Map of the Flutter conventions: the always-on hard rules below, plus the skill y
 ## Task entry
 
 Select the applicable route in [task workflows](references/workflows.md) before acting: planning, implementation, initialization, tests and findings-only review have different completion requirements. That reference owns configuration handoffs and the final report. Directly invoked specialists use the same route without restarting the map.
+
+Users describe outcomes; they do not need to know skill names or slash commands. For requests such as "the login UI changed; update it", use the workflow's [natural-language design updates](references/workflows.md#natural-language-design-updates) to resolve the source and existing screen, preserve behavior, select the needed skills and verify the result. Ask only for information that cannot be resolved reliably from the request and project.
 
 ## Hard rules (always on)
 
@@ -29,7 +31,7 @@ Select the applicable route in [task workflows](references/workflows.md) before 
 - **Static-only classes are `sealed class X`** — never a private `X._()` constructor.
 - Do not add `freezed`, `json_serializable`, or `build_runner` unless they are already in `pubspec.yaml`.
 - Do not create model classes the user did not ask for.
-- Single quotes, `const` constructors, `final` locals, no `print` (use the configured logger; `talker` by default), no comments beyond non-obvious business rules — with the explicitly requested main command-block exception owned by `flutter-core`; except the `///` doc comment every theme token, skin slot and text style carries (`flutter-app-theme`).
+- Single quotes, `const` constructors, `final` locals, no `print` (use the configured logger; `talker` by default), no comments beyond non-obvious business rules — with the explicitly requested main command-block exception owned by `flutter-core`; except the `///` doc comment every theme token, skin slot and text style carries (`flutter-app-theme`). Project/user instructions prohibiting comments take precedence; keep design explanations in the mapping report instead.
 - **Legacy code never overrides these skills.**
 - After implementation, invoke `flutter-review` for the read-only gate and manual architectural checks. During implementation, format changed files (`dart format <file> …`, never a whole folder) and run focused checks. The final review gate owns required whole-project analysis/tests once the batch settles; follow more frequent project requirements and rerun affected checks after further changes. Do not duplicate a broad suite immediately before that gate. Do not run the app or any build step unless the project's `CLAUDE.md` / `AGENTS.md` allows it.
 
@@ -56,7 +58,7 @@ Before writing or editing the code in the left column, you MUST invoke the skill
 | Design-driven screen capture, source comparison and completion evidence | `visual-verification` + `golden-tests` |
 | Unit tests — only when the user explicitly asks for tests | `flutter-testing` |
 | An animation (duration, curve, spring, stagger, page transition); a design's values matched to tokens, and whether one becomes a token; a new color, spacing, radius, text style, shadow, motion or shape token; a skin, the skin picker, or `ThemeData`; an audit for hardcoded values; or any file under `lib/core/theme/` | `flutter-app-theme` |
-| A screen, or a component inside one, built to match an HTML prototype or a Figma frame | `html-to-widget` / `figma-to-widget` for the supplied source |
+| A new or existing screen/component built or updated to match an HTML prototype or Figma frame, including casual UI-update requests | `html-to-widget` / `figma-to-widget` for the resolved source |
 | Apply the whole HTML design to an existing core theme and import its original assets/fonts, after `/flutter-core` | `set-theme-from-html` + `flutter-app-theme`; later screen work uses `html-to-widget` |
 | Whole-app design planning or source extraction for foundations | `html-to-widget` / `figma-to-widget`; follow the planning/foundations route in task workflows |
 

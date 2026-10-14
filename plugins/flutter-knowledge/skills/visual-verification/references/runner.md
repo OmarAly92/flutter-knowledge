@@ -48,6 +48,8 @@ Each run creates a new attempt directory containing `results.json`, `verificatio
 
 `verification.md` follows the seven-column evidence table from the skill, with source-backed percentages from `compare.py` and no number for errors, NOT_RUN or regression-only rows. Default settings and comparator exits are passed through without overrides.
 
+`results.json.metrics` adds measured local elapsed seconds, capture/comparison command attempts and row counts. Batch capture counts as one command even when it renders multiple rows; failed commands remain attempts and do not invent comparisons. Agent token counters are unavailable to the local runner and remain null. See [stage measurement](stage-usage.md) for immutable provider-reported stage evidence and matched-workload comparisons; these measurements do not alter scoring, statuses or required checks.
+
 ## Inspection and finalization
 
 Open the Flutter, reference and diff PNGs at full resolution, check the state, fonts, direction and anything red, then fill the template from `inspection-template`: `inspector`, `inspected_at`, per row `inspected: true`, `outcome` (`accepted` or `rejected`) and notes naming what was read. The template carries the current artifact hashes. `finalize` refuses the inspection if the results, source, reference, profile, candidate, diff, logs or bound source cache artifacts changed since the run or the inspection, if the source dependency inventory changed, if any row is missing or uninspected, or if the output directory exists. It writes `reviewed_results.json` and a reviewed `verification.md` in a new directory and leaves the original results untouched. Writing `inspected: true` records an attestation; the tool cannot perform the PNG inspection for you.

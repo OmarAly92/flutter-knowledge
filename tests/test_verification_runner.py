@@ -148,6 +148,12 @@ class VerificationRunnerTests(unittest.TestCase):
         second_rows = json.loads((second / 'results.json').read_text())['rows']
         self.assertNotEqual(first_rows[0]['inputs']['candidate']['path'], second_rows[0]['inputs']['candidate']['path'])
         self.assertTrue(all(row['comparison']['status'] == 'PASS' for row in first_rows))
+        metrics = json.loads((first / 'results.json').read_text())['metrics']
+        self.assertEqual(metrics['capture_commands'], 1)
+        self.assertEqual(metrics['comparison_commands'], 2)
+        self.assertEqual(metrics['rows'], 2)
+        self.assertIsNone(metrics['provider_tokens'])
+        self.assertGreaterEqual(metrics['elapsed_seconds'], metrics['capture_seconds'] + metrics['comparison_seconds'])
 
     def test_batch_paths_must_be_unique_candidates_inside_project(self):
         for actual in ('test/goldens/baseline.png', '../{attempt}/escape.png'):
@@ -173,6 +179,8 @@ class VerificationRunnerTests(unittest.TestCase):
                 self.assertEqual(code, 2)
                 self.assertEqual(row['capture']['exit_code'], 1)
                 self.assertEqual(row['comparison']['status'], 'ERROR')
+                self.assertEqual(results['metrics']['capture_commands'], 1)
+                self.assertEqual(results['metrics']['comparison_commands'], 0)
                 self.assertNotIn('overall_percent', row['comparison'])
                 self.assertEqual(len(self.commands), 1)
                 self.assertNotEqual(first, failed)

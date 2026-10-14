@@ -9,7 +9,7 @@ For implementation, read the [project configuration contract](../flutter-init/re
 
 `visual-verification` proves a screen matches its design today; a golden is what stops it drifting tomorrow. Goldens here are plain `flutter_test` (`matchesGoldenFile`) — no golden package.
 
-Design-driven implementation must follow the [per-screen verification contract](../visual-verification/SKILL.md#required-completion-contract): capture a candidate, compare it against the original HTML/Figma reference, inspect the diff and report percentages before approving a baseline. Flutter-to-Flutter regression and source-design comparison are separate checks.
+Source-backed rows in design-driven implementation must follow the [per-screen verification contract](../visual-verification/SKILL.md#required-completion-contract): capture a candidate, compare it against the original HTML/Figma reference, inspect the diff and report percentages before approving its baseline. Flutter-to-Flutter regression and source-design comparison are separate checks.
 
 For direct regression-test requests, follow the [golden workflow](../flutter-knowledge/references/workflows.md) without requiring a design source. When visual verification requests a capture, return the artifact to its comparison loop; do not recursively restart source inspection.
 
@@ -26,6 +26,12 @@ Tag every golden file `@Tags(['golden'])` and declare the tag once in `dart_test
 ## Shared capture
 
 Read [the shared capture reference](references/capture.md) for the harness used by both golden regression and design verification. Reuse the existing project harness and its configured package APIs.
+
+## Adaptive coverage and baseline handoff
+
+Read [coverage and handoff](references/coverage-handoff.md) before selecting state rows or approving baselines. Inspect the actual source transitions and live screen/owner/field code to discover applicable states, then bind each to source comparison where a reference exists or inspected regression plus behavior where it does not. The helper checks a declared scoped ledger; it does not discover unvisited states. Missing/unsupported required states block completion.
+
+After opening the actual PNGs, use the existing runner inspection and the handoff helper to preserve prior PNG/profile/review evidence, promote only eligible candidates, and run ordinary golden tests without `--update-goldens`. Keep source fidelity, local baseline approval, behavior and normal regression separate. Regression-only candidates may be locally approved for authorized UI work without another user confirmation, but never become source VERIFIED.
 
 ## Writing one
 
@@ -159,7 +165,7 @@ Reuse the existing harness, capture required variants together where practical a
 
 ## The matrix
 
-This is the default regression matrix, not a limit on source-design coverage. Capture every supplied reference variant required by `visual-verification`, including alternate skins/locales for non-main states. Add the following regression variants where supported by the project; the main state gets the full matrix and other states get their source profile.
+This is the default regression matrix, not a limit on source-design coverage. Capture every supplied reference variant required by `visual-verification`, including alternate skins/locales for non-main states. Add the following regression variants where supported by the project; the main state gets the supported full matrix and other states get their supplied source profiles plus relevant RTL/large-text/narrow/keyboard risk checks selected from inspected state/code behavior.
 
 | Variant | Why |
 |---|---|
@@ -173,17 +179,13 @@ The full cross-product is too many images to review. A variant that throws `A Re
 
 ## Regenerating
 
-```bash
-flutter test --update-goldens test/feature/<feature>/presentation/<screen>_screen/ui/<screen>_golden_test.dart
-```
+Capture intended changes into per-attempt candidate paths with the existing runner, inspect them, and follow [the inspected handoff](references/coverage-handoff.md#promote-check-recover). `--update-goldens` is a camera operation; it can overwrite approved expectations when aimed at them and never proves fidelity or regression correctness. The handoff preserves prior baselines/profiles/reviews and runs a real ordinary check after promotion.
 
-That command replaces expected images with current output; it does not prove design fidelity, and rendering/test failures can still fail. Once a golden is committed:
+- A failing golden needs an intended-change decision. Open the PNGs written to `failures/` next to the test and retain the failed check.
+- Intended: capture a new candidate, open every changed PNG, approve through the scoped coverage ledger, then check without updating. An unexplained change blocks approval.
+- After a Flutter upgrade, regenerate deliberately on the same OS and inspect the changed pixels before approval.
 
-- A failing golden first gets a question — was the change intended? Look at the images `flutter test` writes to `failures/` next to the test.
-- Intended: regenerate, then open every changed PNG before committing. A golden that changed and nobody can say why is a bug being committed.
-- After a Flutter upgrade, expect a few changed pixels: regenerate on purpose, look, commit.
-
-In review, changed golden PNGs are changed code.
+In review, changed golden PNGs are changed code. Local baseline approval does not commit or publish anything.
 
 ## Common mistakes
 

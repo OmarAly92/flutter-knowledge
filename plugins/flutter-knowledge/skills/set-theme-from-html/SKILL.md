@@ -1,11 +1,15 @@
 ---
 name: set-theme-from-html
-description: Apply the complete app theme and import original icons, images and fonts from a whole HTML design after shared core exists. Reads browser-computed foundations across its screens, states and supplied skins, then maps them through the project's theme APIs. Use for /set-theme-from-html with an HTML design path or requests to prepare an existing Flutter core from an HTML design; use html-to-widget for business screens.
+description: Apply or refresh app-wide theme foundations and original icons, images and fonts from a whole HTML design after shared core exists. Use for requests such as "apply this HTML design to the app theme" or "the design's shared colors and fonts changed", as well as /set-theme-from-html with a path. Reads computed foundations across screens, states and supplied skins through the project's theme APIs. A local screen refresh uses html-to-widget instead.
 ---
 
 # Set Theme from HTML
 
 `/set-theme-from-html <html-design-path>` prepares app-wide foundations for later `/html-to-widget` screen implementation. Invocation authorizes the scoped theme/asset edits and required checks. It does not authorize scaffolding core, business screens, routes, state/DI replacement, package changes, publishing or a release.
+
+A natural-language request to apply or refresh these app-wide foundations authorizes the same scoped work; no slash command is required. Follow [task routing](../flutter-knowledge/references/workflows.md#natural-language-design-updates) to distinguish an app-wide foundation request from a local screen refresh.
+
+Complete preparation covers all seven theme groups and the original design resources. A scoped refresh such as "update the shared colors and fonts" changes only the requested groups, their necessary component mappings and affected original resources. Inspect their usage across the whole source, preserve unrelated spacing/radii/motion/shapes/assets, and report dependent mismatches instead of silently expanding the update. Its verification and completion claims cover that refresh, not an entirely reapplied theme.
 
 ## Source and prerequisites
 
@@ -30,6 +34,8 @@ Read [asset import and application](references/assets-and-application.md) and [f
 Write a mapping report under the project's existing `docs/design/`: the source inventory and profiles, observed CSS facts kept separate from implementation choices, and one row per source role or resource naming its token, asset or wrapper consumer. Mark each row `extracted`, `applied` or `visually checked`, and list provisional, unchanged and unsupported roles with reasons. Link source extraction evidence rather than copying the recipe. Avoid shipped absolute source-machine paths or credentials.
 
 Invoke `visual-verification` and its [shared golden capture](../golden-tests/references/capture.md) for a compact set of source-backed component checks in every supplied skin: each shared control variant, text role and paint role the screens will reuse. Render the **actual applied project theme, skins, loaded fonts and core wrappers**; a separately styled replica proves nothing. This command does not implement screens or need a full-screen matrix. No threshold loosening, resized comparisons or ignored gaps. A composite's PASS cannot approve a failing child. Motion and shape behavior static PNGs cannot show need their own evidence.
+
+Use the additive [component calibration preflight](../visual-verification/references/preflight.md#reusable-component-calibration) to check effective runtime typography, viewport/crop scaling, painted field bounds and glow overlap before these component comparisons. Reuse it only with matching inspected fingerprints; it never approves later screens.
 
 Run `flutter-review` as the final findings-only gate. State only the checked roles and components as verified, never an entire app. Report files, executed checks and remaining gaps, then hand the mapping report, imported assets and source profiles to `html-to-widget`, which builds screens on these foundations and still runs its own source comparison. Fixes made later during screen work belong to that stage and are reported there. When the user asks for an auditable proof, add the [optional strict handoff gate](references/strict-handoff-gate.md).
 

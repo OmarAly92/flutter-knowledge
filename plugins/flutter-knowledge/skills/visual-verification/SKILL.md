@@ -1,6 +1,6 @@
 ---
 name: visual-verification
-description: Closes the loop on UI built from a design — capture the screen headless as a golden (flutter test --update-goldens), capture the design at the same size (headless Chrome for an HTML prototype, a 2x export for Figma), diff them with scripts/compare.py, read the diff, fix, and repeat — four rounds of guesses, then only fixes whose cause is known. Use after building or changing a screen or widget from a design, whenever asked whether something matches the design, and before declaring design-driven UI work done. Trigger it at the end of design-driven UI work without being asked — code that compiles is not a screen that matches.
+description: Capture Flutter and its HTML/Figma design at matching profiles, compare with scripts/compare.py, inspect differences and fix known causes. Use automatically after design-driven screen/widget implementation or updates, before declaring fidelity, and for requested visual comparison runs. Findings-only reviews consume existing evidence through flutter-review; they do not start captures or fixes.
 ---
 
 # Visual Verification
@@ -10,6 +10,8 @@ For implementation, read the [project configuration contract](../flutter-init/re
 An agent with no feedback loop declares a screen finished the moment it compiles — the largest source of "looks roughly right but is wrong" UI. This skill is the loop. It runs headless with `flutter test`: no device, no emulator, no running app.
 
 Use the [task workflow](../flutter-knowledge/references/workflows.md) for entry and final handoff. This skill owns source comparison and its correction loop, then returns evidence to the workflow for findings-only review.
+
+A findings-only review follows that workflow's review route: inspect existing comparison evidence and report stale or missing coverage. Do not start this capture/correction loop unless implementation or a new visual comparison run is requested. A comparison-only request authorizes its evidence capture, but UI fixes still require implementation scope.
 
 ## Required completion contract
 
@@ -78,7 +80,7 @@ python3 "<skill-directory>/scripts/compare.py" \
   --output build/visual_diff/<screen_state>.png
 ```
 
-Resolve `<skill-directory>` from the loaded `SKILL.md` path and run the bundled script; do not copy or reimplement it. First run only: `python3 -m pip install --user pillow numpy`.
+Resolve `<skill-directory>` from the loaded `SKILL.md` path and run the bundled script; do not copy or reimplement it. Reuse available Pillow/NumPy. If missing, install them only within the project's permitted tooling environment; otherwise report the exact prerequisite. Do not install comparison dependencies during findings-only review.
 
 Exit codes: `0` match, `1` difference above threshold, `2` could not run (a missing file, an unreadable image, bad arguments). **A `2` is not a pass.**
 
@@ -115,7 +117,9 @@ A size mismatch stops the script: rescaling one image to fit the other buries th
 
 ## After it matches
 
-After the source comparison and PNG review pass, promote the candidate to the regression baseline and hand off to `golden-tests` for its variants. Compare each design-backed variant against its own reference; the others establish regression coverage only. Commit only when authorized. Later baseline updates need an intentional UI change and inspection of every changed PNG.
+For comparison-only work, stop with the source/Flutter/diff artifacts, measurements and inspection report. Do not promote a regression baseline, generate regression variants or start fixes unless that additional work is authorized.
+
+For authorized design implementation, after the source comparison and PNG review pass, use `golden-tests` and its [coverage/handoff contract](../golden-tests/references/coverage-handoff.md) to preserve prior baselines, promote eligible inspected candidates and pass the ordinary regression check without `--update-goldens`. Compare each design-backed variant against its own reference; the others establish regression coverage only. Do not finish with candidates alone or treat a skipped/empty regression suite as a pass. Commit only when authorized. Later baseline updates need an intentional UI change and inspection of every changed PNG.
 
 ## What this does not catch
 
