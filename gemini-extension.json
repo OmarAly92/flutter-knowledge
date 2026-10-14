@@ -1,6 +1,6 @@
 {
   "name": "flutter-knowledge",
   "description": "Flutter/Dart conventions and design workflows: feature architecture, data, Cubit, routing, themes, localization, HTML/Figma implementation, visual verification and golden tests.",
-  "version": "2.5.0",
+  "version": "2.5.1",
   "contextFileName": "GEMINI.md"
 }
