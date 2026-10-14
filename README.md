@@ -56,6 +56,77 @@ The workflow selects the source reader, relevant conventions, visual comparison 
 
 Explicit commands remain available. Creating shared core still requires asking to bootstrap it or invoking `/flutter-core`; an ordinary screen update does not create core automatically.
 
+## Start with an existing Flutter project
+
+After installing the plugin, open your Flutter project's root folder in your coding agent—the folder containing `pubspec.yaml`. The examples below are **agent-chat commands and requests**. Replace `./design/app.html` with your actual HTML design path; it may contain the whole app.
+
+### 1. Initialize the project configuration
+
+```text
+/flutter-init
+```
+
+The agent reads the project's packages and source, then creates `flutter-knowledge.yaml`. Review the detected choices and recommended defaults, and resolve any ambiguous package choices it reports. Initialization only writes configuration; it does not install the recommended packages or build the app.
+
+### 2. Prepare the shared core when needed
+
+For a newly created app or an incomplete core, run:
+
+```text
+/flutter-core
+```
+
+The agent creates or completes routing, dependency injection, API/error handling, network services, localization, shared widgets, theme tokens/skins and app startup wiring. Existing working equivalents and package choices are preserved. If you run this before initialization, it runs `flutter-init` first when configuration is absent.
+
+For an established app whose core already fulfills these responsibilities, continue with the requested feature or design work. Running core setup is not required for every screen. Core setup provides the foundation; its provisional theme values are not a match to a design you have not supplied. Real backend integration still needs your API contract and endpoint configuration.
+
+### 3. Apply the HTML design to the app theme
+
+Once the required core exists and you have the HTML design, run:
+
+```text
+/set-theme-from-html ./design/app.html
+```
+
+The agent inspects the whole supplied design, imports its original icons, images and fonts, and applies the observed skin colors, spacing, radii, typography, elevation, motion and shapes through the existing theme and shared widgets. It verifies representative components and reports unsupported or unprovided values. This prepares the foundations; it does not build the business screens. If the required core is incomplete, the agent reports what needs completing.
+
+Apply this step when preparing or deliberately refreshing app-wide foundations. An established app with the desired theme can go straight to screen work. If you do not have the design yet, continue using the existing theme and apply the design when it is available.
+
+### 4. Build the screens you want
+
+For one screen inside a whole-app HTML file:
+
+```text
+/html-to-widget ./design/app.html build the login screen
+```
+
+You can use an ordinary request instead:
+
+```text
+Build the login and signup screens from ./design/app.html.
+```
+
+Name the screens or feature you want implemented. The agent uses the existing core, selected packages and conventions, then captures Flutter output, compares supplied design states and reports measured differences. It also checks applicable behavior and regression variants, inspects candidate images, and runs ordinary golden tests after local baseline approval. States without a supplied design reference are reported separately from source-verified states. You do not need to select the verification skills yourself.
+
+### 5. Update an already-working screen
+
+When the HTML changes, update the design file and tell the agent:
+
+```text
+The login UI changed in ./design/app.html. Update the existing login screen.
+```
+
+The agent updates that implementation while preserving working validation, API calls, loading/error handling, controller ownership and navigation, then verifies it against the revised source. If the design path is already unambiguous in the conversation, you can simply say, "The login UI changed in the design. Update it." Supply the new path when you move or replace the design file.
+
+For a deliberate app-wide foundation change, state that scope:
+
+```text
+The shared colors and fonts changed in ./design/app.html. Update the app theme
+and verify the affected screens.
+```
+
+The agent selects the theme workflow for that request. A local screen update does not require repeating core setup or reapplying the whole theme. At handoff, check the source/Flutter/diff images, measured differences, behavior and golden results, and any remaining gaps. Missing source files or unavailable capture tooling are reported as blockers rather than successful verification.
+
 ## Project package configuration
 
 Run `/flutter-init` in a Flutter project to create `flutter-knowledge.yaml`
