@@ -13,6 +13,7 @@ CONTRACTS = {
     'router': r'\bclass\s+AppRouter\b',
     'assets': r'\bclass\s+(?:AppAsset|AppAssets)\b',
     'cache': r'\bclass\s+CacheHelper\b',
+    'secure_cache': r'\bclass\s+SecureCacheHelper\b',
 }
 
 

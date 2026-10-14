@@ -43,7 +43,8 @@ class FlutterInitTests(unittest.TestCase):
             'routing': 'navigator', 'http_client': 'dio', 'localization': 'easy_localization',
             'local_database': 'drift', 'equality': 'equatable', 'serialization': 'manual',
             'mocking': 'mocktail', 'state_testing': 'bloc_test', 'logging': 'talker',
-            'preferences': 'shared_preferences', 'typography_scaling': 'flutter_screenutil',
+            'preferences': 'shared_preferences', 'secure_storage': 'flutter_secure_storage',
+            'typography_scaling': 'flutter_screenutil',
             'motion': 'motor', 'shapes': 'material_shapes', 'network_status': 'connectivity_plus',
             'test_runner': 'flutter_test',
         }.items():
@@ -68,6 +69,22 @@ class FlutterInitTests(unittest.TestCase):
             self.assertEqual(config['packages'][category], expected)
             self.assertTrue(config['resolution'][category]['declared'])
         self.assertEqual(config['packages']['state_testing'], 'flutter_test')
+
+    def test_secure_storage_is_detected_separately_and_refresh_preserves_explicit_choices(self):
+        self.write_project({'shared_preferences': 'any', 'flutter_secure_storage': 'any'})
+        self.write_source('lib/platform/credentials.dart', 'sealed class SecureCacheHelper {}')
+        original = self.pubspec.read_bytes()
+        self.assertEqual(self.run_init().returncode, 0)
+        config = self.read_config()
+        self.assertEqual(config['packages']['secure_storage'], 'flutter_secure_storage')
+        self.assertEqual(config['resolution']['secure_storage']['source'], 'pubspec')
+        self.assertEqual(config['packages']['preferences'], 'shared_preferences')
+        self.assertEqual(config['project_contracts']['secure_cache'], 'lib/platform/credentials.dart')
+        config['packages']['secure_storage'] = 'none'
+        self.config.write_text(yaml.safe_dump(config))
+        self.assertEqual(self.run_init().returncode, 0)
+        self.assertEqual(self.read_config()['packages']['secure_storage'], 'none')
+        self.assertEqual(self.pubspec.read_bytes(), original)
 
     def test_ambiguity_is_visible_and_explicit_choice_resolves_it(self):
         self.write_project({'drift': 'any', 'hive_ce': 'any', 'flutter_bloc': 'any', 'flutter_riverpod': 'any'})

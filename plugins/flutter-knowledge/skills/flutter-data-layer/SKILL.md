@@ -15,6 +15,8 @@ Invoked by the `flutter-knowledge` skill (or directly via `/flutter-data-layer`)
 
 Package-specific equality/serialization calls are default examples. Keep the model/params names, nullable model fields, authored member order and API/result contracts when applying the configured mechanisms.
 
+For credential persistence or bearer-token lookup, follow the shared [cache storage contract](../flutter-core/references/core-contracts.md#cache-storage). Use the existing secure helper from the data/session boundary; do not introduce token storage in widgets or bootstrap unrelated core during feature work.
+
 - **Naming suffixes**: models → `XModel` in `data/model/` (extend `Equatable`, `fromJson`/`toJson` as needed); params → `XParams` in `data/model/params/` (extend `Equatable`, implement `toJson()`). **Model fields are always nullable** (`String? name`, `int? total`, ...) — API responses can omit or null out any field, so never declare a model field as required/non-null.
 - **One params class per method**: every data source / repository method that takes parameters gets its own dedicated `XParams` class — never share one params class across two methods, even if their fields happen to overlap. If two methods need overlapping fields, that's two separate params classes with duplicated fields, not one shared class.
 - **Model member order**: fields first, then the constructor, then `fromJson`, then `toJson` (`props` last, for the `Equatable` override). Keep this order in every model file so they all read the same way.

@@ -12,6 +12,7 @@
   "test_runner": {"default": "flutter_test", "families": [["flutter_test"], ["test"]]},
   "logging": {"default": "talker", "families": [["talker", "talker_flutter"], ["logger"], ["logging"]]},
   "preferences": {"default": "shared_preferences", "families": [["shared_preferences"], ["get_storage"]]},
+  "secure_storage": {"default": "flutter_secure_storage", "families": [["flutter_secure_storage"]]},
   "network_status": {"default": "connectivity_plus", "families": [["connectivity_plus"], ["internet_connection_checker_plus", "internet_connection_checker"]]},
   "typography_scaling": {"default": "flutter_screenutil", "families": [["flutter_screenutil"], ["sizer"], ["responsive_framework"]]},
   "motion": {"default": "motor", "families": [["motor"], ["flutter_animate"]]},

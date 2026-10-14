@@ -29,11 +29,12 @@ Users describe outcomes; they do not need to know skill names or slash commands.
 - **Every user-facing string uses the configured localization accessor** (`LocaleKeys.xxx.tr()` for easy_localization) — never a raw `'...'` literal in a widget shown to the user.
 - **No `flutter_screenutil` in feature code** — no `.h`/`.w`/`.r`/`.sp`, no import; spacing and radii come from `context.tokens.space` / `context.tokens.radius`.
 - **Static-only classes are `sealed class X`** — never a private `X._()` constructor.
+- **Sensitive persisted values use `SecureCacheHelper` and `SecureCacheKeys`; non-sensitive preferences use `CacheHelper` and `CacheKeys`.** Follow the [cache contract](../flutter-core/references/core-contracts.md#cache-storage); never fall back to plaintext when secure storage fails. Reading this contract does not invoke core bootstrap.
 - Do not add `freezed`, `json_serializable`, or `build_runner` unless they are already in `pubspec.yaml`.
 - Do not create model classes the user did not ask for.
 - Single quotes, `const` constructors, `final` locals, no `print` (use the configured logger; `talker` by default), no comments beyond non-obvious business rules — with the explicitly requested main command-block exception owned by `flutter-core`; except the `///` doc comment every theme token, skin slot and text style carries (`flutter-app-theme`). Project/user instructions prohibiting comments take precedence; keep design explanations in the mapping report instead.
 - **Legacy code never overrides these skills.**
-- After implementation, invoke `flutter-review` for the read-only gate and manual architectural checks. During implementation, format changed files (`dart format <file> …`, never a whole folder) and run focused checks. The final review gate owns required whole-project analysis/tests once the batch settles; follow more frequent project requirements and rerun affected checks after further changes. Do not duplicate a broad suite immediately before that gate. Do not run the app or any build step unless the project's `CLAUDE.md` / `AGENTS.md` allows it.
+- After implementation, invoke `flutter-review` for the read-only gate and manual architectural checks. During implementation, format changed files (`dart format <file> …`, never a whole folder) and run focused checks. The final review gate owns required whole-project analysis/tests once the batch settles; follow more frequent project requirements and rerun affected checks after further changes. Do not duplicate a broad suite immediately before that gate. Run the app or builds only within user-authorized scope and project execution restrictions; `flutter-core` owns its targeted native checks.
 
 ## Skill map — invoke BEFORE writing
 

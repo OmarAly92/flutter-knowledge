@@ -92,6 +92,52 @@ class CoreInspectionTests(unittest.TestCase):
         self.assertEqual(api['paths'], ['lib/platform/gateway.dart'])
         self.assertFalse((self.project / 'lib/core/data/api/api_consumer.dart').exists())
 
+    def test_secure_cache_reports_missing_and_partial_contracts_without_writes(self):
+        self.initialize()
+        _, report = self.run_inspector()
+        rows = {row['id']: row for row in report['contracts']}
+        self.assertEqual(rows['secure_preferences']['status'], 'missing')
+        self.assertEqual(rows['secure_cache_keys']['status'], 'missing')
+        self.write('lib/core/data/cache/secure_cache_helper.dart', 'sealed class SecureCacheHelper {}')
+        _, report = self.run_inspector()
+        row = next(row for row in report['contracts'] if row['id'] == 'secure_preferences')
+        self.assertEqual(row['status'], 'incomplete_evidence')
+        self.assertFalse(row['contract_checks']['save'])
+        self.write('lib/core/data/cache/secure_cache_helper.dart',
+                   'sealed class SecureCacheHelper { static Future<void> init() async {} '
+                   'static String? get(String key) => null; '
+                   'static Future<void> save(String key, String value) async {} '
+                   'static Future<void> remove(String key) async {} '
+                   'static Future<void> clear() async {} }')
+        _, report = self.run_inspector()
+        row = next(row for row in report['contracts'] if row['id'] == 'secure_preferences')
+        self.assertEqual(row['status'], 'evidence_present_requires_review')
+        config = yaml.safe_load((self.project / 'flutter-knowledge.yaml').read_text())
+        config['packages']['secure_storage'] = 'none'
+        self.write('flutter-knowledge.yaml', yaml.safe_dump(config))
+        before = {str(path): path.read_bytes() for path in self.project.rglob('*') if path.is_file()}
+        _, report = self.run_inspector()
+        row = next(row for row in report['contracts'] if row['id'] == 'secure_preferences')
+        self.assertEqual(row['status'], 'selection_requires_review')
+        self.assertEqual(before, {str(path): path.read_bytes()
+                                  for path in self.project.rglob('*') if path.is_file()})
+
+    def test_secure_initialization_must_be_awaited_in_startup_order(self):
+        self.initialize()
+        for setup, expected in [
+            ('await CacheHelper.init(); SecureCacheHelper.init(); registerAppDependencies();', False),
+            ('await SecureCacheHelper.init(); await CacheHelper.init(); registerAppDependencies();', False),
+            ('await CacheHelper.init(); registerAppDependencies(); await SecureCacheHelper.init();', False),
+            ('await CacheHelper.init(); await SecureCacheHelper.init(); registerAppDependencies();', True),
+        ]:
+            with self.subTest(setup=setup):
+                self.write('lib/main.dart', 'Future<void> main() async { ' + setup + ' }')
+                _, report = self.run_inspector()
+                main = next(row for row in report['contracts'] if row['id'] == 'main')
+                checks = main['contract_checks']
+                self.assertEqual(all(checks[key] for key in (
+                    'secure_cache_init', 'cache_init_order', 'secure_before_registration')), expected)
+
     def test_shared_spacing_family_reports_missing_sliver_implementation(self):
         self.initialize()
         self.write('lib/core/widgets/layout/space_widgets.dart',
@@ -138,7 +184,8 @@ class CoreInspectionTests(unittest.TestCase):
         self.write('lib/my_app.dart', ALIGNED_ROOT)
         command_block = (SCRIPT.parent.parent / 'references/main-command-block.dart.txt').read_text()
         self.write('lib/main.dart', 'Future<void> main() async { WidgetsFlutterBinding.ensureInitialized(); '
-                   'await CacheHelper.init(); registerAppDependencies(); await sl<SkinRegistry>().load(); '
+                   'await CacheHelper.init(); await SecureCacheHelper.init(); '
+                   'registerAppDependencies(); await sl<SkinRegistry>().load(); '
                    'runApp(const MyApp()); }\n' + command_block)
         _, report = self.run_inspector()
         rows = {row['id']: row for row in report['contracts']}

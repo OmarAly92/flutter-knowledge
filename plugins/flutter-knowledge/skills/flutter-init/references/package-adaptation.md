@@ -36,6 +36,8 @@ For another engine, verify its storage semantics and keep those shared boundarie
 
 Keep logging behind the logger and preferences behind `CacheHelper`. Adapt a configured network-status implementation inside `NetworkStatus`; its package choice does not change offline repository policy. A missing helper is an implementation task with the existing layer ownership, not a reason to import infrastructure into feature UI.
 
+`packages.secure_storage` is independent of `packages.preferences` and the local database. Follow the [cache storage contract](../../flutter-core/references/core-contracts.md#cache-storage) for `SecureCacheHelper` and native setup. An explicit alternative keeps its verified secure semantics; `none` blocks sensitive persistence rather than redirecting it to preferences or a database.
+
 ## Tests and design workflows
 
 Keep the test scenarios and naming/layout conventions. Use the selected mocking API and a state test harness compatible with the selected lifecycle; `mocktail` / `bloc_test` are default mechanisms. Stub collaborators before owner creation. Assert the operation states actually observed, accounting for initial fetch timing without weakening assertions. No mismatched Bloc test helper for a non-Bloc backend.

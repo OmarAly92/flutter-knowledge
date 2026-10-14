@@ -67,7 +67,19 @@
       "get_it_checks": {
         "no_arg_registration": "\\bregisterAppDependencies\\s*\\(\\s*\\)",
         "const_root": "\\bconst\\s+MyApp\\s*\\(\\s*\\)"
-      }
+      },
+      "conditional_checks": [
+        {
+          "only_when": {
+            "secure_storage": ["flutter_secure_storage"]
+          },
+          "checks": {
+            "secure_cache_init": "\\bawait\\s+SecureCacheHelper\\.init\\s*\\(",
+            "cache_init_order": "\\bawait\\s+CacheHelper\\.init\\s*\\(\\s*\\)\\s*;[\\s\\S]*?\\bawait\\s+SecureCacheHelper\\.init\\s*\\(\\s*\\)\\s*;",
+            "secure_before_registration": "\\bawait\\s+SecureCacheHelper\\.init\\s*\\(\\s*\\)\\s*;[\\s\\S]*?\\bregisterAppDependencies\\s*\\("
+          }
+        }
+      ]
     },
     {
       "id": "bloc_observer",
@@ -515,6 +527,26 @@
       ],
       "category": "preferences",
       "contract_key": "cache"
+    },
+    {
+      "id": "secure_preferences",
+      "paths": ["lib/core/data/cache/secure_cache_helper.dart"],
+      "symbols": ["SecureCacheHelper"],
+      "category": "secure_storage",
+      "contract_key": "secure_cache",
+      "checks": {
+        "init": "\\bstatic\\s+Future\\s*<\\s*void\\s*>\\s+init\\s*\\(",
+        "get": "\\bstatic\\s+String\\s*\\?\\s+get\\s*\\(",
+        "save": "\\bstatic\\s+Future\\s*<\\s*void\\s*>\\s+save\\s*\\(",
+        "remove": "\\bstatic\\s+Future\\s*<\\s*void\\s*>\\s+remove\\s*\\(",
+        "clear": "\\bstatic\\s+Future\\s*<\\s*void\\s*>\\s+clear\\s*\\("
+      }
+    },
+    {
+      "id": "secure_cache_keys",
+      "paths": ["lib/core/data/cache/secure_cache_keys.dart"],
+      "symbols": ["SecureCacheKeys"],
+      "category": "secure_storage"
     },
     {
       "id": "logger",

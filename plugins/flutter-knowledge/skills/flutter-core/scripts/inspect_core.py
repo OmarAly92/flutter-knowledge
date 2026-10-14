@@ -12,7 +12,8 @@ from dart_source import project_sources
 
 
 REQUIRED_SELECTIONS = ('state_management', 'dependency_injection', 'routing', 'http_client',
-                       'localization', 'equality', 'logging', 'preferences', 'network_status')
+                       'localization', 'equality', 'logging', 'preferences', 'secure_storage',
+                       'network_status')
 
 
 def read_mapping(path):
@@ -161,6 +162,8 @@ def inspect(project):
                                           if {'registerCoreDependencies', 'registerAppDependencies'} & source['symbols']],
               'manual_checks': ['Read actual implementations/callers and preserve existing contracts.',
                                 'Verify complete registrations, startup order and selected package APIs.',
+                                'Verify sensitive values use secure cache, preferences remain non-sensitive and migration preserves data.',
+                                'Inspect iOS/Android configuration, permissions and entitlements; separate builds from native runtime evidence.',
                                 'Verify NetworkCubit factory/provider disposal and public router entry policy where selected.',
                                 'Presence is not a completeness or runtime certificate.']}
     return report, 1 if status != 'ready_for_inspection' else 0

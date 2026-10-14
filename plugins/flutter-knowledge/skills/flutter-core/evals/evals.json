@@ -11,7 +11,9 @@
         "Actual app registration resolves transport/consumer, network, preferences, logger, skin registry and root owners.",
         "All seven token groups, built-in/JSON skins, persisted selection and localized tokenized wrappers work through the app root.",
         "API forwarding and success/validation/timeout/cancellation/connection/mapping failures are exercised without a live backend.",
-        "No supplied reference-app core, incidental database/toolkit packages, auth policy, insecure TLS or credential logging is introduced."
+        "No supplied reference-app core, incidental database/toolkit packages, auth policy, insecure TLS or credential logging is introduced.",
+        "SecureCacheHelper and separate SecureCacheKeys are initialized before consumers, with sensitive values isolated from ordinary preferences and failures never falling back to plaintext.",
+        "Required iOS/Android setup is applied for integrated packages, with configuration, build and native runtime evidence distinguished rather than inferred from mocks."
       ]
     },
     {

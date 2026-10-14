@@ -9,6 +9,7 @@ instance identity cannot replace field-based equality. Other equality overrides
 and repeated UI-operation transitions still require manual inspection.
 - Composition: Screen effects, content-only Body, selective rebuilding and route-owned provider/owner lifetime. No extra owner in the Screen, stale callbacks after disposal, or effects inside a render builder.
 - Data: nullable model fields, per-method Params, authored member order, API/result/failure boundaries and configured storage mapping. Transport or storage types must not leak into presentation.
+- Cache/native setup: review the [cache and mobile platform contracts](../../flutter-core/references/core-contracts.md#cache-storage) when relevant. Check sensitive-value callers, awaited secure initialization, data-safe failures/migration and iOS/Android package requirements. Record native checks separately from mocks; review does not launch builds or change platform files.
 - Reuse/assets: search live by role in discovered shared and feature locations; read the existing component API. Validate actual assets/declarations, including generated constants and dynamic paths the helper cannot prove.
 - UI: apply accessibility/RTL and responsive skills to the changed interaction, including combined variants where relevant. A small-screen screenshot alone does not establish focus or screen-reader behavior.
 - Performance: distinguish justified structural improvements from profiled results. Confirm caching/boundary/row-height changes preserve behavior.
