@@ -1,6 +1,6 @@
 ---
 name: flutter-data-layer
-description: Flutter data layer conventions — XModel/XParams classes (nullable fields, member order, one params class per method), remote data sources with ApiConsumer and GlobalResponse, repositories returning FutureResult gated on NetworkStatus, EndPoints static methods, and the Failure hierarchy. Use before writing or editing a model, params class, data source, repository, or endpoint in a Flutter project.
+description: Use before writing Flutter models, request params, data sources, repositories, endpoints or Failure handling; preserve the configured transport and data-layer contracts.
 ---
 
 # Flutter data layer

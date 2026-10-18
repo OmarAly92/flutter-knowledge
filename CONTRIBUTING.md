@@ -116,6 +116,10 @@ shaped differently — but all three read the live
 `plugins/flutter-knowledge/skills/flutter-knowledge/SKILL.md` at runtime, so there's nothing to keep in
 sync by hand when the skill content changes.
 
+After changing harness manifests, discovery hooks, the installer or Gemini
+includes, run `python3 tests/test_harness_compatibility.py`. These tests execute
+local hook contracts, not live host clients; report runtime skips explicitly.
+
 ## Adding a skill
 
 1. Create `plugins/flutter-knowledge/skills/<name>/SKILL.md` with `name` + `description` frontmatter.
@@ -150,6 +154,14 @@ against `master` (see `benchmark/README.md`, which has a paste-in prompt). It
 spawns Sonnet 5.5 agents on a fixture project with legacy traps, grades the
 code they write, and compares rule breaks, translations and tokens per version.
 Its output goes to `benchmark/out/`, which is not committed.
+
+For description-only changes with unchanged skill bodies and resources, use the
+paired discovery probe in `benchmark/README.md` and run
+`python3 tests/test_skill_selection.py`. Freeze both catalogs, use identical
+requests/model/settings and inspect every miss; record size and preservation
+checks separately from end-to-end token usage. Use the documented focused suites
+for affected helpers, and relevant implementation benchmark tasks when recipes
+or architectural instructions change.
 
 ## Releasing a new version
 

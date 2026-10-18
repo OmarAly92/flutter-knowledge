@@ -18,29 +18,18 @@ the theme layer (skin colors with light/dark switching, text styles, motion,
 shapes and `ThemeData`). HTML/Figma source readers handle both immediate screen
 implementation and whole-app planning through the shared workflow.
 
-`flutter-knowledge` triggers automatically from its `description` — whenever
-Flutter or Dart comes up, the agent loads it. Nothing to invoke by hand. The
-mini skills and helpers are lazy-loaded instead: they stay out of
-`flutter-knowledge` and only enter context on demand, either because the agent
-recognizes the task needs one from its own scoped `description` (a cubit, a
-screen, a repository, local storage, tests, a missing translation key, an HTML
-design prototype), because the `flutter-knowledge` map tells it to invoke one
-before writing that code, or because you run `/<skill-name>` directly — this
-keeps `flutter-knowledge` itself small and avoids loading every detailed
-convention into every session.
+Each skill has a scoped `description` for task-based discovery. Outside Gemini,
+the mini skills and helpers load on demand through those descriptions, the
+`flutter-knowledge` map or an explicit `/<skill-name>` request. Description-based
+selection depends on the host and agent; it does not guarantee invocation.
 
-On Claude Code, Codex, OpenCode, and Pi, `flutter-knowledge` is also
-force-loaded: a hook/plugin checks for `pubspec.yaml` and injects the
-map and hard rules directly, so they apply even if the model doesn't decide to
-trigger the skill on its own. The timing differs by harness, though — Claude
-Code and Codex inject it once, at session start (a `SessionStart` hook); on
-OpenCode and Pi it's re-applied to the system prompt on every turn instead,
-since those harnesses only expose per-turn hooks (`experimental.chat.system.transform`
-and `before_agent_start` respectively) — it doesn't accumulate across turns,
-and system prompts are typically prompt-cached, but it's a different
-mechanism from the other two's one-time injection. Gemini already gets this
-for free since `GEMINI.md` is always loaded. Cursor and Kimi rely on
-description-based triggering only (see `CONTRIBUTING.md`).
+The configured Claude Code and Codex `SessionStart` hooks check for
+`pubspec.yaml` and inject the map and hard rules. OpenCode adds them through
+`experimental.chat.system.transform`; Pi detects the project at `session_start`
+and adds them through `before_agent_start`. Cursor and Kimi rely on descriptions.
+Gemini's `GEMINI.md` includes all 22 skills and shared references, so its context
+loading differs from the on-demand hosts. These loading paths alone establish
+neither prompt-cache behavior nor measured token savings.
 
 ## Use ordinary requests
 
@@ -54,7 +43,7 @@ Apply the updated shared colors and fonts from ./design/app.html to the app them
 
 The workflow selects the source reader, relevant conventions, visual comparison and review. Existing-screen updates preserve working logic and use the screen's known design source; if that source or screen is unclear, the agent asks for the missing identity. A local UI update stays scoped to that screen. App-wide theme requests use the foundation workflow after core exists. Design comparisons report measured differences and unresolved gaps; passing an old Flutter golden does not prove a match to the updated design.
 
-Explicit commands remain available. Creating shared core still requires asking to bootstrap it or invoking `/flutter-core`; an ordinary screen update does not create core automatically.
+The agent also checks the foundation before implementation. It automatically prepares shared core in a confirmed fresh app, completes only task-required gaps in an existing core, and reuses working equivalents. Planning and review remain read-only. You can still use `/flutter-core` to prepare or complete the whole foundation explicitly.
 
 ## Start with an existing Flutter project
 
@@ -66,29 +55,29 @@ After installing the plugin, open your Flutter project's root folder in your cod
 /flutter-init
 ```
 
-The agent reads the project's packages and source, then creates `flutter-knowledge.yaml`. Review the detected choices and recommended defaults, and resolve any ambiguous package choices it reports. Initialization only writes configuration; it does not install the recommended packages or build the app.
+The agent reads the project's packages and source, then creates `flutter-knowledge.yaml`. For a confirmed empty Flutter starter, it also adds the selected packages to `pubspec.yaml` with compatible versions, puts test packages in `dev_dependencies`, and resolves the dependencies. An existing app keeps its current pubspec; initialization only updates configuration there. Review the choices and resolve any ambiguity it reports. Initialization does not build core or screens, run app builds or add code generators. If package setup cannot run, the agent reports the incomplete step.
 
 ### 2. Prepare the shared core when needed
 
-For a newly created app or an incomplete core, run:
+To prepare the whole shared foundation up front, run:
 
 ```text
 /flutter-core
 ```
 
-The agent creates or completes routing, dependency injection, API/error handling, network services, localization, shared widgets, theme tokens/skins and app startup wiring. Existing working equivalents and package choices are preserved. If you run this before initialization, it runs `flutter-init` first when configuration is absent.
+The agent creates or completes routing, dependency injection, API/error handling, network services, localization, shared widgets, theme tokens/skins and app startup wiring. Existing working equivalents and package choices are preserved. If configuration is absent, it runs config-only `flutter-init` first and adds dependencies needed for core work.
 
-For an established app whose core already fulfills these responsibilities, continue with the requested feature or design work. Running core setup is not required for every screen. Core setup provides the foundation; its provisional theme values are not a match to a design you have not supplied. Real backend integration still needs your API contract and endpoint configuration.
+You can also go straight to a screen, feature or theme implementation request. In a confirmed fresh app the agent prepares core automatically; in an existing app it fills only proven gaps needed for that task, preserving unrelated infrastructure and styles. A missing `lib/core` folder alone does not trigger setup when working equivalents exist elsewhere. The agent states its scope and continues without asking you to select skills. Core setup provides the foundation; provisional theme values are not a match to a design you have not supplied. Real backend integration still needs your API contract and endpoint configuration.
 
 ### 3. Apply the HTML design to the app theme
 
-Once the required core exists and you have the HTML design, run:
+When you have the HTML design, run:
 
 ```text
 /set-theme-from-html ./design/app.html
 ```
 
-The agent inspects the whole supplied design, imports its original icons, images and fonts, and applies the observed skin colors, spacing, radii, typography, elevation, motion and shapes through the existing theme and shared widgets. It verifies representative components and reports unsupported or unprovided values. This prepares the foundations; it does not build the business screens. If the required core is incomplete, the agent reports what needs completing.
+The agent resolves the design, prepares missing core through the scoped readiness workflow, imports its original icons, images and fonts, and applies the observed skin colors, spacing, radii, typography, elevation, motion and shapes through the existing theme and shared widgets. It verifies representative components and reports unsupported or unprovided values. This prepares foundations; it does not build business screens or replace working unrelated infrastructure.
 
 Apply this step when preparing or deliberately refreshing app-wide foundations. An established app with the desired theme can go straight to screen work. If you do not have the design yet, continue using the existing theme and apply the design when it is available.
 
@@ -133,7 +122,7 @@ Run `/flutter-init` in a Flutter project to create `flutter-knowledge.yaml`
 from its `pubspec.yaml` and authored `lib/` source. It detects the existing stack and fills missing
 categories using the skill package catalog. Existing selections are preserved;
 ambiguous alternatives are reported with unresolved choices. The helper requires
-Python 3.10+ and PyYAML (requirements are bundled with `flutter-init`). Recommendations do not install packages.
+Python 3.10+ and PyYAML (requirements are bundled with `flutter-init`). Config-only discovery records recommendations without installing packages; explicit empty-starter initialization has the dependency setup described above.
 
 All task skills read the [configuration contract](plugins/flutter-knowledge/skills/flutter-init/references/configuration.md).
 Source evidence also records shared widget/component locations, custom contract
@@ -142,13 +131,45 @@ Package mechanics adapt while naming, layer ownership and other conventions
 stay fixed. The renamed `flutter-state-management` skill keeps the existing
 Cubit/state naming and uses Cubit for the default Bloc stack.
 
+## Compatibility and evidence
+
+The [configuration contract](plugins/flutter-knowledge/skills/flutter-init/references/configuration.md)
+and [package adaptation](plugins/flutter-knowledge/skills/flutter-init/references/package-adaptation.md)
+define compatibility: selected packages change implementation mechanics while
+the architecture stays fixed. Feature/layer ownership, Screen/Body separation,
+route-owned state provisioning, Cubit/state naming, owner-held data and
+controllers, payload-free success states, model/params contracts, shared visual
+tokens and complete English/Arabic translations still apply. Keep the
+[generator restrictions](plugins/flutter-knowledge/skills/flutter-knowledge/SKILL.md#hard-rules-always-on).
+The older-theme exception remains in its owning skill
+notes; package selection does not broaden it.
+
+Preserve working project contracts where the skills allow, follow explicit
+user/project constraints, and keep changes within the requested scope. Conflicting
+legacy patterns do not silently override the conventions or authorize unrelated
+migrations. Report a precise incompatibility before dependent changes and continue
+independent work. Catalog recognition supports detection; it does not verify every
+package version or combination. Inspect installed APIs and relevant source for
+the selected stack.
+
+Local manifest and hook-contract checks establish repository wiring under their
+test inputs; run `python3 tests/test_harness_compatibility.py` for those checks.
+They do not establish live compatibility with all seven hosts or
+reliable skill selection by their agents. The [state recipe fixture](tests/check_state_references.py)
+checks specific package versions with host-side Flutter analysis/tests; those
+results do not establish Android/iOS builds, native setup or device behavior.
+The [agent benchmark](benchmark/README.md) measures its stated tasks and runs;
+broader compatibility or token-reduction claims need separate evidence.
+Use its [focused checks](benchmark/README.md#focused-discovery-and-compatibility-checks)
+to select affected suites and compare skill discovery on identical requests.
+
 ## What's inside
 
 | Skill | Purpose | Loads |
 | --- | --- | --- |
-| **flutter-init** | Detect project packages and create or refresh flutter-knowledge.yaml; default recommendations fill absent categories. | On request or before package-dependent work when config is absent |
-| **flutter-core** | Create or complete shared core and app-root wiring while preserving existing contracts and selected packages; initializes config when absent. | Only on `/flutter-core` or an explicit core setup request |
-| **flutter-knowledge** | The map: always-on hard rules plus which skill to invoke before writing each kind of code. | Automatically |
+| **flutter-init** | Detect packages and create or refresh flutter-knowledge.yaml; explicit empty-starter initialization also adds/resolves selected dependencies. | On request or config-only discovery before package-dependent work when config is absent |
+| **flutter-core** | Create/complete the full foundation explicitly or in a fresh app; fill only task-required core gaps in existing apps, preserving working equivalents. | Explicit setup or automatic readiness during implementation; never read-only planning/review |
+| **flutter-knowledge** | The map: always-on hard rules plus which skill to invoke before writing each kind of code. | Host hook/context loading or task-based discovery as described above |
 | **flutter-feature-structure** | Feature folder tree, `_screen` suffix, the `lib/core/` folders, mirroring an existing equivalent file. | On demand, via `flutter-knowledge` or `/flutter-feature-structure` |
 | **flutter-data-layer** | Models, params, remote data sources, repositories, `EndPoints`, `Failure`. | On demand, via `flutter-knowledge` or `/flutter-data-layer` |
 | **flutter-state-management** | Cubit + state classes, per-method state naming, data and controller lifecycle. | On demand, via `flutter-knowledge` or `/flutter-state-management` |
@@ -174,7 +195,7 @@ conventions above. The Figma, verification and golden skills were adapted from [
 | Skill | Purpose |
 | --- | --- |
 | **figma-to-widget** | Turns a Figma frame into widgets: Auto Layout to `Row`/`Column`, gaps to `VerticalSpace`, variables and styles to `context.tokens`, component instances to existing core widgets, `Stack` only where layers overlap. |
-| **set-theme-from-html** | Applies the whole HTML design to an existing core after `/flutter-core`: original asset/font import, all seven token groups and AppTheme/component mappings, with scoped source-backed foundation checks. Invoke `/set-theme-from-html <html-design-path>` before later screen implementation. |
+| **set-theme-from-html** | Applies the whole HTML design after automatic core readiness when needed: original assets/fonts, all seven theme groups and component mappings, with scoped source-backed checks. Invoke `/set-theme-from-html <html-design-path>` before later screen implementation. |
 | **html-to-widget** | Turns an HTML prototype into widgets: reads the computed CSS with `scripts/layout-tree.js`, then maps flex to `Row`/`Column`, gaps to `VerticalSpace`, values to `context.tokens`, and JS-toggled states to cubit states. |
 | **visual-verification** | Requires per-screen reference/Flutter/diff evidence and overall/worst-region percentages. Captures at matching viewport/DPR (default 750×1624), diffs them with `scripts/compare.py`, and fixes until it matches — four rounds of guesses, then only fixes whose cause is known. |
 | **golden-tests** | Locks the matched screen in plain `flutter_test` goldens through a shared harness (the app's theme, real fonts and shadows), across the other skin, Arabic, 2× text and a small phone. |

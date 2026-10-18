@@ -1,6 +1,6 @@
 ---
 name: flutter-routing-di
-description: Flutter routing and dependency injection conventions — per-feature get_it injection files and dependency registration functions, core registrations in lib/core/di/injection.dart, registerAppDependencies in lib/app_injection.dart and its registration test, RoutesStrings constants, the lib/core/router/app_router.dart library whose case branches own the BlocProvider, registerFactoryParam with param1, MultiBlocProvider, BlocProvider.value for sharing a cubit, and the Navigation extension. Use before adding or editing a route, a BlocProvider, or a get_it registration in a Flutter project.
+description: Use before changing Flutter routes, navigation extensions, dependency injection or state-provider wiring, including get_it registrations and route-owned BlocProviders.
 ---
 
 # Flutter routing & DI

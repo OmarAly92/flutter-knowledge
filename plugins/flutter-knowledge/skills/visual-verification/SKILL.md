@@ -1,6 +1,6 @@
 ---
 name: visual-verification
-description: Capture Flutter and its HTML/Figma design at matching profiles, compare with scripts/compare.py, inspect differences and fix known causes. Use automatically after design-driven screen/widget implementation or updates, before declaring fidelity, and for requested visual comparison runs. Findings-only reviews consume existing evidence through flutter-review; they do not start captures or fixes.
+description: Use after design-driven Flutter implementation/updates, or for matching-profile HTML/Figma capture, difference measurement and visual fixes. Findings-only reviews use flutter-review.
 ---
 
 # Visual Verification

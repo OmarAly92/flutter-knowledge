@@ -1,6 +1,6 @@
 ---
 name: flutter-state-management
-description: Use before writing or editing a Flutter state owner, Cubit, controller, state class, state lifecycle, or state naming. Preserve the project conventions while using the state-management package selected in flutter-knowledge.yaml.
+description: Use before writing Flutter state owners, Cubits, controllers, state classes, state naming or lifecycle behavior, using the configured state-management package.
 ---
 
 # Flutter state management

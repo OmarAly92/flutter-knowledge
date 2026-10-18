@@ -1,6 +1,6 @@
 ---
 name: drift-local-database
-description: Drift/SQLite local persistence conventions for a Flutter feature — tables, DAOs, entities, migrations, local-only and hybrid (remote+local) repositories. Use when the user asks to add local storage, persist data locally, add offline support, cache API responses locally, or work with drift/SQLite in this Flutter project.
+description: Use for Flutter local persistence, SQLite tables, DAOs, migrations, offline support or cached repositories when the configured engine is Drift.
 ---
 
 # Local database (drift)

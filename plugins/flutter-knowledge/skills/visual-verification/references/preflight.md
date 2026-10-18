@@ -2,7 +2,7 @@
 
 Run this before building the first design-backed screen and again when core or the capture harness changes. It finds shared-foundation and capture defects while they are cheap, instead of discovering them as red pixels in every row. It proves wiring, not design fidelity.
 
-For an existing-screen refresh with unchanged core/harness, reuse applicable preflight evidence only when its inputs still match; run affected checks when dependencies change or prior proof is missing. Continue the screen's behavior and capture checks below. Findings outside the authorized UI/core scope are reported, not permission to bootstrap core or repair unrelated services. A blocker in the actual screen/capture dependency remains a blocker until resolved.
+For an existing-screen refresh with unchanged core/harness, reuse applicable preflight evidence only when its inputs still match; run affected checks when dependencies change or prior proof is missing. Continue the screen's behavior and capture checks below. Findings outside the authorized UI/core scope are reported, not permission to repair unrelated services. A proven blocker in the actual screen/capture dependency returns to the implementation workflow's [core readiness gate](../../flutter-knowledge/references/workflows.md#core-readiness-during-implementation); comparison-only and findings-only review report it without fixes. A blocker remains unresolved until the required work is actually verified.
 
 ## Shared core
 

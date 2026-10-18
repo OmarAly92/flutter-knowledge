@@ -2,6 +2,8 @@
 
 Measures whether agents follow the skills in this repo, so a skill change can be checked against `master` before it ships.
 
+GitHub Actions runs focused deterministic checks for changed helpers, dependency manifests, skill catalogs and harness integrations on two runtime pairs: Python 3.10 with Node 22, and Python 3.14 with Node 24. Preview selection with `python3 scripts/focused_checks.py --base master --dry-run --json`, run it without `--dry-run`, or use `--files <paths...>` / `--all`. Unknown scripts and CI/dependency changes select the full deterministic set; unrelated documentation selects no checks. Browser suites require installed Chrome and Playwright; CI installs the Playwright adapter only when selected. Required-runtime skips fail the job. These checks do not run model agents, the implementation benchmark, live harness clients, native apps or Flutter/Dart recipe tests, and do not download Flutter. Changed state recipe references are reported under `required_manual_checks` for separate Flutter analysis and execution. The paired discovery probe and applicable implementation benchmarks below remain separate release evidence.
+
 Each run gives one agent a realistic Flutter project and one task. A static grader then counts which conventions the agent broke. Every project is in the 2.0.0 shape the skills teach: design tokens read as `context.tokens` from `lib/core/theme/` (`AppSkin` with `LightSkin`/`DarkSkin`, `AppSpacing`, `AppRadius`, `AppTypography`, `AppElevation`, `AppTheme`), a data core in `lib/core/data/` (`ApiConsumer`, `GlobalResponse`, `Failure`/`Result`), `NetworkStatus` in `lib/core/services/`, `LocaleKeys` in `lib/core/l10n/`, the router library in `lib/core/router/`, the global `sl` in `lib/core/di/injection.dart`, one `<feature>_injection.dart` per feature wired through `lib/app_injection.dart`, a `test/app_injection_test.dart`, and core widgets grouped by role under `lib/core/widgets/`. Each project also contains legacy code that breaks the rules on purpose: `RoutesStrings._()`, an `orders` feature on Bloc whose injection file registers untyped `sl()` lookups, and (drift) a `budget` feature whose params return a drift `Companion` and whose data source core DI registers untyped. An agent that copies the code around it instead of following the skills gets caught.
 
 The newer tasks (f1, f2, t1, g1) run on a third project, `app`: the drift project plus a `trips` feature written the way the skills ask, shared email and phone validators, a legacy flat `test/` file that uses mockito, and a design prototype at `design/prototype.html`. The prototype is built like a standalone design export: its real CSS sits escaped inside a JS string, the page's own `<style>` holds a decoy `--primary`, and its font is embedded as compressed base64. Reading the file by eye gives the wrong values, so it tests whether an agent follows the design skill's extraction steps. Task m2 also runs here: `app` has no `AppMotion`, but the prototype defines motion tokens, so it checks that an agent creates one with documented tokens whose values come from the prototype, and adds it to `AppTokens` as the `motion` group.
@@ -96,6 +98,44 @@ Permutation test p = 0.79. Almost all of v250's extra breaks came from one sente
 
 Grader fixes from reading these runs: an argument-free `registerXDependencies()` call counts as wired, g1 accepts `set-theme-from-html` as the task skill, and the d4 checks find the budget files wherever the agent moved them.
 
+### Description discovery: scoped Codex comparison
+
+The pre-change working-tree catalog and shortened catalog were tested on the
+same [48 requests](selection_cases.json), with five fresh Codex/gpt-6.1-sol
+high-reasoning agents per variant. Both selected the expected entry skill on
+240/240 decisions. Descriptions shrank from 1,185 to 491 words and from 8,728 to
+3,937 UTF-8 bytes. All 22 skill bodies and 51 supporting resources were unchanged
+against that snapshot. The baseline included earlier uncommitted init/core work;
+it was not committed `master` or the historical Sonnet benchmark.
+
+Eight local harness tests, six selection-grader tests and 127 focused helper
+tests passed on Python 3.14.0 / Node 25.9.0 on macOS. Six independent workflow
+probes checked alternative packages, legacy themes, existing generation,
+architectural conflicts, read-only review and unavailable-tool handling; these
+were instruction-route checks, not Flutter execution. The saturated discovery
+sample establishes no observed regression on those requests, not general trigger
+reliability, live-host certification or end-to-end token savings. Raw local
+artifacts are in ignored `benchmark/out/discovery-compat-20261017/`.
+
+### Fresh-project automatic core and handoff smoke
+
+One real empty Flutter starter received an ordinary request for a localized
+profile-name settings screen, without naming specialists. The consumer selected
+configuration discovery, full fresh-core setup and the implementation/test/review
+owners. Independent review found and corrected failed-preference cache recovery,
+nested form-log redaction, component skin-role mapping and iOS locale metadata.
+The final uninterrupted host gate passed 23 tests, fatal-info analysis and
+formatting; a read-only readiness assessment preserved all 153 frozen files and
+found no duplicate setup. It was not a second blind implementation run.
+
+Android and targeted arm64 iOS storage-probe builds/installations passed, but
+launch markers were not observed; native storage runtime and the main app's
+native UI remain unverified. An interrupted run also exposed a zero-exit test
+failure reporting bug: the review helper now blocks recognized failing reporter
+output despite exit code 0, with passing-marker and failure regressions tested
+on Python 3.10 and 3.14. Raw evidence is retained in ignored
+`benchmark/out/ci-fresh-flow-20261018/`; provider token counters are unavailable.
+
 ## Files
 
 | File | What it is |
@@ -149,6 +189,60 @@ f1 and f2 cover what the first six tasks never reach: `EndPoints` methods that t
 The default plan is forced ×3 and desc ×1 on d1–d4, h1, h2, f1, f2, t1, g1 and o1, plus nowrap ×2 on d1 and h1. That is 48 runs per version. To run only the newer tasks, use `--only forced:f1,f2,t1,g1:3 --only desc:f1,f2,t1,g1:1`.
 
 ## Running it
+
+### Focused discovery and compatibility checks
+
+Description changes can first use the smaller, description-only probe:
+
+```sh
+python3 benchmark/skill_selection.py prepare --root ../fk-master --out benchmark/out/selection/before
+python3 benchmark/skill_selection.py prepare --root . --out benchmark/out/selection/after
+```
+
+Freeze both source trees before preparing. Each output contains a catalog, body
+hashes and the same 48 requests in `prompt.txt`, without expected answers. Give
+only that prompt to a fresh agent per repetition and save its JSON decisions.
+Use the same provider, model and reasoning settings for both variants, with five
+independent repetitions each; record those settings with the results. Do not load
+the map or skill bodies in this probe, since it measures description discovery.
+Resume from saved result files after interruption instead of rerunning completed
+samples. Keep any exploratory or revised-catalog results separate.
+
+```sh
+python3 benchmark/skill_selection.py score --before benchmark/out/selection/before --after benchmark/out/selection/after --result before=benchmark/out/selection/before-1.json --result after=benchmark/out/selection/after-1.json
+```
+
+Repeat `--result before=... --result after=...` for every paired repetition. The
+grader rejects missing/unknown decisions, changed request fixtures, duplicate
+result paths and unequal repetition counts. It reports exact routing accuracy,
+case regressions, description words/bytes and changed skill-body hashes. Inspect
+every miss; a routing pass does not establish implementation quality or total
+token savings. For a working-tree comparison, freeze the live pre-change tree
+and label it as such instead of calling it `master`. Historical Sonnet results
+above are not comparable to runs on another model.
+
+Run the focused checks for the surfaces actually changed:
+
+| Changed surface | Local checks |
+| --- | --- |
+| Descriptions or discovery benchmark | `python3 tests/test_skill_selection.py`, paired agent probe above, skill frontmatter validation |
+| Harness manifests, hooks, installer or Gemini includes | `python3 tests/test_harness_compatibility.py` |
+| Package detection/configuration or empty-starter setup | `python3 tests/test_flutter_init.py` and `python3 tests/test_flutter_init_bootstrap.py` |
+| Core inspection or findings-only review | `python3 tests/test_flutter_core.py` and `python3 tests/test_flutter_review.py` |
+| State-package recipes or their dependency versions | `python3 tests/check_state_references.py` with the resolved APIs; inspect its flags before selecting backends |
+| HTML extraction, foundations or assets | `python3 tests/test_layout_tree.py` and `python3 tests/test_html_to_theme.py` |
+| Reference reuse, comparison or regression handoff | `python3 tests/test_design_cache.py`, `python3 tests/test_compare.py` and `python3 tests/test_golden_handoff.py` |
+
+Harness checks execute real hook/extension files with temporary projects and
+host-shaped callbacks; manifests and Gemini includes get structural checks.
+They do not launch or certify the seven host clients. Node is needed for hook
+execution and native TypeScript support for Pi execution; unavailable runtimes
+are explicit skips, not passes for those integrations. Package/native behavior
+still requires checks against the installed Flutter/package versions and the
+affected target platform. These focused checks supplement the implementation
+benchmark; use its relevant task slice when skill instructions or recipes change.
+
+### Full implementation benchmark
 
 Use **Sonnet 5.5 (`claude-sonnet-5-5`)** for every agent, so results stay comparable with the table above. In Claude Code the steps are:
 

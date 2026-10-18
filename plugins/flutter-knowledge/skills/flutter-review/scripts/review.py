@@ -109,7 +109,7 @@ def dependency_changes(project, pubspec, changes):
 def flutter_test_failures(lines):
     failures = []
     for line in lines:
-        match = re.match(r'^\d+:\d+\s+[^:]*:\s+(.+?)\s+\[E\]$', line)
+        match = re.match(r'^\d+:\d+\s+[^:]*-[1-9]\d*[^:]*:\s+(.+?)\s+\[E\]$', line)
         if match and match.group(1) not in failures:
             failures.append(match.group(1))
     if failures and 'Failing tests:' in lines:
@@ -120,9 +120,13 @@ def flutter_test_failures(lines):
     return failures
 
 
-def concise_output(output):
+def output_lines(output):
     clean = re.sub(r'\x1b\[[0-9;]*m', '', output).replace('\r', '\n')
-    lines = [line for line in clean.splitlines() if line.strip()]
+    return [line for line in clean.splitlines() if line.strip()]
+
+
+def concise_output(output):
+    lines = output_lines(output)
     failures = flutter_test_failures(lines)
     if failures:
         return 'Failing tests:\n' + '\n'.join('  ' + case for case in failures)
@@ -172,12 +176,16 @@ def run_check(name, command, project, report):
         report['findings'].append(finding(name, 'error', str(error)))
         return
     output = completed.stdout + completed.stderr
-    status = 'passed' if completed.returncode == 0 else 'failed'
+    reported_failures = name == 'tests' and bool(flutter_test_failures(output_lines(output)))
+    failed = completed.returncode != 0 or reported_failures
+    status = 'failed' if failed else 'passed'
     check = {'name': name, 'status': status, 'command': command, 'exit_code': completed.returncode}
     report['checks'].append(check)
     summary = retain_output(name, output, report, check)
-    if completed.returncode:
+    if failed:
         message = summary or f'{name} returned {completed.returncode}'
+        if reported_failures and completed.returncode == 0:
+            message = 'Test output reports failures despite process exit code 0.\n' + message
         if check.get('log_path'):
             message += '\nFull log: ' + check['log_path']
         report['findings'].append(finding(name, 'blocking', message))

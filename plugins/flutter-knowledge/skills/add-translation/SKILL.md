@@ -1,6 +1,6 @@
 ---
 name: add-translation
-description: Add one or more localization keys to both assets/translations/en.json and assets/translations/ar.json in sync, then regenerate lib/core/l10n/locale_keys.g.dart. Use when the user asks to add a translation, add a string, add a new key, or wire up a new label/error message in the UI.
+description: Use when adding or changing localized Flutter strings or translation keys; keep English/Arabic resources synchronized and regenerate the configured localization accessors.
 ---
 
 # Add translation key(s)

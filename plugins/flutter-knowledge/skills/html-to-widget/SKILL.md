@@ -1,6 +1,6 @@
 ---
 name: html-to-widget
-description: Build or update Flutter screens/components from an HTML/CSS prototype using browser-computed layout, project tokens and existing core widgets. Use for casual requests such as "the login UI changed in the HTML", "update this existing screen" or "make it match the prototype" when an HTML source is supplied or already associated with the screen; no slash command is needed. Also handles whole-app HTML planning and source inspection. Use set-theme-from-html for whole-design foundations/assets and figma-to-widget for Figma.
+description: Use to build, plan or update Flutter screens/components from HTML/CSS, including existing-screen UI refreshes that preserve logic. Accepts an HTML path and optional screen selection; no slash command required.
 ---
 
 # HTML to Widget
@@ -28,9 +28,9 @@ The failure mode this prevents: eyeballing a screenshot of the prototype, or cop
 
 ## Task route
 
-Follow the [task workflow](../flutter-knowledge/references/workflows.md): build a requested single screen immediately, produce briefs for whole-app planning, and continue through every screen for explicit whole-app implementation. Planning uses the [shared design briefs](../flutter-knowledge/references/design-briefs.md) and does not require configuration creation or Flutter tooling. This skill owns source inspection; convention skills own implementation and `visual-verification` owns source comparison.
+Follow the [task workflow](../flutter-knowledge/references/workflows.md): resolve source/scope, apply its core readiness gate for implementation, build a requested single screen without unnecessary planning, and continue through every screen for explicit whole-app implementation. Whole-app planning uses the [shared design briefs](../flutter-knowledge/references/design-briefs.md) and does not create configuration/core or require Flutter tooling. This skill owns source inspection; convention skills own implementation and `visual-verification` owns source comparison.
 
-For whole-design theme/asset preparation after `/flutter-core`, use [set-theme-from-html](../set-theme-from-html/SKILL.md) before building screens. Read its `docs/design/` mappings/import evidence and validate source freshness; prepared tokens/assets do not establish screen fidelity or replace current project API inspection. Single-screen work retains its scoped route.
+For requested whole-design theme/asset preparation, use [set-theme-from-html](../set-theme-from-html/SKILL.md) after its readiness handoff and before building screens; a manual `/flutter-core` step is not required. Read its `docs/design/` mappings/import evidence and validate source freshness; prepared tokens/assets do not establish screen fidelity or replace current project API inspection. Single-screen work retains its scoped route.
 
 ## Reusable source inputs
 

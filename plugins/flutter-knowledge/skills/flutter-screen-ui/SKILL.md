@@ -1,6 +1,6 @@
 ---
 name: flutter-screen-ui
-description: Flutter screen and widget UI conventions — Screen/Body split with BlocListener + AppScaffold, BlocBuilder buildWhen, one widget per file and when to inline, threading cubit data to child widgets, bottom sheets/dialogs, snackbar extension, form validators, localization with LocaleKeys, core widget wrappers (AppText, AppScaffold, GlobalAppbar, VerticalSpace...), design tokens through context.tokens (skin colors, space, radius, text, elevation), spacing without flutter_screenutil, general style, and navigation extensions. Use before writing or editing any Flutter screen, widget, sheet, dialog, or styling code.
+description: Use before writing Flutter screens, bodies, widgets, sheets, dialogs or forms; applies shared wrappers, localization, navigation and design tokens. External HTML/Figma designs use their source-reader skill.
 ---
 
 # Flutter screen & UI

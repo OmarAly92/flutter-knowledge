@@ -13,9 +13,9 @@ except ImportError:
     raise SystemExit(2)
 
 from project_discovery import add_discovery, inspect_project, observed_family_candidates, usage_evidence
+from empty_project import BUILTINS, bootstrap_packages
 
 CATALOG = Path(__file__).resolve().parents[1] / 'package-catalog.json'
-BUILTINS = {'navigator', 'manual', 'none'}
 PACKAGE_NAME = re.compile(r'^[a-z][a-z0-9_]*$')
 
 
@@ -146,7 +146,7 @@ def findings(config, declared, catalog):
     pending = [f'{key}={choice}' for key, choice in config['packages'].items()
                if choice and choice not in declared and choice not in BUILTINS]
     if pending:
-        print('Not declared in pubspec (recommendations/selections only): ' + ', '.join(pending))
+        print('Not declared in pubspec: ' + ', '.join(pending))
     return problems
 
 
@@ -165,7 +165,9 @@ def write_config(path, config):
             temporary.unlink(missing_ok=True)
 
 
-def run(project, check):
+def run(project, check, bootstrap_empty=False):
+    if check and bootstrap_empty:
+        raise ConfigError('--check cannot be combined with --bootstrap-empty')
     pubspec = read_mapping(project / 'pubspec.yaml')
     declared = declared_packages(pubspec)
     usage, discovery = inspect_project(project, pubspec)
@@ -187,6 +189,12 @@ def run(project, check):
     else:
         write_config(path, resolved)
         print(f'Config ready: {path}')
+        if bootstrap_empty and not problems and bootstrap_packages(project, pubspec, resolved, catalog):
+            pubspec = read_mapping(project / 'pubspec.yaml')
+            declared = declared_packages(pubspec)
+            usage, discovery = inspect_project(project, pubspec)
+            resolved = add_discovery(resolve_config(resolved, declared, catalog, usage), discovery)
+            write_config(path, resolved)
     for problem in problems:
         print(problem, file=sys.stderr)
     return 1 if problems else 0
@@ -196,9 +204,11 @@ def main():
     parser = argparse.ArgumentParser(description='Detect Flutter package choices and write flutter-knowledge.yaml.')
     parser.add_argument('--project', type=Path, default=Path.cwd())
     parser.add_argument('--check', action='store_true', help='Validate choices without writing files')
+    parser.add_argument('--bootstrap-empty', action='store_true',
+                        help='Also resolve/add selected packages for a confirmed empty Flutter starter')
     args = parser.parse_args()
     try:
-        return run(args.project.resolve(), args.check)
+        return run(args.project.resolve(), args.check, args.bootstrap_empty)
     except (ValueError, OSError, UnicodeError, yaml.YAMLError, json.JSONDecodeError) as error:
         print(f'error: {error}', file=sys.stderr)
         return 2

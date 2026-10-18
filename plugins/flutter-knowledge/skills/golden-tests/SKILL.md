@@ -1,6 +1,6 @@
 ---
 name: golden-tests
-description: Golden tests that lock a Flutter screen's look with plain flutter_test — a shared harness (test/helpers/golden_harness.dart) that renders a screen headless at 375×812, ratio 2, through the app's own AppTheme.of(skin), EasyLocalization and ScreenUtil, with real fonts and real shadows; the real cubit fed by a mocked repository for each state; a variant matrix (the other skin, Arabic right-to-left, 2× text, a small phone); and the rule that a regenerated golden is looked at before it is committed. Use during design-driven screen implementation for mandatory capture and comparison, after visual-verification for regression variants, when the user asks for golden or UI snapshot tests, or when a golden test fails. Unrelated widget changes do not trigger new golden suites.
+description: Use for Flutter golden/snapshot tests, failed baselines, design-workflow captures and regression variants across skins, RTL, large text and small phones; inspect regenerated images before acceptance.
 ---
 
 # Golden Tests

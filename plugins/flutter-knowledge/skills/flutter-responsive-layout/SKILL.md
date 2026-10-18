@@ -1,6 +1,6 @@
 ---
 name: flutter-responsive-layout
-description: Use before Flutter layout work involving constraints, overflow, keyboard insets, small screens, large text, split panes, tablet/desktop targets or breakpoints, including screens built from a single design artboard.
+description: Use for Flutter constraints, breakpoints, overflow, keyboard/safe-area insets, small screens, large text, tablets or split panes, including layouts from one design artboard.
 ---
 
 # Responsive layout

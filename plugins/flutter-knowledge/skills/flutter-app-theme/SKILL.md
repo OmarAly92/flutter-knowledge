@@ -1,6 +1,6 @@
 ---
 name: flutter-app-theme
-description: Theme conventions for a Flutter app's lib/core/theme layer — the AppTokens ThemeExtension read as context.tokens (skin colors, space, radius, text, elevation, motion, shape), skins as a list (built-in LightSkin/DarkSkin plus JSON skins in a SkinRegistry, chosen with SkinCubit.select and a picker sheet), AppTypography text styles, AppMotion durations/curves/springs/stagger, AppSpacing/AppRadius/AppElevation, AppShapes, ThemeData built by AppTheme.of(skin) with the ColorScheme mapping, when a design's value becomes a token, and an audit script for hardcoded values. Use before writing any animation, duration or curve; matching a design's values to tokens or deciding whether a value becomes a token; adding a color, spacing, radius, text style, shadow, motion or shape token; adding or switching a skin; touching ThemeData; auditing UI code for hardcoded values; or editing a file under lib/core/theme/.
+description: Use for Flutter theme files, tokens, skins, ThemeData, typography, colors, spacing, radii, shadows, motion/animations or shapes; also hardcoded-value audits. Whole-HTML foundation extraction uses set-theme-from-html.
 ---
 
 # App theme (`lib/core/theme`)
@@ -13,7 +13,7 @@ Invoked by the `flutter-knowledge` skill (or directly via `/flutter-app-theme`).
 
 **Older project.** The project uses this layer if `lib/core/theme/app_tokens.dart` exists or `grep -rn "class AppTokens" lib` finds one. If not, it predates `context.tokens`: keep its own theme classes and mirror them — colors from `context.skin` (an `AppSkin` with `SkinScope`) or a flat `AppColors`, text from `AppTextStyle`, motion from a static `AppMotion`, radii as raw numbers — and apply the rules below with those names. Do not migrate it, or half-migrate a few widgets, unless the user asks; when they do, build the layer described here.
 
-For `/set-theme-from-html <html-design-path>`, [set-theme-from-html](../set-theme-from-html/SKILL.md) handles whole-source exploration, original asset import and scoped completion after `/flutter-core`; this skill remains the token/slot/API authority. That invocation uses the existing source-of-truth policy for measured semantic tokens. Keep unprovided modes/roles explicitly provisional, derived or unchanged rather than inventing source evidence.
+For `/set-theme-from-html <html-design-path>`, [set-theme-from-html](../set-theme-from-html/SKILL.md) handles whole-source exploration, required core readiness, original asset import and scoped theme completion; this skill remains the token/slot/API authority. That invocation uses the existing source-of-truth policy for measured semantic tokens. Keep unprovided modes/roles explicitly provisional, derived or unchanged rather than inventing source evidence.
 
 ## The layer
 

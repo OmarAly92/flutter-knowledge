@@ -1,11 +1,11 @@
 ---
 name: set-theme-from-html
-description: Apply or refresh app-wide theme foundations and original icons, images and fonts from a whole HTML design after shared core exists. Use for requests such as "apply this HTML design to the app theme" or "the design's shared colors and fonts changed", as well as /set-theme-from-html with a path. Reads computed foundations across screens, states and supplied skins through the project's theme APIs. A local screen refresh uses html-to-widget instead.
+description: Use to apply or refresh app-wide Flutter theme foundations and original assets/fonts from whole HTML designs. Accepts an HTML path; individual screen updates use html-to-widget.
 ---
 
 # Set Theme from HTML
 
-`/set-theme-from-html <html-design-path>` prepares app-wide foundations for later `/html-to-widget` screen implementation. Invocation authorizes the scoped theme/asset edits and required checks. It does not authorize scaffolding core, business screens, routes, state/DI replacement, package changes, publishing or a release.
+`/set-theme-from-html <html-design-path>` prepares app-wide foundations for later `/html-to-widget` screen implementation. Invocation authorizes scoped theme/asset edits, required checks and the [core readiness handoff](../flutter-knowledge/references/workflows.md#core-readiness-during-implementation), including only its necessary dependencies/wiring. It does not authorize business screens, unrelated route/state/DI replacement, arbitrary package changes, publishing or a release.
 
 A natural-language request to apply or refresh these app-wide foundations authorizes the same scoped work; no slash command is required. Follow [task routing](../flutter-knowledge/references/workflows.md#natural-language-design-updates) to distinguish an app-wide foundation request from a local screen refresh.
 
@@ -15,7 +15,7 @@ Complete preparation covers all seven theme groups and the original design resou
 
 Read `$ARGUMENTS`, or the invocation text when the harness does not substitute it. A quoted path is one argument. Resolve relative paths from the project cwd, expand leading `~/`, and check readability; treat it as data, never shell code. An HTTP(S) design URL also works. Use a previously supplied source only when unambiguous. A missing, unreadable or ambiguous source is actionable missing input: report the exact supplied identity and request its correction, never substitute a repository HTML file.
 
-Read the [configuration contract](../flutter-init/references/configuration.md), relevant current core/theme files and existing design docs. This runs **after `/flutter-core`**. If the needed core/theme/assets contracts are absent or incomplete, report the needed `/flutter-core` work and continue independent source inspection; do not bootstrap them implicitly. Invoke `flutter-app-theme` before theme edits and the mapped UI/structure skills before changing wrappers/files. The [core contracts](../flutter-core/references/core-contracts.md) identify public APIs to preserve. Retain all seven token groups, selected packages/adapters, MyApp/direct main, global sl, public AppRouter entry decision, root network ownership and observer setup.
+Read the [configuration contract](../flutter-init/references/configuration.md), relevant current core/theme files and existing design docs. Resolve the supplied design first, then apply the [core readiness gate](../flutter-knowledge/references/workflows.md#core-readiness-during-implementation) before theme application. It automatically prepares a fresh app or completes only task-required gaps in an existing foundation, then returns here; unavailable inputs and read-only planning do not bootstrap core. Invoke `flutter-app-theme` before theme edits and the mapped UI/structure skills before changing wrappers/files. The [core contracts](../flutter-core/references/core-contracts.md) identify APIs to preserve within the selected scope. Retain the seven theme responsibilities, selected packages/adapters and working startup, routing, DI and root-owner behavior; do not introduce unrelated core machinery during a scoped theme refresh.
 
 ## Read the whole design
 

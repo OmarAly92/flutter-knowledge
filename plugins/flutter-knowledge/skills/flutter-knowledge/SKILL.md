@@ -1,6 +1,6 @@
 ---
 name: flutter-knowledge
-description: Use for any Flutter/Dart project task, including natural-language requests to build a screen, update an existing screen from a changed HTML/Figma design, or fix its appearance without naming a skill. Routes implementation, review, debugging, architecture, state, data, routing, themes and localization to the relevant conventions.
+description: Use for Flutter/Dart tasks to select the relevant conventions and workflow, including natural-language screen/design updates, architecture, implementation, debugging and review.
 ---
 
 # Flutter knowledge
@@ -43,7 +43,7 @@ Before writing or editing the code in the left column, you MUST invoke the skill
 | Before you write… | You MUST invoke |
 | --- | --- |
 | Initialize package selections from `pubspec.yaml`, or create/refresh `flutter-knowledge.yaml` | `flutter-init` |
-| Create or complete the shared core — only when the user explicitly invokes `/flutter-core` or asks to bootstrap core; never as a side effect of screen work | `flutter-core` (manual; it runs `flutter-init` first when config is absent) |
+| Create/complete core explicitly, bootstrap a confirmed fresh app before implementation, or complete a task-required shared-core dependency | `flutter-core` under the [core readiness gate](references/workflows.md#core-readiness-during-implementation); preserve its full/scoped handoff and initialize missing config first |
 | A new feature, a new screen, or any new file (folder tree, `_screen` suffix, where files go, mirroring an existing file) | `flutter-feature-structure` |
 | A model, params class, remote data source, repository, `EndPoints` entry, or `Failure` handling | `flutter-data-layer` |
 | A state owner, cubit, controller or state class | `flutter-state-management` |
@@ -60,7 +60,7 @@ Before writing or editing the code in the left column, you MUST invoke the skill
 | Unit tests — only when the user explicitly asks for tests | `flutter-testing` |
 | An animation (duration, curve, spring, stagger, page transition); a design's values matched to tokens, and whether one becomes a token; a new color, spacing, radius, text style, shadow, motion or shape token; a skin, the skin picker, or `ThemeData`; an audit for hardcoded values; or any file under `lib/core/theme/` | `flutter-app-theme` |
 | A new or existing screen/component built or updated to match an HTML prototype or Figma frame, including casual UI-update requests | `html-to-widget` / `figma-to-widget` for the resolved source |
-| Apply the whole HTML design to an existing core theme and import its original assets/fonts, after `/flutter-core` | `set-theme-from-html` + `flutter-app-theme`; later screen work uses `html-to-widget` |
+| Apply the whole HTML design to the app theme and import original assets/fonts, with core readiness handled when needed | `set-theme-from-html` + `flutter-app-theme`; later screen work uses `html-to-widget` |
 | Whole-app design planning or source extraction for foundations | `html-to-widget` / `figma-to-widget`; follow the planning/foundations route in task workflows |
 
 Older project: if it has no `lib/core/theme/app_tokens.dart` (and `grep -rn "class AppTokens" lib` finds nothing), it predates `context.tokens`. Keep using its own theme classes (`context.skin` or `AppColors`, `AppTextStyle`, static `AppMotion`) and invoke `flutter-app-theme`, which says how; do not migrate it unless the user asks.

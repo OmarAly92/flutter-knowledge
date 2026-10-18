@@ -1,6 +1,6 @@
 ---
 name: flutter-testing
-description: Unit test conventions for a Flutter feature — mocktail mocks, bloc_test cubit tests, data source/repository/cubit test layout and coverage. Use when the user explicitly asks to write, add, or update tests for a Flutter feature.
+description: Use when explicitly asked to write, add or update Flutter feature unit tests for data sources, repositories or state owners. Visual snapshots use golden-tests.
 ---
 
 # Unit tests

@@ -1,6 +1,6 @@
 ---
 name: hive-local-database
-description: Hive (hive_ce) local persistence conventions for a Flutter feature — boxes, local data sources, storage↔model mapping, local-only and hybrid (remote+local) repositories. Use when the user asks to add local storage, persist data locally, add offline support, cache API responses locally, or work with hive/hive_ce in this Flutter project.
+description: Use for Flutter local persistence, boxes, storage mapping, offline support or cached repositories when the configured engine is Hive/hive_ce, including hive_ce_flutter.
 ---
 
 # Local database (Hive)

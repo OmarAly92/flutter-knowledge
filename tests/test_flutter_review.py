@@ -245,6 +245,36 @@ sys.exit(int(os.environ.get('FK_TOOL_EXIT','0')))
             self.assertEqual(failures['message'].count(case), 1)
         self.assertNotIn('and 8 more', failures['message'])
 
+    def test_reported_test_failures_block_despite_zero_process_exit(self):
+        output = ('00:02 +21 -2: /fixture/test/profile_test.dart: save and reopen [E]\n'
+                  '00:02 +21 -2: Some tests failed.')
+        tool = self.tool_dir / 'flutter'
+        tool.write_text(tool.read_text().replace(
+            "sys.exit(int(os.environ.get('FK_TOOL_EXIT','0')))",
+            f"if len(sys.argv)>1 and sys.argv[1]=='test':\n    print({output!r})\nsys.exit(0)"))
+        before = self.snapshot()
+        run, report = self.run_review('--log-dir', str(self.base / 'logs'))
+        self.assertEqual(run.returncode, 1, run.stderr)
+        check = next(item for item in report['checks'] if item['name'] == 'tests')
+        self.assertEqual(check['status'], 'failed')
+        self.assertEqual(check['exit_code'], 0)
+        self.assertIn(output, Path(check['log_path']).read_text())
+        self.assertTrue(any(hit['rule'] == 'tests' and hit['severity'] == 'blocking'
+                            for hit in report['findings']))
+        self.assertEqual(before, self.snapshot())
+
+    def test_passing_test_name_with_error_marker_is_not_a_failure(self):
+        output = ('00:00 +0: /fixture/test/profile_test.dart: displays [E]\n'
+                  '00:00 +1: All tests passed!')
+        tool = self.tool_dir / 'flutter'
+        tool.write_text(tool.read_text().replace(
+            "sys.exit(int(os.environ.get('FK_TOOL_EXIT','0')))",
+            f"if len(sys.argv)>1 and sys.argv[1]=='test':\n    print({output!r})\nsys.exit(0)"))
+        run, report = self.run_review()
+        self.assertEqual(run.returncode, 0, run.stderr)
+        check = next(item for item in report['checks'] if item['name'] == 'tests')
+        self.assertEqual(check['status'], 'passed')
+
     def test_convention_candidates_ignore_strings_and_report_real_code(self):
         self.write('lib/feature/x/presentation/x_screen/ui/x_screen.dart',
                    "class XScreen extends StatelessWidget { Widget build(BuildContext context) { return BlocProvider(create: (_) => XCubit(), child: AppText('Hello')); } }")

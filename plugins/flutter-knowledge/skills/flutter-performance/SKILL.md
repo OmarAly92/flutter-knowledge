@@ -1,6 +1,6 @@
 ---
 name: flutter-performance
-description: Use when writing Flutter lists/grids, image loading, animations or expensive build logic, investigating jank or excess memory/rebuilds, or reviewing a UI change with a concrete performance concern.
+description: Use for Flutter list/grid efficiency, image decoding, expensive builds, animations, excessive rebuilds, jank or memory concerns; measure before optimizing.
 ---
 
 # Performance

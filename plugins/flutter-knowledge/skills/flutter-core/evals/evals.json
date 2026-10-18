@@ -38,6 +38,169 @@
         "Real request forwarding and Failure boundaries are tested against an injected client.",
         "Adaptation integrates with actual dependency registration and app startup rather than isolated sample code."
       ]
+    },
+    {
+      "id": 4,
+      "case": "fresh_after_init",
+      "prompt": "Build the first profile screen from the supplied valid HTML in an unchanged Flutter starter. flutter-init already populated its package declarations/config, but there are no implemented features or equivalent core.",
+      "expected_output": "full",
+      "files": [],
+      "assertions": [
+        "Invoke flutter-core automatically for the full fresh foundation before implementing the selected screen.",
+        "Package count does not disqualify fresh source; no extra user approval or manual skill selection is required.",
+        "Resume the screen and design verification after core; do not invent backend/auth policy."
+      ]
+    },
+    {
+      "id": 5,
+      "case": "required_partial_cache",
+      "prompt": "Finish remembering the selected language in this existing app. Settings and startup already call CacheHelper, but its imported implementation is missing. Theme/router/widgets and cache keys already work and must be preserved.",
+      "expected_output": "scoped",
+      "files": [],
+      "assertions": [
+        "Invoke flutter-core for the ordinary cache contract and any actually missing readiness boundary only.",
+        "Preserve unrelated root/theme/routes/providers and key strings; no secure cache, HTTP, database or full inventory completion.",
+        "Return to the original task and verify language persistence without claiming all core is complete.",
+        "Complete the standard selected CacheHelper value/API contract rather than narrowing it to the fixture strings."
+      ]
+    },
+    {
+      "id": 6,
+      "case": "custom_equivalent_core",
+      "prompt": "Update the existing account UI label using its known design. The app has no lib/core directory, but its shared/ folder has working theme, routing, wrappers, localization and services, and the change has no missing dependency.",
+      "expected_output": "none",
+      "files": [],
+      "assertions": [
+        "Reuse existing equivalents without creating a conventional parallel core.",
+        "Retain the older-theme exception and existing behavior; finish the design update checks."
+      ]
+    },
+    {
+      "id": 7,
+      "case": "planning_only",
+      "prompt": "Plan all screens from this valid HTML for a Flutter starter with no core or config. Do not implement yet.",
+      "expected_output": "none",
+      "files": [],
+      "assertions": [
+        "Inspect/design-plan without creating configuration, dependencies, core, theme or screens."
+      ]
+    },
+    {
+      "id": 8,
+      "case": "review_only",
+      "prompt": "Review whether this app is ready. Core/cache infrastructure and configuration are incomplete. Findings only.",
+      "expected_output": "none",
+      "files": [],
+      "assertions": [
+        "Report gaps read-only; no initialization, dependency installation, core fixes or app builds."
+      ]
+    },
+    {
+      "id": 9,
+      "case": "source_unavailable",
+      "prompt": "Build login from ./design/missing.html in a fresh starter. The explicit file is absent and no alternative source was supplied.",
+      "expected_output": "blocked",
+      "files": [],
+      "assertions": [
+        "Request the missing source identity and continue independent read-only inspection.",
+        "Do not bootstrap core before resolving the implementation input/scope or silently substitute another design."
+      ]
+    },
+    {
+      "id": 10,
+      "case": "optional_wrapper",
+      "prompt": "Add a small divider to this existing screen. Its current theme works; the named core divider wrapper is absent and the UI convention permits a working raw fallback. No required shared dependency is missing.",
+      "expected_output": "none",
+      "files": [],
+      "assertions": [
+        "Use the permitted fallback through the existing theme; do not turn every missing optional wrapper into core setup."
+      ]
+    },
+    {
+      "id": 11,
+      "case": "core_forbidden",
+      "prompt": "Implement this feature, but leave core and dependencies unchanged. It requires a shared service that is actually missing and has no permitted existing fallback.",
+      "expected_output": "blocked",
+      "files": [],
+      "assertions": [
+        "Respect the explicit constraint, report the concrete blocker and continue independent allowed work.",
+        "Do not invoke automatic core completion or request routine skill selection."
+      ]
+    },
+    {
+      "id": 12,
+      "case": "explicit_scoped_core",
+      "prompt": "Use /flutter-core to complete only NetworkStatus in an existing app. Keep the rest of the core as it is.",
+      "expected_output": "scoped",
+      "files": [],
+      "assertions": [
+        "Honor the user-limited network scope and necessary wiring; the slash command does not expand an explicitly limited request."
+      ]
+    },
+    {
+      "id": 13,
+      "case": "ready_second_screen",
+      "prompt": "Build the next screen from a valid supplied design. The previous task already prepared core and all dependencies for this screen work. No missing required contracts were found.",
+      "expected_output": "none",
+      "files": [],
+      "assertions": [
+        "Reuse current APIs/config and continue screen implementation without reinitializing core or recursively restarting setup."
+      ]
+    },
+    {
+      "id": 14,
+      "case": "fresh_theme_request",
+      "prompt": "Use /set-theme-from-html ./design/app.html to apply the supplied complete readable HTML design. This is an unchanged Flutter starter with configuration already selected, no implemented feature code and no equivalent core.",
+      "expected_output": "full",
+      "files": [],
+      "assertions": [
+        "Apply the shared readiness gate without contradicting the direct specialist entry point.",
+        "Preserve task scope, source prerequisites and read-only exclusions."
+      ]
+    },
+    {
+      "id": 15,
+      "case": "ready_theme_unrelated_gaps",
+      "prompt": "Update shared colors and fonts from the supplied readable HTML in an existing app. The current theme/token/asset APIs and their consumers work. Inspector also lists unrelated missing HTTP/network/secure-cache files that this change does not use.",
+      "expected_output": "none",
+      "files": [],
+      "assertions": [
+        "Apply the shared readiness gate without contradicting the direct specialist entry point.",
+        "Preserve task scope, source prerequisites and read-only exclusions."
+      ]
+    },
+    {
+      "id": 16,
+      "case": "figma_unavailable",
+      "prompt": "Build the first login screen from the supplied Figma frame URL in a fresh Flutter starter. The agent cannot access Figma tools or an inspect export, so source values are unavailable. No other source was provided.",
+      "expected_output": "blocked",
+      "files": [],
+      "assertions": [
+        "Apply the shared readiness gate without contradicting the direct specialist entry point.",
+        "Preserve task scope, source prerequisites and read-only exclusions."
+      ]
+    },
+    {
+      "id": 17,
+      "case": "comparison_only_gap",
+      "prompt": "Only compare existing login with its supplied design, with no code repairs. The capture cannot render because a required shared service is missing from the current app.",
+      "expected_output": "blocked",
+      "files": [],
+      "assertions": [
+        "Apply the shared readiness gate without contradicting the direct specialist entry point.",
+        "Preserve task scope, source prerequisites and read-only exclusions."
+      ]
+    },
+    {
+      "id": 18,
+      "case": "test_only_unrelated_gaps",
+      "prompt": "Write unit tests for the existing working repository using its installed test APIs. There are unrelated core inventory gaps, but this repository and its required test collaborators already work.",
+      "expected_output": "none",
+      "files": [],
+      "assertions": [
+        "Apply the shared readiness gate without contradicting the direct specialist entry point.",
+        "Preserve task scope, source prerequisites and read-only exclusions."
+      ]
     }
   ]
 }

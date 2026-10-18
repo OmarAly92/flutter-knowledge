@@ -1,6 +1,6 @@
 ---
 name: flutter-accessibility-rtl
-description: Use before writing or changing user-facing Flutter controls, semantics, icons, directional layout, localized content or text scaling, and when reviewing Arabic/RTL behavior or accessibility failures.
+description: Use before changing Flutter controls, semantics, focus, touch targets, directional icons/layout, localization behavior or text scaling; also accessibility and Arabic/RTL reviews.
 ---
 
 # Accessibility and RTL

@@ -1,6 +1,6 @@
 ---
 name: flutter-feature-structure
-description: Folder layout for a Flutter project — feature directories under lib/feature/ (data/ vs presentation/, the `_screen` directory suffix, logic/ui/widgets placement, feature injection files), the lib/core/ folders (theme, l10n, layout, router, data, di, helpers, services, widgets), and the "read an existing equivalent file first and mirror it" rule. Use before creating a new Flutter feature, screen, or file, or when deciding where a Dart file belongs.
+description: Use before creating Flutter features, screens or files, or deciding folder placement and naming under lib/feature/ and lib/core/.
 ---
 
 # Flutter feature structure

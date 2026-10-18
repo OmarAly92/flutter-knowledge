@@ -1,6 +1,6 @@
 ---
 name: figma-to-widget
-description: Build or update Flutter screens/components from a Figma frame using Auto Layout, variables, project tokens and existing core widgets. Use for casual requests such as "the login design changed in Figma", "update this existing screen" or "make it look like the design" when a Figma source is supplied or already associated with the screen; no slash command is needed. Also handles whole-app Figma planning and foundation extraction. For HTML use html-to-widget.
+description: Use to build, plan or update Flutter screens/components from Figma frames, including existing-screen UI refreshes that preserve logic. Also covers whole-app Figma planning/foundation extraction.
 ---
 
 # Figma to Widget
@@ -11,7 +11,7 @@ The failure mode this prevents: reading pixel positions off the frame and rebuil
 
 ## Task route
 
-Follow the [task workflow](../flutter-knowledge/references/workflows.md): build a requested single screen immediately, produce briefs for whole-app planning, and continue through every screen for explicit whole-app implementation. Planning uses the [shared design briefs](../flutter-knowledge/references/design-briefs.md) and does not require configuration creation or Flutter tooling. This skill owns source inspection; convention skills own implementation and `visual-verification` owns source comparison.
+Follow the [task workflow](../flutter-knowledge/references/workflows.md): resolve source/scope, apply its core readiness gate for implementation, build a requested single screen without unnecessary planning, and continue through every screen for explicit whole-app implementation. Whole-app planning uses the [shared design briefs](../flutter-knowledge/references/design-briefs.md) and does not create configuration/core or require Flutter tooling. This skill owns source inspection; convention skills own implementation and `visual-verification` owns source comparison.
 
 Existing-screen updates follow [natural-language design updates](../flutter-knowledge/references/workflows.md#natural-language-design-updates). Resolve the associated frame and current revision, preserve the working logic and update the existing UI. Users do not need to name skills or repeat an unambiguous frame identity.
 

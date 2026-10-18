@@ -1,6 +1,6 @@
 ---
 name: flutter-review
-description: Use when reviewing Flutter changes, finishing substantial implementation, checking readiness before commit/PR/merge, or requesting a findings-only audit of formatting, analysis, tests and project conventions.
+description: Use for findings-only Flutter reviews and readiness checks before handoff, commit or PR; inspect conventions, formatting, analysis, tests and existing evidence without fixing or recapturing.
 allowed-tools: Read, Grep, Glob, Bash
 ---
 

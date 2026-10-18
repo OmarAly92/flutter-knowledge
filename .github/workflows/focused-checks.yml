@@ -1,0 +1,66 @@
+name: Focused checks
+
+on:
+  pull_request:
+  push:
+    branches: [master]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: focused-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  select:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    outputs:
+      relevant: ${{ steps.select.outputs.relevant }}
+      browser: ${{ steps.select.outputs.browser }}
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - id: select
+        run: python3 scripts/focused_checks.py --github-event --dry-run --json --github-output "$GITHUB_OUTPUT"
+
+  checks:
+    needs: select
+    if: needs.select.outputs.relevant == 'true'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - python: '3.10'
+            node: '22'
+          - python: '3.14'
+            node: '24'
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-python@e797f83bcb11b83ae66e0230d6156d7c80228e7c
+        with:
+          python-version: ${{ matrix.python }}
+      - uses: actions/setup-node@2028fbc5c25fe9cf00d9f06a71cc4710d4507903
+        with:
+          node-version: ${{ matrix.node }}
+          package-manager-cache: false
+      - name: Install test dependencies
+        run: python -m pip install 'PyYAML>=6,<7' 'Pillow>=10.1,<13' 'numpy>=1.26,<3' 'fonttools>=4.50,<5'
+      - name: Install browser test adapter
+        if: needs.select.outputs.browser == 'true'
+        env:
+          PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: '1'
+        run: npm install --prefix "$RUNNER_TEMP/focused-node" --no-package-lock --ignore-scripts playwright@1.56.1
+      - name: Run affected suites
+        env:
+          NODE_PATH: ${{ runner.temp }}/focused-node/node_modules
+        run: python scripts/focused_checks.py --github-event --json
