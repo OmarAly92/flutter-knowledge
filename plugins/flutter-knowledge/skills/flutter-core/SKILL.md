@@ -47,6 +47,8 @@ Full foundation work includes both ordinary and secure cache through [cache stor
 
 The default recipes follow the reference architecture, not its application features. Use target package imports from pubspec's `name`. Selected alternative packages keep the same responsibilities, naming and lifetimes through their verified APIs. Read only applicable package-adaptation sections. Never switch an alternative to a default just to match a recipe.
 
+Before authoring a missing or incomplete cache, HTTP logger or component mapping, read only its matching [tested reference implementation](references/reference-implementations.md). Adapt verified mechanics to the target contracts; do not replace working implementations or change package versions to fit a reference.
+
 Add a selected dependency only when a requested core responsibility actually uses it. Discover supplied local UI packages and integrate all applicable core responsibilities through the contract reference. Packages supplied for these responsibilities are applicable dependencies; optional unrelated toolkits and a recommended local database are not required merely because the reference app used them. Keep both database skills separate. Missing project configuration such as the backend URL is reported explicitly; never invent a working endpoint or claim a live API was tested.
 
 Use normal transport certificate validation. Do not copy token logging, universal certificate acceptance, a transport singleton that ignores injected configuration, or no-op setters. Preserve the ApiConsumer/Failure boundaries while implementing real request forwarding and error translation. Auth integration, if already present, preserves its actual token/session contract without logging credentials.

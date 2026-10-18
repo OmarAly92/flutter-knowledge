@@ -1,0 +1,128 @@
+import 'package:flutter/material.dart';
+
+class FixtureRoles {
+  const FixtureRoles({required this.name, required this.brightness, required this.colors});
+
+  final String name;
+  final Brightness brightness;
+  final List<Color> colors;
+
+  Color get buttonBackground => colors[0];
+  Color get buttonText => colors[1];
+  Color get buttonDisabledBackground => colors[2];
+  Color get buttonDisabledText => colors[3];
+  Color get textFieldBorder => colors[4];
+  Color get textFieldFocusedBorder => colors[5];
+  Color get textPrimary => colors[6];
+}
+
+class FixtureTokens extends ThemeExtension<FixtureTokens> {
+  const FixtureTokens(this.skin);
+
+  final FixtureRoles skin;
+
+  @override
+  FixtureTokens copyWith({FixtureRoles? skin}) => FixtureTokens(skin ?? this.skin);
+
+  @override
+  FixtureTokens lerp(covariant FixtureTokens? other, double t) =>
+      other == null || t < 0.5 ? this : other;
+}
+
+abstract final class FixtureTheme {
+  static const buttonShape = RoundedRectangleBorder(
+    borderRadius: BorderRadius.all(Radius.circular(19)),
+  );
+  static const buttonText = TextStyle(fontSize: 17, fontWeight: FontWeight.w700);
+  static const buttonPadding = EdgeInsets.symmetric(horizontal: 23, vertical: 13);
+  static const buttonMinimumSize = Size(127, 57);
+  static const buttonAnimation = Duration(milliseconds: 310);
+  static const inputPadding = EdgeInsets.symmetric(horizontal: 21, vertical: 17);
+  static const inputEnabledBorder = OutlineInputBorder(
+    borderRadius: BorderRadius.all(Radius.circular(15)),
+    borderSide: BorderSide(color: Color(0xff010203), width: 3),
+    gapPadding: 7,
+  );
+  static const inputFocusedBorder = OutlineInputBorder(
+    borderRadius: BorderRadius.all(Radius.circular(18)),
+    borderSide: BorderSide(color: Color(0xff040506), width: 5),
+    gapPadding: 9,
+  );
+  static const inputDisabledBorder = UnderlineInputBorder(
+    borderSide: BorderSide(color: Color(0xff070809), width: 2),
+  );
+  static const inputErrorBorder = UnderlineInputBorder(
+    borderSide: BorderSide(color: Color(0xff101112), width: 4),
+  );
+
+  static ThemeData of(FixtureRoles skin) {
+    final enabledBorder = inputEnabledBorder;
+    final focusedBorder = inputFocusedBorder;
+    final decoration = const InputDecorationThemeData(
+      enabledBorder: inputEnabledBorder,
+      focusedBorder: inputFocusedBorder,
+      disabledBorder: inputDisabledBorder,
+      errorBorder: inputErrorBorder,
+      contentPadding: inputPadding,
+      floatingLabelBehavior: FloatingLabelBehavior.always,
+    ).copyWith(
+@@INPUT_BORDERS@@
+    );
+    return ThemeData(
+      useMaterial3: true,
+      brightness: skin.brightness,
+      extensions: [FixtureTokens(skin)],
+      inputDecorationTheme: decoration,
+      filledButtonTheme: FilledButtonThemeData(
+        style: FilledButton.styleFrom(
+          minimumSize: buttonMinimumSize,
+          padding: buttonPadding,
+          shape: buttonShape,
+          textStyle: buttonText,
+          animationDuration: buttonAnimation,
+@@FILLED_BUTTON_STYLE@@
+        ),
+      ),
+    );
+  }
+}
+
+class FixturePrimaryButton extends StatelessWidget {
+  const FixturePrimaryButton({super.key, required this.onPressed, this.isLoading = false});
+
+  final VoidCallback? onPressed;
+  final bool isLoading;
+
+  @override
+  Widget build(BuildContext context) {
+    final tokens = Theme.of(context).extension<FixtureTokens>()!;
+    final isEnabled = onPressed != null && !isLoading;
+    return FilledButton(
+      onPressed: isEnabled ? onPressed : null,
+      child: FixtureAppText(
+        isLoading ? 'Loading' : 'Core label',
+        style: FixtureTheme.buttonText.copyWith(
+          color:
+@@BUTTON_LABEL_COLOR@@
+          ,
+        ),
+      ),
+    );
+  }
+}
+
+class FixtureAppText extends StatelessWidget {
+  const FixtureAppText(this.label, {super.key, this.style});
+
+  final String label;
+  final TextStyle? style;
+
+  @override
+  Widget build(BuildContext context) {
+    final tokens = Theme.of(context).extension<FixtureTokens>()!;
+    return Text(
+      label,
+      style: style ?? FixtureTheme.buttonText.copyWith(color: tokens.skin.textPrimary),
+    );
+  }
+}

@@ -136,6 +136,20 @@ output despite exit code 0, with passing-marker and failure regressions tested
 on Python 3.10 and 3.14. Raw evidence is retained in ignored
 `benchmark/out/ci-fresh-flow-20261018/`; provider token counters are unavailable.
 
+### Tested core references: scoped validation
+
+The cache, Dio/Talker logger and Material mapping references pass 47 host
+contract/widget tests plus a compiled product-mode logger probe on Flutter
+3.44.5/Dart 3.12.2. Fixture pins record the exercised package versions rather
+than application dependency requirements. A paired, blind cache-only task had
+both submitted implementations pass the same 25 public-contract checks; each
+preserved seven original caller/key/config/dependency files. The candidate used
+the matching cache references unchanged and did not load unrelated logger/theme
+implementations. This proves scoped adoption/preservation on that sample, not
+fewer general errors, statistical improvement or token savings. Initial stricter
+scores reflected private policy differences and are retained as diagnostics.
+Local raw evidence is in ignored `benchmark/out/core-references-20261018/`.
+
 ## Files
 
 | File | What it is |
@@ -229,6 +243,7 @@ Run the focused checks for the surfaces actually changed:
 | Harness manifests, hooks, installer or Gemini includes | `python3 tests/test_harness_compatibility.py` |
 | Package detection/configuration or empty-starter setup | `python3 tests/test_flutter_init.py` and `python3 tests/test_flutter_init_bootstrap.py` |
 | Core inspection or findings-only review | `python3 tests/test_flutter_core.py` and `python3 tests/test_flutter_review.py` |
+| Core reference implementations, theme fragments or pinned fixtures | `python3 tests/test_core_references.py` for packaging/reporting, then `python3 tests/check_core_references.py` (or `--only cache`, `--only logger`, `--only theme`) with Flutter/Dart; offline by default, `--fetch` permits fixture dependencies |
 | State-package recipes or their dependency versions | `python3 tests/check_state_references.py` with the resolved APIs; inspect its flags before selecting backends |
 | HTML extraction, foundations or assets | `python3 tests/test_layout_tree.py` and `python3 tests/test_html_to_theme.py` |
 | Reference reuse, comparison or regression handoff | `python3 tests/test_design_cache.py`, `python3 tests/test_compare.py` and `python3 tests/test_golden_handoff.py` |
@@ -241,6 +256,13 @@ are explicit skips, not passes for those integrations. Package/native behavior
 still requires checks against the installed Flutter/package versions and the
 affected target platform. These focused checks supplement the implementation
 benchmark; use its relevant task slice when skill instructions or recipes change.
+
+Core reference edits select the Python packaging/reporting suite and explicitly
+report required Flutter followup. Python/Node CI does not compile those Dart
+assets or satisfy that check. The Flutter runner copies the shipped sources into
+an isolated fixture, formats only that workspace, exercises the host contracts
+and widgets, and compiles the logger's product-mode smoke probe. It neither
+overwrites an existing app nor verifies native storage or a target design.
 
 ### Full implementation benchmark
 

@@ -121,6 +121,24 @@ class FocusedCheckSelectionTests(unittest.TestCase):
                 self.assertIn('not analyzed or exercised', plan['required_manual_checks'][0])
         self.assertEqual(CHECKS.select(['docs/plans/ci.md'])['required_manual_checks'], [])
 
+    def test_core_reference_edits_select_packaging_and_require_flutter_verification(self):
+        paths = [
+            CHECKS.SKILLS + 'flutter-core/assets/reference-implementations/shared_preferences/cache_helper.dart',
+            CHECKS.SKILLS + 'flutter-app-theme/assets/reference-implementations/input-borders.dart.inc',
+            'tests/fixtures/core-references/manifest.json',
+            'tests/fixtures/core-references/theme_support/app_theme.dart.in',
+            'tests/check_core_references.py',
+        ]
+        for path in paths:
+            with self.subTest(path=path):
+                plan = CHECKS.select([path])
+                self.assertEqual(plan['suites'], ['core_references'])
+                self.assertFalse(plan['browser'])
+                self.assertFalse(plan['fallback'])
+                self.assertIn('not compiled or exercised', plan['required_manual_checks'][0])
+        unknown = CHECKS.SKILLS + 'flutter-core/assets/reference-implementations/new_tool.py'
+        self.assertEqual(set(CHECKS.select([unknown])['suites']), set(CHECKS.SUITES))
+
     def test_changed_file_detection_keeps_deleted_and_shell_special_paths(self):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)

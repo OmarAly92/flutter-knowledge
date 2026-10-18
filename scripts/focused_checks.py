@@ -20,7 +20,7 @@ SUITES = {
         'focused_checks', 'harness_compatibility', 'skill_selection', 'flutter_init',
         'flutter_init_bootstrap', 'flutter_core', 'flutter_review', 'token_audit',
         'compare', 'design_cache', 'verification_runner', 'stage_usage',
-        'golden_handoff', 'html_to_theme', 'layout_tree', 'benchmark_grade',
+        'golden_handoff', 'html_to_theme', 'layout_tree', 'benchmark_grade', 'core_references',
     )
 }
 SUITES['calibration'] = SKILLS + 'visual-verification/tests/test_calibration.py'
@@ -67,6 +67,17 @@ def select(paths):
     for raw in paths:
         path = PurePosixPath(raw).as_posix().removeprefix('./')
         name = PurePosixPath(path).name
+        core_reference = path == 'tests/check_core_references.py' or (
+            path.startswith((
+                SKILLS + 'flutter-core/assets/reference-implementations/',
+                SKILLS + 'flutter-app-theme/assets/reference-implementations/',
+                'tests/fixtures/core-references/',
+            )) and name.endswith(('.dart', '.dart.inc', '.dart.in', '.json'))
+        )
+        if core_reference:
+            selected.add('core_references')
+            manual.add('Run python3 tests/check_core_references.py with Flutter/Dart and cached fixture packages; '
+                       'reference implementations are not compiled or exercised by this Python/Node CI.')
         if path in GEMINI_REFERENCES:
             selected.add('harness_compatibility')
         if path in {'tests/check_state_references.py', 'tests/state_reference_test.dart'} or (
@@ -79,6 +90,8 @@ def select(paths):
             'scripts/focused_checks.py', 'tests/test_focused_checks.py',
         } or name in DEPENDENCIES or (name.startswith('requirements') and name.endswith('.txt')):
             selected.update(SUITES)
+        elif core_reference:
+            pass
         elif path in SUITES.values():
             selected.update(key for key, value in SUITES.items() if value == path)
         elif path.startswith(('.claude-plugin/', '.agents/plugins/', '.cursor-plugin/',

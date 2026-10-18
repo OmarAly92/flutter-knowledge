@@ -1,0 +1,13 @@
+# Tested component mappings
+
+Use these fragments only to complete missing or incorrect compatible mappings in the existing `AppTheme.of` builder and core button. Inspect target contracts, callers and the installed Flutter API first. Preserve working mappings, selected packages, older theme APIs and all seven token groups. These fragments do not define a palette, token set or replacement theme.
+
+| Fragment | Destination and required bindings |
+| --- | --- |
+| [filled-button-style.dart.inc](../assets/reference-implementations/filled-button-style.dart.inc) | Color arguments in the existing `FilledButton.styleFrom` call owned by `AppTheme`; `skin` is the current skin. Retain its text style, padding, minimum size, shape, animation and other arguments. Replace matching color arguments rather than adding duplicate arguments. |
+| [input-borders.dart.inc](../assets/reference-implementations/input-borders.dart.inc) | Arguments in the existing input decoration theme's `copyWith` call; `skin` is the current skin and `enabledBorder` / `focusedBorder` are its existing non-null effective borders. Preserve their shape, radius, gap, width and style; the fragment changes only color. If a state border is absent, resolve the target's existing border fallback first, preserving its state-specific width; do not invent an outline or geometry. Leave disabled/error borders and other decoration fields intact. |
+| [button-label-color.dart.inc](../assets/reference-implementations/button-label-color.dart.inc) | The color passed to the existing button label's token text style, or its existing `AppText.color` parameter when that wrapper overrides style color. `tokens` is read in `build`; `isEnabled` reflects the actual callback/loading condition supplied to the Material button. Keep the wrapper's typography and loading/semantics behavior. |
+
+An `AppText` wrapper can supply its own text color, hiding `FilledButton`'s foreground mapping. Check that wrapper and map its explicit label color to the same enabled/disabled roles; do not add visual literals in feature code. Apply the same state to icons/loaders only where their existing wrapper otherwise overrides the Material foreground. A local button style or field decoration can also override the theme; inspect those call sites before claiming a skin override works.
+
+The focused fixture assembles these exact files into test-only support and exercises actual `FilledButton` / `TextField` widgets for distinct light, dark and custom role values. It checks enabled/disabled label and fill colors, focus border colors and preservation of existing geometry, typography and motion. The fixture is a host widget check, not visual verification of a target app or a guarantee for different Flutter APIs.

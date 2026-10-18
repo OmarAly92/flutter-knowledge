@@ -1,0 +1,61 @@
+{
+  "sdk": ">=3.9.0 <4.0.0",
+  "tested_packages": {
+    "shared_preferences": "2.5.6",
+    "shared_preferences_platform_interface": "2.4.2",
+    "flutter_secure_storage": "11.2.0",
+    "dio": "5.11.1",
+    "talker": "5.1.20",
+    "talker_dio_logger": "5.1.20"
+  },
+  "components": {
+    "cache": {
+      "packages": [
+        "shared_preferences",
+        "shared_preferences_platform_interface",
+        "flutter_secure_storage"
+      ],
+      "copies": {
+        "plugins/flutter-knowledge/skills/flutter-core/assets/reference-implementations/shared_preferences/cache_helper.dart": "lib/core/data/cache/cache_helper.dart",
+        "plugins/flutter-knowledge/skills/flutter-core/assets/reference-implementations/flutter_secure_storage/secure_cache_helper.dart": "lib/core/data/cache/secure_cache_helper.dart",
+        "tests/fixtures/core-references/support/cache_keys.dart": "lib/core/data/cache/cache_keys.dart",
+        "tests/fixtures/core-references/support/secure_cache_keys.dart": "lib/core/data/cache/secure_cache_keys.dart",
+        "tests/fixtures/core-references/cache_helper_test.dart": "test/cache_helper_test.dart",
+        "tests/fixtures/core-references/secure_cache_helper_test.dart": "test/secure_cache_helper_test.dart"
+      }
+    },
+    "logger": {
+      "packages": [
+        "dio",
+        "talker",
+        "talker_dio_logger"
+      ],
+      "copies": {
+        "plugins/flutter-knowledge/skills/flutter-core/assets/reference-implementations/dio_talker/app_interceptor_logger.dart": "lib/core/data/api/app_interceptor_logger.dart",
+        "tests/fixtures/core-references/interceptor_logger_test.dart": "test/interceptor_logger_test.dart",
+        "tests/fixtures/core-references/logger_release_smoke.dart": "tool/logger_release_smoke.dart"
+      }
+    },
+    "theme": {
+      "packages": [],
+      "copies": {
+        "tests/fixtures/core-references/theme_component_test.dart": "test/theme_component_test.dart"
+      },
+      "templates": [
+        {
+          "source": "tests/fixtures/core-references/theme_support/app_theme.dart.in",
+          "target": "lib/core/theme/app_theme.dart",
+          "bindings": {
+            "@@FILLED_BUTTON_STYLE@@": "plugins/flutter-knowledge/skills/flutter-app-theme/assets/reference-implementations/filled-button-style.dart.inc",
+            "@@INPUT_BORDERS@@": "plugins/flutter-knowledge/skills/flutter-app-theme/assets/reference-implementations/input-borders.dart.inc",
+            "@@BUTTON_LABEL_COLOR@@": "plugins/flutter-knowledge/skills/flutter-app-theme/assets/reference-implementations/button-label-color.dart.inc"
+          }
+        }
+      ]
+    }
+  },
+  "verified_sdk": {
+    "flutter": "3.44.5",
+    "dart": "3.12.2"
+  }
+}

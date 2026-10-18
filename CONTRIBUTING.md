@@ -141,6 +141,13 @@ Golden capture is shared through `golden-tests/references/capture.md`.
 State mechanics are checked with `tests/check_state_references.py`; new recipe
 versions must be analyzed and exercised against the installed APIs.
 
+Core implementation assets and theme mapping fragments are checked with
+`python3 tests/check_core_references.py` after changes; use `--only cache`,
+`--only logger` or `--only theme` for a component. Fixture pins belong in
+`tests/fixtures/core-references/manifest.json`, not the package-default catalog.
+Python/Node CI checks fixture assembly/reporting and records required Flutter
+followup; it does not compile the Dart references.
+
 `flutter-review` is findings-only. Its helper must include untracked app-relative
 files, never write formatter output, never initialize config/fetch packages/update
 baselines, and report skipped/manual checks. Run `python3 tests/test_flutter_review.py`

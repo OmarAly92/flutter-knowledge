@@ -69,6 +69,11 @@ The agent creates or completes routing, dependency injection, API/error handling
 
 You can also go straight to a screen, feature or theme implementation request. In a confirmed fresh app the agent prepares core automatically; in an existing app it fills only proven gaps needed for that task, preserving unrelated infrastructure and styles. A missing `lib/core` folder alone does not trigger setup when working equivalents exist elsewhere. The agent states its scope and continues without asking you to select skills. Core setup provides the foundation; provisional theme values are not a match to a design you have not supplied. Real backend integration still needs your API contract and endpoint configuration.
 
+For missing or incomplete compatible cache, HTTP logger and theme mappings,
+core setup can use [tested reference implementations](plugins/flutter-knowledge/skills/flutter-core/references/reference-implementations.md).
+These load only for the selected responsibility and preserve working project
+APIs, package choices, keys and styles; they do not replace the whole core.
+
 ### 3. Apply the HTML design to the app theme
 
 When you have the HTML design, run:

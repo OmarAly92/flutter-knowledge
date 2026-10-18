@@ -445,6 +445,8 @@ abstract final class AppTheme {
 
 `AppTheme` is the only `ThemeData` builder; features never build one. `_build` sets `useMaterial3`, `extensions: [tokens]`, `brightness` from `skin.themeMode`, `scaffoldBackgroundColor`, `textSelectionTheme`, the default `fontFamily` and `fontFamilyFallback` from `AppFonts`, `pageTransitionsTheme`, and every component theme (`appBarTheme`, `dialogTheme`, `bottomSheetTheme`, `switchTheme`, `checkboxTheme`, `timePickerTheme`, …) — colors from skin slots (`skin.appBarBackground`, `barrierColor: skin.overlayBarrier`), text from `tokens.text`, radii from `tokens.radius`. `AppTokens.of(skin)` returns the `const` `light` / `dark` instances for the built-ins and caches one per id for other skins.
 
+For missing or incorrect Material button/field mappings, the [tested component fragments](references/component-mappings.md) demonstrate semantic roles and enabled/disabled state without replacing the existing builder or wrappers.
+
 For the `ColorScheme`, **map every role explicitly** in `ColorScheme.fromSeed(seedColor: skin.primary, brightness: …, …)`. Any role left out is invented by Material's tonal-palette algorithm from the seed, and Material widgets and packages will draw with a color nobody chose. The usual mapping:
 
 | ColorScheme role | AppSkin slot |

@@ -2,7 +2,7 @@
   "name": "flutter-knowledge",
   "displayName": "Flutter Knowledge",
   "description": "Flutter/Dart conventions and design workflows: feature architecture, data, Cubit, routing, themes, localization, HTML/Figma implementation, visual verification and golden tests.",
-  "version": "2.5.3",
+  "version": "2.5.4",
   "author": {
     "name": "Omar Aly",
     "email": "omarkarim5555@gmail.com"
