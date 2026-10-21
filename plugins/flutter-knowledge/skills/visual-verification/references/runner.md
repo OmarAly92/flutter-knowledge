@@ -40,6 +40,17 @@ python3 "<skill-directory>/scripts/run_verification.py" finalize --results <atte
 - Batch capture (`capture.command` at manifest level) starts one Flutter process for all rows; the test reads `String.fromEnvironment('CAPTURE_ROUND')` to write `test/goldens/<round>/<row>.png`. The runner adds `--no-pub` and `--update-goldens` (the camera is not an approval) and replaces `{attempt}`. Candidate paths must resolve to distinct files. Per-row mode (`capture.command` inside a row, with `{actual}` and `{profile}`) exists for single-state tools; avoid it for the whole suite, a Flutter process per row is slow. A manifest must use one mode throughout and cannot also declare row commands when it has a batch command.
 - Source rows may bind freshness with `source.inputs_manifest` and `source.cache` from [design-cache.md](design-cache.md). Only a fresh capture-time reference bound to the current source can become VERIFIED; no cache, an archived reference or a miss stays NOT VERIFIED.
 
+## Source rows first, complete gate second
+
+Keep two manifests over the same row ids, profiles, references and caches:
+
+- **Focused** — every supplied `kind: source` row, with all supplied skins, locales, states and profiles, and nothing else. Its capture command runs only those camera tests: name each test with its row id and add one regex, for example `--name '^(login-dark|login-light)\b'` (repeated `--name` flags must all match, so a second flag selects nothing). Capture, compare, inspect and fix here until each source row is VERIFIED or has a recorded blocker. Regression rows and extra variants are not captured while a source row is still being corrected.
+- **Complete** — the focused rows plus the regression matrix from the [coverage ledger](../../golden-tests/references/coverage-handoff.md): the main state's supported variants and the targeted risk combinations. Run it once, after code and capture setup settle. Later changes go back to targeted rows, then one new complete run.
+
+Only a complete run feeds inspection, the coverage ledger and baseline handoff. The handoff requires exactly its manifest's rows, so a focused attempt can never promote a baseline, and focused PNGs are never reused as complete-run candidates. Source matching and regression evidence stay separate axes in the report: a regression capture adds no source fidelity, and a clean source row does not approve the other variants.
+
+A row whose [capture readiness](../../golden-tests/references/capture.md#capture-readiness) is BLOCKED is in neither manifest. It stays in the ledger as an unsupported state with the finding, so it is reported and never captured around or given a baseline.
+
 ## Evidence
 
 Each run creates a new attempt directory containing `results.json`, `verification.md`, shared or per-row capture logs and per-row comparator logs (complete stdout/stderr), a copy of each candidate PNG, `diff.png` and `compare.json` when comparison runs. Reruns never overwrite an earlier attempt, and a candidate path that already exists is refused. A failing batch camera marks every row ERROR; a failed per-row camera marks that row ERROR. Partial PNGs are copied and hashed as `uncompared_actual` evidence, never compared. No output from another attempt supplies a missing capture.

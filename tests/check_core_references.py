@@ -62,6 +62,8 @@ def assemble(project, components=None):
     pubspec = {'name': 'core_reference_check', 'environment': {'sdk': plan['sdk']},
                'dependencies': {'flutter': {'sdk': 'flutter'}, **plan['packages']},
                'dev_dependencies': {'flutter_test': {'sdk': 'flutter'}}}
+    if any(group.get('uses_material_design') for group in plan['components'].values()):
+        pubspec['flutter'] = {'uses-material-design': True}
     write_fixture_file(project, 'pubspec.yaml', json.dumps(pubspec, indent=2) + '\n')
     write_fixture_file(project, 'analysis_options.yaml',
                        'analyzer:\n  errors:\n    unused_import: error\n    unused_local_variable: error\n')
@@ -142,7 +144,7 @@ def verify(project, components=None, fetch=False):
 
 def main():
     parser = argparse.ArgumentParser(description='Compile and exercise shipped core reference implementations in an isolated fixture.')
-    parser.add_argument('--only', choices=['cache', 'logger', 'theme'], action='append')
+    parser.add_argument('--only', choices=['cache', 'logger', 'theme', 'capture'], action='append')
     parser.add_argument('--fetch', action='store_true', help='Permit fixture package downloads; default resolution is offline')
     parser.add_argument('--out', type=Path, help='Keep a fixture at a new or empty directory instead of a temporary directory')
     parser.add_argument('--list', action='store_true', help='Print the selected fixture plan without writing or running tools')

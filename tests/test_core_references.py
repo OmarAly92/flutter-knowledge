@@ -38,6 +38,23 @@ class CoreReferenceFixtureTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             REFERENCES.fixture_plan(['unknown'])
 
+    def test_capture_component_ships_the_helper_with_material_assets_and_no_packages(self):
+        capture = REFERENCES.fixture_plan(['capture'])
+        self.assertEqual(capture['packages'], {})
+        helper = 'plugins/flutter-knowledge/skills/golden-tests/scripts/capture_readiness.dart'
+        self.assertEqual(capture['components']['capture']['copies'][helper], 'test/helpers/capture_readiness.dart')
+        with tempfile.TemporaryDirectory() as folder:
+            project = Path(folder)
+            REFERENCES.assemble(project, ['capture'])
+            self.assertEqual(json.loads((project / 'pubspec.yaml').read_text())['flutter'],
+                             {'uses-material-design': True})
+            self.assertEqual((project / 'test/helpers/capture_readiness.dart').read_bytes(),
+                             (ROOT / helper).read_bytes())
+        with tempfile.TemporaryDirectory() as folder:
+            project = Path(folder)
+            REFERENCES.assemble(project, ['theme'])
+            self.assertNotIn('flutter', json.loads((project / 'pubspec.yaml').read_text()))
+
     def test_assembly_uses_the_shipped_sources_and_resolves_all_bindings(self):
         manifest = json.loads(REFERENCES.MANIFEST.read_text())
         with tempfile.TemporaryDirectory() as folder:

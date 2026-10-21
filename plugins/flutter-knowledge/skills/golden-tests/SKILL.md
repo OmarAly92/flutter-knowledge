@@ -25,7 +25,7 @@ Tag every golden file `@Tags(['golden'])` and declare the tag once in `dart_test
 
 ## Shared capture
 
-Read [the shared capture reference](references/capture.md) for the harness used by both golden regression and design verification. Reuse the existing project harness and its configured package APIs.
+Read [the shared capture reference](references/capture.md) for the harness used by both golden regression and design verification. Reuse the existing project harness and its configured package APIs. Its [capture readiness](references/capture.md#capture-readiness) check blocks a row whose fonts or glyphs cannot be shown; a blocked variant is reported, never baselined.
 
 ## Adaptive coverage and baseline handoff
 
@@ -171,7 +171,7 @@ This is the default regression matrix, not a limit on source-design coverage. Ca
 |---|---|
 | The design's skin, viewport and locale | the reference — the golden `visual-verification` compared |
 | The other built-in skin (`SkinRegistry.builtIns`) | a hardcoded color shows up here first |
-| `AppLocales.ar` | right-to-left mirroring and the Arabic font |
+| `AppLocales.ar` | right-to-left mirroring and the Arabic font; blocked, not captured, while no loaded font has the glyphs |
 | `textScale: 2` | the user's large-text setting |
 | `goldenSmallPhone` (360×640) with `goldenSmallPhoneSafeArea` | the smallest supported screen |
 

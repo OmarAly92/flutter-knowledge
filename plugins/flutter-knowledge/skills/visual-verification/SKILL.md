@@ -36,7 +36,7 @@ For variants with no supplied design, record source comparison as NOT VERIFIED (
 
 Before the first screen matrix, run the [core and capture preflight](references/preflight.md): shared-core wiring, expected-state assertions, fonts, shadows, text metrics, inputs, loading frames and the source capture profile on one or two representative rows. Apply the applicable pending-operation, disposal and combined Arabic/large-text/narrow/keyboard checks from it before spending visual rounds on polish.
 
-For more than a couple of rows use the [verification runner](references/runner.md): one Flutter camera process, unique attempts, complete logs, artifact hashes, `compare.py --json` at default settings and a hash-bound inspection step. The runner never turns a numeric PASS into VERIFIED; the final inspection and `finalize` do. Use targeted rows while correcting and one full manifest run as the final gate.
+For more than a couple of rows use the [verification runner](references/runner.md): one Flutter camera process, unique attempts, complete logs, artifact hashes, `compare.py --json` at default settings and a hash-bound inspection step. The runner never turns a numeric PASS into VERIFIED; the final inspection and `finalize` do. Resolve the supplied source rows with a focused manifest and targeted rows while correcting, then run the complete manifest with the regression matrix once as the final gate ([source rows first](references/runner.md#source-rows-first-complete-gate-second)).
 
 ## Reuse and concise evidence
 
@@ -99,7 +99,7 @@ The output is the capture, faded, with differing pixels in red. The script also 
 - **Red outlining one element's box** — its size, radius or border token.
 - **A solid red block over one element** — a wrong color token, or a missing opacity.
 - **Red everywhere, evenly** — check both capture profiles and image dimensions before changing the code.
-- **Letters with a different shape entirely** — the font is not loaded. Check `pubspec.yaml` and the golden harness before touching the widget.
+- **Letters with a different shape entirely** — the font is not loaded. Check the [capture readiness](../golden-tests/references/capture.md#capture-readiness) report, `pubspec.yaml` and the golden harness before touching the widget.
 
 ## The loop
 

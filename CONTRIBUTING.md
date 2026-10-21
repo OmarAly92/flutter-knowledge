@@ -79,7 +79,7 @@ The same `plugins/flutter-knowledge/skills/` folder holds `figma-to-widget`,
 from Mohamed Draz's `flutter-design-fidelity` (MIT; his notice is preserved in
 `plugins/flutter-knowledge/LICENSE` and must stay), plus `html-to-widget`
 (with `scripts/layout-tree.js`) and `set-theme-from-html` for whole-design foundation/asset application after core. Its focused helpers are checked with `python3 tests/test_html_to_theme.py`; no proprietary font bytes are included in test fixtures. These skills follow the code conventions and
-ship on every supported harness. The map points at `html-to-widget` /
+ship on every supported harness. Their shared capture ships `golden-tests/scripts/capture_readiness.dart` (font/glyph readiness, capture-only null-family stand-in, profile assertions); after changing it run `python3 tests/check_core_references.py --only capture` with Flutter. The map points at `html-to-widget` /
 `figma-to-widget`; verification and golden tests also load through descriptions
 and workflow handoffs. After changing `compare.py`, run
 `python3 tests/test_compare.py`.

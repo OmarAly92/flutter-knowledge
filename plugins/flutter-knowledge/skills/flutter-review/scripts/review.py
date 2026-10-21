@@ -10,7 +10,7 @@ from pathlib import Path, PurePosixPath
 SKILLS = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(SKILLS / 'flutter-init/scripts'))
 from init_config import ConfigError, declared_packages, read_mapping, yaml
-from dart_source import authored_dart
+from dart_source import GENERATED_SUFFIXES, authored_dart
 from checks import finding, inspect_scope
 from conventions import source_findings, translation_findings, package_findings
 from design_evidence import inspect_design
@@ -30,6 +30,17 @@ def capture(command, cwd):
     return subprocess.run(command, cwd=cwd, capture_output=True, text=True, timeout=300)
 
 
+def represented_by_git(project):
+    on_disk = any(authored_dart(path) for directory in ('lib', 'test')
+                  for path in (project / directory).rglob('*.dart'))
+    if not on_disk:
+        return True
+    known = capture(['git', 'ls-files', '--cached', '--others', '--exclude-standard', '-z', '--', 'lib', 'test'], project)
+    if known.returncode:
+        raise ConfigError('Git scope could not be read')
+    return any(name.endswith('.dart') and not name.endswith(GENERATED_SUFFIXES) for name in known.stdout.split('\0'))
+
+
 def git_changes(project):
     if shutil.which('git') is None:
         return None
@@ -47,6 +58,8 @@ def git_changes(project):
     untracked = capture(['git', 'ls-files', '--others', '--exclude-standard', '-z'], repo)
     if changed.returncode or untracked.returncode:
         raise ConfigError('Git scope could not be read')
+    if not represented_by_git(project):
+        return None
     selected = []
     for name in (changed.stdout + untracked.stdout).split('\0'):
         if not name:

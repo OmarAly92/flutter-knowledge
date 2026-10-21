@@ -86,6 +86,58 @@ sys.exit(int(os.environ.get('FK_TOOL_EXIT','0')))
         self.assertTrue(any('test' in call and '--no-pub' in call for call in calls))
         self.assertEqual(before, self.snapshot())
 
+    def test_ignored_nested_project_falls_back_to_all_authored_files(self):
+        (self.repo / '.gitignore').write_text('ignored_app/\n')
+        self.git('add', '.gitignore')
+        self.git('commit', '-qm', 'ignore')
+        self.project = self.repo / 'ignored_app'
+        self.project.mkdir()
+        self.write('pubspec.yaml', yaml.safe_dump({'name': 'nested', 'dependencies': {'flutter': {'sdk': 'flutter'}},
+                                                 'dev_dependencies': {'flutter_test': {'sdk': 'flutter'}}}))
+        subprocess.run([sys.executable, str(INIT), '--project', str(self.project)], capture_output=True, check=True)
+        self.write('lib/feature/demo/presentation/demo_screen/ui/demo_screen.dart', "class DemoScreen extends StatelessWidget { void f() { print('x'); } }")
+        self.write('test/demo_test.dart', 'void main() {}')
+        self.write('lib/generated.g.dart', "print('generated');")
+        before = self.snapshot()
+        run, report = self.run_review()
+        self.assertEqual(report['scope_kind'], 'all authored Dart files')
+        self.assertCountEqual(report['scope'], ['lib/feature/demo/presentation/demo_screen/ui/demo_screen.dart', 'test/demo_test.dart'])
+        self.assertTrue(any(f['rule'] == 'print' for f in report['findings']))
+        self.assertEqual(run.returncode, 1)
+        self.assertEqual(before, self.snapshot())
+
+    def test_generated_only_git_representation_falls_back_to_all_authored_files(self):
+        (self.repo / '.gitignore').write_text('ignored_app/lib/feature/\nignored_app/test/\n')
+        self.project = self.repo / 'ignored_app'
+        self.project.mkdir()
+        self.write('pubspec.yaml', yaml.safe_dump({'name': 'nested', 'dependencies': {'flutter': {'sdk': 'flutter'}},
+                                                 'dev_dependencies': {'flutter_test': {'sdk': 'flutter'}}}))
+        subprocess.run([sys.executable, str(INIT), '--project', str(self.project)], capture_output=True, check=True)
+        self.write('lib/models.g.dart', "print('generated');")
+        self.git('add', '.gitignore', 'ignored_app')
+        self.git('commit', '-qm', 'generated only')
+        self.write('lib/feature/a.dart', "class A { void f() { print('x'); } }")
+        self.write('test/a_test.dart', 'void main() {}')
+        run, report = self.run_review()
+        self.assertEqual(report['scope_kind'], 'all authored Dart files')
+        self.assertCountEqual(report['scope'], ['lib/feature/a.dart', 'test/a_test.dart'])
+        self.assertNotIn('lib/models.g.dart', report['scope'])
+        self.assertEqual(run.returncode, 1)
+
+    def test_clean_tracked_project_keeps_changed_only_scope(self):
+        run, report = self.run_review()
+        self.assertEqual(report['scope'], [])
+        self.assertEqual(report['scope_kind'], 'changed and untracked files')
+        self.assertEqual(run.returncode, 0, run.stderr)
+
+    def test_tracked_project_with_one_ignored_file_keeps_changed_only_scope(self):
+        self.write('.gitignore', 'lib/ignored.dart\n')
+        self.write('lib/ignored.dart', "void f() { print('x'); }")
+        self.write('lib/new_file.dart', 'class NewFile {}')
+        run, report = self.run_review()
+        self.assertEqual(report['scope_kind'], 'changed and untracked files')
+        self.assertEqual(report['scope'], ['lib/new_file.dart'])
+
     def test_real_print_and_token_literals_block_but_comments_strings_and_generated_files_do_not(self):
         self.write('lib/feature/demo/presentation/demo_screen/ui/demo_screen.dart',
                    "class DemoScreen extends StatelessWidget { final color = Color(0xFF112233); void f() { print('x'); } }")

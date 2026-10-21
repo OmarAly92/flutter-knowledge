@@ -21,7 +21,8 @@ Before the full matrix, capture one or two representative source rows and read t
 
 - The harness mounts the expected root and state. Assert it with finders (screen type, key text) so a wrong route, loading skeleton or error state fails the capture instead of producing a plausible image.
 - Dimensions, DPR, safe area, skin, locale, text scale, pointer and focus come from the row's profile; nothing is inherited from a default.
-- Fonts come from the project's bundled files for both scripts, never the test fallback. Compare glyph shapes and the wrapping of a long line against the source.
+- Every script in the row (Latin, Arabic, icons) passes [capture readiness](../../golden-tests/references/capture.md#capture-readiness): each rendered run resolves to a loaded family with glyphs in its font, never the test fallback. A null-family style, unloaded family or missing glyph blocks that row and any baseline derived from it; it is reported, not captured around. Compare glyph shapes and the wrapping of a long line against the source.
+- Readiness is evidenced, not assumed: the harness source calls `expectCaptureProfile` and `expectCaptureReady` before the PNG matcher, and the evidence directory holds the `reportPath` JSON of `expectCaptureReady` (status `READY`) plus the passing log of that row. No report, or a harness missing either call, means readiness is UNPROVEN, never READY. READY covers fonts and glyph coverage only; it does not certify glyph shapes, production typography or that a wrapper matches the source.
 - Shadows are enabled and animations are advanced to the settled frame the source was captured at; a mid-transition drawer or sheet is not a settled state.
 - Inputs show the intended text, caret and placeholder; loading rows show the intended frame.
 - Source capture used the same profile and the extraction covered the whole capture boundary (see `captureComposition`). Content outside the screen subtree is implemented or consciously excluded.
@@ -37,9 +38,20 @@ Run the checks the feature actually has, before spending visual rounds:
 - Combined layout: Arabic with larger text scale at a narrow width, with the keyboard open on a screen with fields. Automatic keyboard avoidance must work without capture/test scrolling helpers (including forced `ensureVisible`); production focus/inset management must be exercised as actual UI behavior and reported explicitly. Assert the actual field and caret stay inside the scroll viewport and above any fixed footer, rather than only above the keyboard. Verify inset consumption does not apply the keyboard twice. A deliberately scrolled capture is labeled and tested separately.
 - Interaction targets keep their tap size and semantics under scale and RTL.
 
-## Correction rhythm
+## Correction rhythm and failure triage
 
-Iterate with targeted rows, not the whole matrix: capture only affected rows with `run_verification.py`, compare, fix every known cause. After the changes settle run the complete manifest once as the final gate, then the repository's final review. Retain every attempt; do not edit a manifest or reference to make a row pass.
+Iterate with the focused source manifest ([source rows first](runner.md#source-rows-first-complete-gate-second)), not the whole matrix: capture only affected rows with `run_verification.py`, compare, fix every known cause. After the changes settle run the complete manifest once as the final gate, then the repository's final review. A defect found after the gate returns to targeted rows and one new complete run. Retain every attempt; do not edit a manifest or reference to make a row pass.
+
+Name the failing layer before changing anything, then repair that layer once:
+
+| Failure | Layer | Repair |
+| --- | --- | --- |
+| [Capture readiness](../../golden-tests/references/capture.md#capture-readiness) BLOCKED, profile mismatch, camera/exit/dimension error, missing SDK, browser, font or reference | Capture or environment | Fix the harness, font declaration or profile, or report the blocker. Do not edit the screen. A missing font or glyph stays BLOCKED/NOT VERIFIED until a real font is in the chain |
+| A shared token, wrapper or default is wrong in an actual consumer's ready capture | Shared theme or wrapper | A source-backed token or scoped wrapper variant through the owning skill; `flutter-core` only for a proven missing contract, never a whole-core rebuild |
+| Red in a ready capture at the right profile | Screen | Fix the screen code |
+| Reference capture wrong, stale or at another profile | Source | Recapture through the [design cache](design-cache.md) |
+
+Do not repeat an identical failing command without a changed input; a second identical failure stops with its logs. A transient tool failure such as a timeout may be retried once with both logs kept. Capture or environment failures never become a PASS and never justify relaxing a threshold, ignoring a region or editing production code to hide a test-only problem. Full logs, exit codes and statuses remain in the evidence.
 
 ## Reusable component calibration
 

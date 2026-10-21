@@ -67,7 +67,9 @@ def select(paths):
     for raw in paths:
         path = PurePosixPath(raw).as_posix().removeprefix('./')
         name = PurePosixPath(path).name
-        core_reference = path == 'tests/check_core_references.py' or (
+        core_reference = path in {
+            'tests/check_core_references.py', SKILLS + 'golden-tests/scripts/capture_readiness.dart',
+        } or (
             path.startswith((
                 SKILLS + 'flutter-core/assets/reference-implementations/',
                 SKILLS + 'flutter-app-theme/assets/reference-implementations/',

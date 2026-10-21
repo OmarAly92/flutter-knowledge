@@ -52,6 +52,15 @@
           }
         }
       ]
+    },
+    "capture": {
+      "packages": [],
+      "uses_material_design": true,
+      "copies": {
+        "plugins/flutter-knowledge/skills/golden-tests/scripts/capture_readiness.dart": "test/helpers/capture_readiness.dart",
+        "tests/fixtures/core-references/capture_support/capture_consumers.dart": "lib/core/capture_consumers.dart",
+        "tests/fixtures/core-references/capture_readiness_test.dart": "test/capture_readiness_test.dart"
+      }
     }
   },
   "verified_sdk": {

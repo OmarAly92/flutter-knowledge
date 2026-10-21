@@ -102,6 +102,28 @@ class GoldenHandoffTests(unittest.TestCase):
     def save_ledger(self):
         coverage.runner.write_json(self.ledger, self.ledger_data)
 
+    def test_focused_attempt_cannot_back_the_ledger_of_the_complete_manifest(self):
+        focused = self.root / 'focused.json'
+        data = json.loads(self.manifest.read_text())
+        data['capture']['command'] += ['--name', '^(error)\\b']
+        focused.write_text(json.dumps(data))
+        with patch.object(coverage.runner.subprocess, 'run', side_effect=self.camera):
+            attempt, _ = coverage.runner.run_manifest(focused, self.root / 'focused-captures')
+        review = coverage.runner.template(attempt / 'results.json')
+        review.update(inspector='test fixture reviewer', inspected_at=coverage.runner.now())
+        for row in review['rows']:
+            row.update(inspected=True, outcome='accepted', notes='Opened full PNG; focused attempt')
+        inspection = self.root / 'focused-inspection.json'
+        coverage.runner.write_json(inspection, review)
+        request = dict(self.request, results=attempt / 'results.json', inspection=inspection)
+        report = coverage.check_coverage(request)
+        self.assertEqual(report['coverage'], 'BLOCKED')
+        self.assertIn('another manifest', ' '.join(report['issues']))
+        with self.assertRaises(ValueError):
+            handoff.promote(request, Path('/trusted/flutter'), self.root / 'focused-promotion')
+        self.assertFalse((self.project / 'test/goldens/error.png').exists())
+        self.assertEqual(coverage.check_coverage(self.request)['coverage'], 'COMPLETE')
+
     def test_nested_authored_input_additions_edits_and_deletions_block_promotion(self):
         for relative in self.authored_inputs:
             original = self.project / relative

@@ -128,6 +128,9 @@ class FocusedCheckSelectionTests(unittest.TestCase):
             'tests/fixtures/core-references/manifest.json',
             'tests/fixtures/core-references/theme_support/app_theme.dart.in',
             'tests/check_core_references.py',
+            CHECKS.SKILLS + 'golden-tests/scripts/capture_readiness.dart',
+            'tests/fixtures/core-references/capture_readiness_test.dart',
+            'tests/fixtures/core-references/capture_support/capture_consumers.dart',
         ]
         for path in paths:
             with self.subTest(path=path):

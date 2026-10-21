@@ -52,6 +52,8 @@ The example abbreviates `rows`: the actual list must cover **every** manifest ro
 
 ## Capture and behavior
 
+Resolve the supplied source rows first with the focused manifest, then capture the regression matrix in the one complete run ([source rows first](../../visual-verification/references/runner.md#source-rows-first-complete-gate-second)). Create no baseline PNG for a row that is blocked by [capture readiness](capture.md#capture-readiness), uninspected, DIFF/ERROR or part of a ledger whose coverage is BLOCKED: no `--update-goldens` output at an approved path and no copied candidate. Leave candidates in attempt evidence and report `baseline_approval: BLOCKED`. Approved baselines already in the project stay unchanged until the handoff promotes inspected replacements.
+
 Before the candidate capture, save an input snapshot:
 
 ```bash
