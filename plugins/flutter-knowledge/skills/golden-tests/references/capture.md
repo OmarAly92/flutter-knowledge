@@ -158,6 +158,17 @@ The stand-in is the SDK's Roboto, which is also the default Android family; it r
 
 What this proves: every rendered text run resolves to a loaded family and every code point has a glyph in a loaded font's `cmap`, and only when the harness ran `expectCaptureReady` and `expectCaptureProfile` before the matcher. The preflight evidence includes the JSON written by `reportPath` (status `READY`) and the passing log of that test; a missing report, or a harness lacking either call, leaves readiness unproven. What it does not prove: that a shared wrapper matches the source, glyph shapes, shaping or joining, kerning, weight fidelity, text drawn outside paragraphs (custom painters, SVG, images) or that the source uses the same font. Inspect the PNG for those. A passing load is never proof of glyph support.
 
-Run it on one representative row per profile before the matrix, including an Arabic row whenever Arabic rows are planned, and keep the readiness output in the evidence directory. A blocked row stays in the coverage ledger as `unsupported` with the finding as its reason; it is neither silently dropped nor given a baseline. The camera of a batch fails when any row is blocked, so resolve or exclude blocked rows before the batch, never after.
+Run it, or the [existing-harness check](#reusing-a-working-harness) for an existing-screen update, on one representative row per profile before the matrix, including an Arabic row whenever Arabic rows are planned, and keep the readiness output in the evidence directory. A blocked row stays in the coverage ledger as `unsupported` with the finding as its reason; it is neither silently dropped nor given a baseline. The camera of a batch fails when any row is blocked, so resolve or exclude blocked rows before the batch, never after.
+
+### Reusing a working harness
+
+For an existing-screen update, keep a project harness that lacks `expectCaptureReady` when it already captures this app's screens and all of these hold for the first changed row, captured before polish:
+
+- The harness loads every font family the screen's text uses: read its font loading and the `pubspec.yaml` fonts against the theme's text styles.
+- The PNG has the profile's exact pixel size, logical size times DPR.
+- At full resolution beside the source capture, glyph shapes, weights and the wrapping of the longest line match, with no blocks or fallback letters.
+- The update adds no font family, weight or script.
+
+Record these observations in the evidence as `readiness: inspected (existing harness)`; that is not READY. Capture Arabic rows only when an Arabic-capable family is loaded in their chain; otherwise report them blocked, as readiness would. A failed or uncertain item, a new project or harness, or a font, weight or script the update introduces requires readiness as above before further rows. Do not copy the helper into a working harness, split capture files or recapture rows only to produce a READY report. Source comparison and inspection of every required row are unchanged.
 
 A harness that mounts the real application root cannot receive `CaptureThemeScope`. Compose the controlled `MaterialApp` above with the application's own router instead of editing production code: for a screen whose providers the route owns, pass `onGenerateRoute: AppRouter.generateRoute` and `onGenerateInitialRoutes: (name) => [AppRouter.generateRoute(RouteSettings(name: name))]` (otherwise a nested initial route is split into its parent routes). `expectCaptureReady(..., reportPath:)` writes the JSON report even when it throws.
