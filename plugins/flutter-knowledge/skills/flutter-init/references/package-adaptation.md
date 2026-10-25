@@ -22,7 +22,7 @@ Equatable is the default comparison mechanism. A selected alternative must prese
 
 ## Localization
 
-`add-translation` owns locale completeness, key naming, collisions and generation. JSON plus `LocaleKeys.xxx.tr()` is the default easy_localization mechanism. For SDK-generated localization or another configured library, use its actual resource format, generated accessor and generator while preserving the English/Arabic meaning and key coverage. No raw user-facing literals or hand-written generated output. Locale changes require an explicit user/project choice.
+`add-translation` owns locale completeness, key naming, collisions and generation. Feature-grouped JSON plus `LocaleKeys.<group>_<key>.tr()` is the default easy_localization mechanism; an existing flat catalog stays flat. For SDK-generated localization or another configured library, use its actual resource format, generated accessor and generator while preserving the English/Arabic meaning and key coverage. No raw user-facing literals or hand-written generated output. Locale changes require an explicit user/project choice.
 
 ## Persistence
 

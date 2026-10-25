@@ -53,6 +53,53 @@ class BenchmarkPackageTests(unittest.TestCase):
                                      int(selected is not None and selected != package))
                     self.assertEqual(violations.get('test_deps_missing', 0), int(not declared))
 
+    def grade_translations(self, fixture_en, run_en, run_ar, usage):
+        with tempfile.TemporaryDirectory() as directory:
+            out = Path(directory)
+            fixture = out / 'fixture-app'
+            run = out / 'runs' / 'branch-forced-t1-r1'
+            for root, en, ar in ((fixture, fixture_en, fixture_en), (run, run_en, run_ar)):
+                translations = root / 'assets/translations'
+                translations.mkdir(parents=True)
+                (translations / 'en.json').write_text(json.dumps(en))
+                (translations / 'ar.json').write_text(json.dumps(ar, ensure_ascii=False))
+                (root / 'pubspec.yaml').write_text('name: app\n')
+            (run / 'SKILLS_READ.txt').write_text('flutter-testing/SKILL.md\n')
+            screen = run / 'lib/feature/trip_details/presentation/trip_details_screen/ui/trip_details_screen.dart'
+            screen.parent.mkdir(parents=True)
+            screen.write_text(f"Widget build(BuildContext context) => AppText({usage}.tr());\n")
+            result = subprocess.run([sys.executable, str(ROOT / 'benchmark/grade.py'), str(out)],
+                                    capture_output=True, text=True)
+            self.assertEqual(result.returncode, 0, result.stderr)
+            return json.loads((out / 'grades.json').read_text())['branch-forced-t1-r1']
+
+    def test_nested_translation_keys_resolve_through_generated_accessors(self):
+        fixture = {'common': {'save': 'Save'}, 'trips': {'title': 'Trips'}}
+        grade = self.grade_translations(
+            fixture,
+            {**fixture, 'tripDetails': {'delete': 'Delete'}, 'stray': 'Stray', 'orders': {'x': 'X'}},
+            {**fixture, 'tripDetails': {'delete': 'حذف'}, 'stray': 'شارد', 'orders': {'x': 'س'}},
+            'LocaleKeys.tripDetails_delete')
+        violations = grade['violations']
+        self.assertNotIn('locale_key_missing_from_json', violations)
+        self.assertNotIn('en_ar_key_mismatch', violations)
+        self.assertEqual(violations['translation_key_outside_feature_group'], 2)
+        self.assertEqual(grade['info']['ar_real'], 3)
+        missing = self.grade_translations(fixture, fixture, fixture, 'LocaleKeys.tripDetails_delete')
+        self.assertEqual(missing['violations']['locale_key_missing_from_json'], 1)
+
+    def test_flat_catalog_new_keys_stay_flat(self):
+        fixture = {'save': 'Save', 'trips': 'Trips'}
+        grade = self.grade_translations(
+            fixture,
+            {**fixture, 'deleteTrip': 'Delete', 'tripDetails': {'title': 'Trip'}},
+            {**fixture, 'deleteTrip': 'حذف', 'tripDetails': {'title': 'رحلة'}},
+            'LocaleKeys.deleteTrip')
+        violations = grade['violations']
+        self.assertNotIn('locale_key_missing_from_json', violations)
+        self.assertEqual(violations['translation_key_nested_in_flat_catalog'], 1)
+        self.assertNotIn('translation_key_outside_feature_group', violations)
+
 
 if __name__ == '__main__':
     unittest.main()

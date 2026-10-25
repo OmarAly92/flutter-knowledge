@@ -145,12 +145,12 @@ class SummaryCard extends StatelessWidget {
         children: [
           Row(
             children: [
-              Expanded(child: AppText(LocaleKeys.xTotal.tr(), style: label)),
+              Expanded(child: AppText(LocaleKeys.x_total.tr(), style: label)),
               AppText(total, style: label),
             ],
           ),
           VerticalSpace(tokens.space.md),
-          PrimaryButton.expand(text: LocaleKeys.xSave.tr(), onPressed: onSave),
+          PrimaryButton.expand(text: LocaleKeys.common_save.tr(), onPressed: onSave),
         ],
       ),
     );

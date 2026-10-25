@@ -33,7 +33,7 @@ class XScreen extends StatelessWidget {
           }
         },
         child: AppScaffold(
-          appBar: GlobalAppbar.main(titleText: LocaleKeys.xTitle.tr()),
+          appBar: GlobalAppbar.main(titleText: LocaleKeys.x_title.tr()),
           body: const XBody(),
         ),
       );
@@ -80,7 +80,7 @@ Splitting into a file is for genuine sections — a form, a card, a list item, a
 
 **Form validation**: check for an existing shared validators helper (e.g. `AppFormValidations` in `lib/core/helpers/`) before writing a field's `validator:`. If one exists, use its static validators (email, phone, password, username, ...) instead of an inline validation closure — this keeps validation rules (and their `LocaleKeys` messages) consistent across every form in the app. Only write an inline validator when the field doesn't match any case the shared helper already covers.
 
-**Localization**: every user-facing string (in `AppText`, `PrimaryButton.text`, `GlobalAppbar.titleText`, dialog messages, snackbars, validator messages, etc.) MUST use the configured generated/localized accessor (`LocaleKeys.xxx.tr()` for `easy_localization`). NEVER inline a raw `'...'` literal into a widget shown to the user. If a needed key doesn't exist, invoke the `add-translation` skill (via the Skill tool, or tell the user to run `/add-translation`) which adds the key to both `assets/translations/ar.json` and `en.json` in sync, writing the English and the Arabic itself. Exceptions: debug-only strings (`talker` logs), asset paths, hex colors, route names, regex patterns — anything not shown to the user.
+**Localization**: every user-facing string (in `AppText`, `PrimaryButton.text`, `GlobalAppbar.titleText`, dialog messages, snackbars, validator messages, etc.) MUST use the configured generated/localized accessor (`LocaleKeys.<group>_<key>.tr()` for `easy_localization`: the feature's group, or `common` for shared strings). NEVER inline a raw `'...'` literal into a widget shown to the user. If a needed key doesn't exist, invoke the `add-translation` skill (via the Skill tool, or tell the user to run `/add-translation`) which adds the key to the right group (or flat, mirroring a flat project) in both `assets/translations/ar.json` and `en.json` in sync, writing the English and the Arabic itself. Exceptions: debug-only strings (`talker` logs), asset paths, hex colors, route names, regex patterns — anything not shown to the user.
 
 **Widgets — use the core wrappers from `lib/core/widgets/` instead of raw Flutter widgets**:
 - `AppText(...)` instead of `Text(...)`
@@ -108,7 +108,7 @@ Widget build(BuildContext context) {
       boxShadow: tokens.elevation.low,
     ),
     child: AppText(
-      LocaleKeys.xTitle.tr(),
+      LocaleKeys.x_title.tr(),
       style: tokens.text.headingSm.copyWith(color: tokens.skin.textSecondary),
     ),
   );
@@ -146,7 +146,7 @@ Widget build(BuildContext context) {
 - Do not write an inline validator closure for a field that a shared validators helper (e.g. `AppFormValidations`) already covers — use the shared one.
 - Do not add a private constructor (`X._()`) to a static-only constants class (`EndPoints`, `RoutesStrings`, `AppFonts`, ...) to block instantiation — declare it `sealed class X` instead.
 - Do not reach for raw `Text(...)` / `Scaffold(...)` / `SizedBox(height: ...)` / `AppBar(...)` when the corresponding core widget exists in `lib/core/widgets/`. When it does not exist, fall back to the raw widget instead of importing or inventing a wrapper.
-- Do not inline raw string literals into widgets shown to the user. Every user-facing string is `LocaleKeys.xxx.tr()`.
+- Do not inline raw string literals into widgets shown to the user. Every user-facing string is a `LocaleKeys` accessor with `.tr()`.
 - Do not write raw `TextStyle(fontSize: …, fontWeight: …, …)`, a `Color(0x…)`, a literal radius or spacing number, or `Theme.of(context).colorScheme` in presentation widgets. Read `context.tokens` (`.text`, `.skin`, `.radius`, `.space`).
 - Do not use `flutter_screenutil` extensions (`.h`, `.w`, `.r`, `.sp`, `.spMin`, `.dm`) in feature presentation code. Spacing and radii come from `context.tokens.space` / `.radius`; fonts from `context.tokens.text`. (Existing code that did this is legacy; do not copy it.)
 - Do not transcribe a design from an HTML prototype by eye, and do not set skin/text-style/motion tokens from a screenshot — read the values from the prototype's computed CSS, through `html-to-widget`; `flutter-app-theme` owns token decisions.

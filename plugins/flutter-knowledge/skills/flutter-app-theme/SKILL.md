@@ -212,7 +212,7 @@ class LightSkin extends AppSkin {
   String get id => 'light';
 
   @override
-  String displayName(Locale locale) => LocaleKeys.themeLight.tr();
+  String displayName(Locale locale) => LocaleKeys.common_themeLight.tr();
 
   @override
   ThemeMode get themeMode => ThemeMode.light;

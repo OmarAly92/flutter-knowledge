@@ -122,6 +122,21 @@ def role(rel):
     return 'core'
 
 
+def leaves(tree, prefix=''):
+    result = {}
+    for key, value in tree.items():
+        if isinstance(value, dict):
+            result.update(leaves(value, prefix + key + '.'))
+        else:
+            result[prefix + key] = value
+    return result
+
+
+def camel(folder):
+    head, *rest = folder.split('_')
+    return head + ''.join(part[:1].upper() + part[1:] for part in rest)
+
+
 def count(pat, text, flags=0):
     return len(re.findall(pat, text, flags))
 
@@ -370,12 +385,20 @@ def grade(run_dir, fixture_dir, task):
     en = json.loads(read(os.path.join(run_dir, 'assets/translations/en.json')) or '{}')
     ar = json.loads(read(os.path.join(run_dir, 'assets/translations/ar.json')) or '{}')
     fx_en = json.loads(read(os.path.join(fixture_dir, 'assets/translations/en.json')))
+    en, ar, fx_en = leaves(en), leaves(ar), leaves(fx_en)
     used = set()
     for r, t in feat.items():
         used |= set(re.findall(r'LocaleKeys\.(\w+)', t))
-    v['locale_key_missing_from_json'] += len([k for k in used if k not in en or k not in ar])
+    accessors = lambda keys: {k.replace('.', '_') for k in keys}
+    v['locale_key_missing_from_json'] += len(used - (accessors(en) & accessors(ar)))
     v['en_ar_key_mismatch'] += len(set(en) ^ set(ar))
     new_keys = [k for k in ar if k not in fx_en]
+    if any('.' in k for k in fx_en):
+        features = {camel(r.split('/')[2]) for r in code if r.startswith('lib/feature/')}
+        v['translation_key_outside_feature_group'] += sum(
+            1 for k in new_keys if '.' not in k or k.split('.')[0] not in features | {'common'})
+    else:
+        v['translation_key_nested_in_flat_catalog'] += sum(1 for k in new_keys if '.' in k)
     info['new_keys'] = len(new_keys)
     info['ar_real'] = sum(1 for k in new_keys if ARABIC.search(str(ar[k])))
     info['ar_placeholder'] = len(new_keys) - info['ar_real']

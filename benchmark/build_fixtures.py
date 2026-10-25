@@ -1,11 +1,12 @@
 #!/usr/bin/env python3
 """Build the benchmark fixture projects in the 2.0.0 shape the skills teach: design tokens read as
 `context.tokens` from lib/core/theme/, per-feature `<feature>_injection.dart` files wired through
-lib/app_injection.dart, the router library in lib/core/router/, l10n in lib/core/l10n/, and the data
-core in lib/core/data/. Each project also carries legacy code that breaks the rules on purpose,
-as traps for "legacy never overrides": an `orders` feature on Bloc with untyped DI registrations,
-`RoutesStrings._()`, and (drift) a `budget` feature whose params return a drift Companion and whose
-data source core registers.
+lib/app_injection.dart, the router library in lib/core/router/, l10n in lib/core/l10n/ with translation
+keys grouped per feature plus a shared `common` group, and the data core in lib/core/data/. Each
+project also carries legacy code that breaks the rules on purpose, as traps for "legacy never
+overrides": an `orders` feature on Bloc with untyped DI registrations, `RoutesStrings._()`, and
+(drift) a `budget` feature whose params return a drift Companion and whose data source core
+registers.
 
 Usage: build_fixtures.py <out_dir>
   -> <out_dir>/fixture-drift, fixture-hive: the core plus the legacy features, for d1-d4, h1, h2.
@@ -15,10 +16,11 @@ Usage: build_fixtures.py <out_dir>
   -> <out_dir>/fixture-skin: the app project with a full skin layer (SkinRegistry with a JSON skin,
      SkinCubit persisted through CacheHelper) and an AppMotion token group. Tasks s1, s2, m1.
   -> <out_dir>/fixture-older: the app project on the pre-2.0 theme (a flat AppColors and a static
-     AppTextStyle, no AppTokens), to test the skills' older-project notes. Task o1.
+     AppTextStyle, no AppTokens) with flat translation keys, to test the skills' older-project
+     notes. Task o1.
   Each also gets a -nowrap copy with PrimaryButton, AppTextField, AppLoader and AppErrorWidget removed.
 """
-import os, re, shutil, sys, textwrap
+import json, os, re, shutil, sys, textwrap
 
 OUT = sys.argv[1] if __name__ == '__main__' else None
 NOWRAP_REMOVED = ('buttons/primary_button', 'inputs/app_text_field', 'feedback/app_loader', 'feedback/app_error_widget')
@@ -31,39 +33,62 @@ def w(root, path, text):
         f.write(textwrap.dedent(text).lstrip('\n'))
 
 
-EN = '''{
-  "orders": "Orders",
-  "retry": "Retry",
-  "save": "Save",
-  "somethingWentWrong": "Something went wrong",
-  "fieldIsRequired": "This field is required",
-  "noInternetConnection": "No internet connection",
-  "themeLight": "Light",
-  "themeDark": "Dark"
+EN = {
+    'common': {
+        'retry': 'Retry',
+        'save': 'Save',
+        'somethingWentWrong': 'Something went wrong',
+        'fieldIsRequired': 'This field is required',
+        'noInternetConnection': 'No internet connection',
+        'themeLight': 'Light',
+        'themeDark': 'Dark',
+    },
+    'orders': {'title': 'Orders'},
 }
-'''
-AR = '''{
-  "orders": "الطلبات",
-  "retry": "إعادة المحاولة",
-  "save": "حفظ",
-  "somethingWentWrong": "حدث خطأ ما",
-  "fieldIsRequired": "هذا الحقل مطلوب",
-  "noInternetConnection": "لا يوجد اتصال بالإنترنت",
-  "themeLight": "فاتح",
-  "themeDark": "داكن"
+AR = {
+    'common': {
+        'retry': 'إعادة المحاولة',
+        'save': 'حفظ',
+        'somethingWentWrong': 'حدث خطأ ما',
+        'fieldIsRequired': 'هذا الحقل مطلوب',
+        'noInternetConnection': 'لا يوجد اتصال بالإنترنت',
+        'themeLight': 'فاتح',
+        'themeDark': 'داكن',
+    },
+    'orders': {'title': 'الطلبات'},
 }
-'''
+FLAT_NAMES = {'orders.title': 'orders', 'trips.title': 'trips'}
 
 
-def locale_keys(keys):
+def catalog(tree):
+    return json.dumps(tree, ensure_ascii=False, indent=2) + '\n'
+
+
+def leaves(tree, prefix=''):
+    for key, value in tree.items():
+        if isinstance(value, dict):
+            yield from leaves(value, prefix + key + '.')
+        else:
+            yield prefix + key, value
+
+
+def flat(tree):
+    return {FLAT_NAMES.get(path, path.rsplit('.', 1)[-1]): value for path, value in leaves(tree)}
+
+
+def accessors(tree, prefix=''):
+    for key, value in tree.items():
+        if isinstance(value, dict):
+            yield from accessors(value, prefix + key + '.')
+        yield prefix.replace('.', '_') + key, prefix + key
+
+
+def locale_keys(tree):
     return ('// DO NOT EDIT. This is code generated via package:easy_localization/generate.dart\n\n'
             'abstract class LocaleKeys {\n'
-            + ''.join("  static const %s = '%s';\n" % (k, k) for k in keys)
+            + ''.join("  static const %s = '%s';\n" % pair for pair in accessors(tree))
             + '}\n')
 
-
-BASE_KEYS = ['orders', 'retry', 'save', 'somethingWentWrong', 'fieldIsRequired', 'noInternetConnection',
-             'themeLight', 'themeDark']
 
 # ---------- the skin contract: base slots are abstract, derived slots have a default ----------
 APP_SKIN_SLOTS = '''
@@ -417,8 +442,8 @@ extension AppTokensContext on BuildContext {
 
 THEME = {
     'lib/core/theme/skin/app_skin.dart': APP_SKIN,
-    'lib/core/theme/skin/light_skin.dart': built_in_skin('LightSkin', 'light', 'themeLight', 'light', LIGHT, {}),
-    'lib/core/theme/skin/dark_skin.dart': built_in_skin('DarkSkin', 'dark', 'themeDark', 'dark', DARK, DARK_OVERRIDES),
+    'lib/core/theme/skin/light_skin.dart': built_in_skin('LightSkin', 'light', 'common_themeLight', 'light', LIGHT, {}),
+    'lib/core/theme/skin/dark_skin.dart': built_in_skin('DarkSkin', 'dark', 'common_themeDark', 'dark', DARK, DARK_OVERRIDES),
     'lib/core/theme/app_tokens.dart': app_tokens(False),
     'lib/core/theme/app_spacing.dart': '''
 import 'package:flutter/widgets.dart';
@@ -956,7 +981,7 @@ class AppErrorWidget extends StatelessWidget {
             AppText(message, textAlign: TextAlign.center),
             if (onRetry != null) ...[
               VerticalSpace(context.tokens.space.md),
-              PrimaryButton(text: LocaleKeys.retry.tr(), onPressed: onRetry),
+              PrimaryButton(text: LocaleKeys.common_retry.tr(), onPressed: onRetry),
             ],
           ],
         ),
@@ -1143,7 +1168,7 @@ abstract final class AppLocales {
   static const fallback = en;
 }
 ''',
-    'lib/core/l10n/locale_keys.g.dart': locale_keys(BASE_KEYS),
+    'lib/core/l10n/locale_keys.g.dart': locale_keys(EN),
     # ---------- helpers ----------
     'lib/core/helpers/app_form_validations.dart': '''
 import 'package:easy_localization/easy_localization.dart';
@@ -1151,7 +1176,7 @@ import 'package:app/core/l10n/locale_keys.g.dart';
 
 sealed class AppFormValidations {
   static String? requiredField(String? value) =>
-      (value == null || value.trim().isEmpty) ? LocaleKeys.fieldIsRequired.tr() : null;
+      (value == null || value.trim().isEmpty) ? LocaleKeys.common_fieldIsRequired.tr() : null;
 }
 ''',
     'lib/core/helpers/extensions/snackbar_extensions.dart': '''
@@ -1604,8 +1629,8 @@ def common(root):
     for d in (CORE, THEME, WIDGETS):
         for path, text in d.items():
             w(root, path, text)
-    w(root, 'assets/translations/en.json', EN)
-    w(root, 'assets/translations/ar.json', AR)
+    w(root, 'assets/translations/en.json', catalog(EN))
+    w(root, 'assets/translations/ar.json', catalog(AR))
     w(root, 'lib/my_app.dart', my_app('orders'))
 
 
@@ -1783,36 +1808,36 @@ T handleLocalFailureSync<T>(T Function() op) {
 
 
 # ---------- app fixture: the drift project plus a clean `trips` feature, for tasks f1, f2, t1, g1, m2 ----------
-APP_EN = '''{
-  "orders": "Orders",
-  "trips": "Trips",
-  "retry": "Retry",
-  "save": "Save",
-  "somethingWentWrong": "Something went wrong",
-  "fieldIsRequired": "This field is required",
-  "enterValidEmail": "Enter a valid email address",
-  "enterValidPhone": "Enter a valid phone number",
-  "noInternetConnection": "No internet connection",
-  "themeLight": "Light",
-  "themeDark": "Dark"
+APP_EN = {
+    'common': {
+        'retry': 'Retry',
+        'save': 'Save',
+        'somethingWentWrong': 'Something went wrong',
+        'fieldIsRequired': 'This field is required',
+        'enterValidEmail': 'Enter a valid email address',
+        'enterValidPhone': 'Enter a valid phone number',
+        'noInternetConnection': 'No internet connection',
+        'themeLight': 'Light',
+        'themeDark': 'Dark',
+    },
+    'orders': {'title': 'Orders'},
+    'trips': {'title': 'Trips'},
 }
-'''
-APP_AR = '''{
-  "orders": "الطلبات",
-  "trips": "الرحلات",
-  "retry": "إعادة المحاولة",
-  "save": "حفظ",
-  "somethingWentWrong": "حدث خطأ ما",
-  "fieldIsRequired": "هذا الحقل مطلوب",
-  "enterValidEmail": "أدخل بريدًا إلكترونيًا صحيحًا",
-  "enterValidPhone": "أدخل رقم هاتف صحيحًا",
-  "noInternetConnection": "لا يوجد اتصال بالإنترنت",
-  "themeLight": "فاتح",
-  "themeDark": "داكن"
+APP_AR = {
+    'common': {
+        'retry': 'إعادة المحاولة',
+        'save': 'حفظ',
+        'somethingWentWrong': 'حدث خطأ ما',
+        'fieldIsRequired': 'هذا الحقل مطلوب',
+        'enterValidEmail': 'أدخل بريدًا إلكترونيًا صحيحًا',
+        'enterValidPhone': 'أدخل رقم هاتف صحيحًا',
+        'noInternetConnection': 'لا يوجد اتصال بالإنترنت',
+        'themeLight': 'فاتح',
+        'themeDark': 'داكن',
+    },
+    'orders': {'title': 'الطلبات'},
+    'trips': {'title': 'الرحلات'},
 }
-'''
-APP_KEYS = ['orders', 'trips', 'retry', 'save', 'somethingWentWrong', 'fieldIsRequired', 'enterValidEmail',
-            'enterValidPhone', 'noInternetConnection', 'themeLight', 'themeDark']
 TRIPS = 'lib/feature/trips/'
 TRIPS_SCREEN = TRIPS + 'presentation/trips_screen/'
 TRIPS_TYPES = [('feature/trips/presentation/trips_screen/logic/trips_cubit.dart', 'TripsCubit'),
@@ -1873,23 +1898,23 @@ sealed class AppRouter {
   }
 }
 ''',
-    'lib/core/l10n/locale_keys.g.dart': locale_keys(APP_KEYS),
+    'lib/core/l10n/locale_keys.g.dart': locale_keys(APP_EN),
     'lib/core/helpers/app_form_validations.dart': r'''
 import 'package:easy_localization/easy_localization.dart';
 import 'package:app/core/l10n/locale_keys.g.dart';
 
 sealed class AppFormValidations {
   static String? requiredField(String? value) =>
-      (value == null || value.trim().isEmpty) ? LocaleKeys.fieldIsRequired.tr() : null;
+      (value == null || value.trim().isEmpty) ? LocaleKeys.common_fieldIsRequired.tr() : null;
 
   static String? email(String? value) =>
       (value == null || !RegExp(r'^[^@\s]+@[^@\s]+\.[^@\s]+$').hasMatch(value.trim()))
-          ? LocaleKeys.enterValidEmail.tr()
+          ? LocaleKeys.common_enterValidEmail.tr()
           : null;
 
   static String? phone(String? value) =>
       (value == null || !RegExp(r'^\+?[0-9]{8,15}$').hasMatch(value.trim()))
-          ? LocaleKeys.enterValidPhone.tr()
+          ? LocaleKeys.common_enterValidPhone.tr()
           : null;
 }
 ''',
@@ -2120,7 +2145,7 @@ class TripsScreen extends StatelessWidget {
           }
         },
         child: AppScaffold(
-          appBar: GlobalAppbar.main(titleText: LocaleKeys.trips.tr()),
+          appBar: GlobalAppbar.main(titleText: LocaleKeys.trips_title.tr()),
           body: const TripsBody(),
         ),
       );
@@ -2234,8 +2259,8 @@ def app(root):
     drift(root)
     for path, text in APP.items():
         w(root, path, text)
-    w(root, 'assets/translations/en.json', APP_EN)
-    w(root, 'assets/translations/ar.json', APP_AR)
+    w(root, 'assets/translations/en.json', catalog(APP_EN))
+    w(root, 'assets/translations/ar.json', catalog(APP_AR))
     w(root, 'pubspec.yaml', pubspec(DRIFT_DEPS, DRIFT_DEV + '\n  mockito: ^5.4.4'))
     w(root, 'lib/app_injection.dart', app_injection(['orders', 'trips']))
     w(root, 'lib/my_app.dart', my_app('trips'))
@@ -3116,7 +3141,7 @@ class AppErrorWidget extends StatelessWidget {
             AppText(message, textAlign: TextAlign.center),
             if (onRetry != null) ...[
               const VerticalSpace(12),
-              PrimaryButton(text: LocaleKeys.retry.tr(), onPressed: onRetry),
+              PrimaryButton(text: LocaleKeys.common_retry.tr(), onPressed: onRetry),
             ],
           ],
         ),
@@ -3257,6 +3282,18 @@ def older(root):
     shutil.rmtree(os.path.join(root, 'design'))
     for path, text in OLDER.items():
         w(root, path, text)
+    for locale, tree in (('en', APP_EN), ('ar', APP_AR)):
+        w(root, 'assets/translations/%s.json' % locale, catalog(flat(tree)))
+    w(root, 'lib/core/l10n/locale_keys.g.dart', locale_keys(flat(APP_EN)))
+    renames = {path.replace('.', '_'): FLAT_NAMES.get(path, path.rsplit('.', 1)[-1]) for path, _ in leaves(APP_EN)}
+    for folder, _, names in os.walk(os.path.join(root, 'lib')):
+        for name in names:
+            path = os.path.join(folder, name)
+            if name.endswith('.dart') and not name.endswith('.g.dart'):
+                with open(path, encoding='utf-8') as f:
+                    text = f.read()
+                with open(path, 'w', encoding='utf-8') as f:
+                    f.write(re.sub(r'LocaleKeys\.(\w+)', lambda m: 'LocaleKeys.' + renames.get(m.group(1), m.group(1)), text))
 
 
 def nowrap(src, dst):
