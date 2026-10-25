@@ -9,15 +9,15 @@ For implementation, read the [project configuration contract](../flutter-init/re
 
 Argument: `$ARGUMENTS` = key + value, free-form. Examples:
 - `login.welcomeBack "Welcome back" "مرحبا بعودتك"` — single key with both translations.
-- `welcomeBack "Welcome back"` — English only; pick the group and write the Arabic yourself.
+- `welcomeBack "Welcome back"` — English only; place it per the key layout below and write the Arabic yourself.
 - empty — derive the keys from the strings the current task needs.
 
 ## Key layout
 
 Detect the layout from the existing `en.json` and mirror it:
 
-- **Grouped (new projects, already-grouped files):** each feature owns a top-level object named by the camelCase of its folder (`lib/feature/order_details/` → `"orderDetails"`). Strings used by more than one feature (Save, Cancel, generic errors, validation messages) live in `"common"`. Keys inside a group are camelCase.
-- **Flat (existing file whose keys are all top-level strings):** keep adding flat camelCase keys. Do not nest, regroup or migrate it.
+- **Grouped (new projects, files with any group object):** each feature owns a top-level object named by the camelCase of its folder (`lib/feature/order_details/` → `"orderDetails"`). Strings used by more than one feature (Save, Cancel, generic errors, validation messages) live in `"common"`. Keys inside a group are camelCase. In a mixed file, leave existing top-level strings where they are; new keys still go into groups.
+- **Flat (existing file with only top-level strings and plural/gender maps):** keep adding flat camelCase keys. Do not nest, regroup or migrate it.
 
 ```json
 {

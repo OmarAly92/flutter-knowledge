@@ -122,10 +122,13 @@ def role(rel):
     return 'core'
 
 
+PLURAL_GENDER = {'zero', 'one', 'two', 'few', 'many', 'other', 'male', 'female'}
+
+
 def leaves(tree, prefix=''):
     result = {}
     for key, value in tree.items():
-        if isinstance(value, dict):
+        if isinstance(value, dict) and not (value and set(value) <= PLURAL_GENDER):
             result.update(leaves(value, prefix + key + '.'))
         else:
             result[prefix + key] = value
@@ -394,9 +397,9 @@ def grade(run_dir, fixture_dir, task):
     v['en_ar_key_mismatch'] += len(set(en) ^ set(ar))
     new_keys = [k for k in ar if k not in fx_en]
     if any('.' in k for k in fx_en):
-        features = {camel(r.split('/')[2]) for r in code if r.startswith('lib/feature/')}
+        groups = {'common', camel(TASKS[task]['feature'])} if TASKS[task].get('feature') else {'common'}
         v['translation_key_outside_feature_group'] += sum(
-            1 for k in new_keys if '.' not in k or k.split('.')[0] not in features | {'common'})
+            1 for k in new_keys if '.' not in k or k.split('.')[0] not in groups)
     else:
         v['translation_key_nested_in_flat_catalog'] += sum(1 for k in new_keys if '.' in k)
     info['new_keys'] = len(new_keys)
