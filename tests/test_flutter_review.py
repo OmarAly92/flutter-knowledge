@@ -340,6 +340,31 @@ sys.exit(int(os.environ.get('FK_TOOL_EXIT','0')))
         rules = {hit['rule'] for hit in report['findings']}
         self.assertTrue({'screen_provider', 'success_payload', 'state_naming', 'async_lifecycle', 'localized_text'} <= rules)
 
+    def test_nav_bar_change_tab_state_is_not_a_success_payload(self):
+        self.write('lib/feature/app_nav_bar/presentation/app_nav_bar_screen/logic/app_nav_bar_state.dart',
+                   'final class ChangeTabSuccessState extends AppNavBarState { final AppNavTab tab; const ChangeTabSuccessState(this.tab); }')
+        run, report = self.run_review()
+        self.assertEqual(run.returncode, 0, run.stderr)
+        self.assertFalse(any(hit['rule'] == 'success_payload' for hit in report['findings']))
+
+    def test_file_placement_flags_misplaced_presentation_files(self):
+        cases = {
+            'lib/feature/x/presentation/widgets/x_avatar.dart': ('class XAvatar extends StatelessWidget {}', True),
+            'lib/feature/x/presentation/widget/x_avatar.dart': ('class XAvatar extends StatelessWidget {}', False),
+            'lib/feature/x/presentation/x_screen/logic/x_board.dart': ('class XBoard {\n  final String name;\n}', True),
+            'lib/feature/x/presentation/x_screen/logic/helpers/x_board.dart': ('class XBoard {\n  final String name;\n}', True),
+            'lib/feature/x/presentation/x_screen/logic/helpers/x_board_builder.dart': ('sealed class XBoardBuilder {\n  static XBoardModel build(XInputsParams input) {\n    final name = input.name;\n    return XBoardModel(name: name);\n  }\n}', False),
+            'lib/feature/x/presentation/x_screen/logic/helpers/x_tab.dart': ('enum XTab {\n  home(labelKey: \'home\');\n\n  const XTab({required this.labelKey});\n\n  final String labelKey;\n}', False),
+            'lib/feature/x/presentation/x_screen/logic/x_cubit.dart': ('class XCubit extends Cubit<XState> {\n  final XRepository repository;\n}', False),
+            'lib/feature/x/presentation/x_screen/ui/widgets/x_row.dart': ('class XRow extends StatelessWidget {\n  final String name;\n}', False),
+        }
+        for path, (source, _) in cases.items():
+            self.write(path, source)
+        run, report = self.run_review()
+        self.assertEqual(run.returncode, 0, run.stderr)
+        flagged = {hit['path'] for hit in report['findings'] if hit['rule'] == 'file_placement'}
+        self.assertEqual(flagged, {path for path, (_, expected) in cases.items() if expected})
+
     def test_state_instance_identity_cannot_replace_value_equality(self):
         path = 'lib/feature/x/presentation/x_screen/logic/x_state.dart'
         cases = [

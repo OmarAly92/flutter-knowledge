@@ -98,6 +98,37 @@ Permutation test p = 0.79. Almost all of v250's extra breaks came from one sente
 
 Grader fixes from reading these runs: an argument-free `registerXDependencies()` call counts as wired, g1 accepts `set-theme-from-html` as the task skill, and the d4 checks find the budget files wherever the agent moved them.
 
+### Placement, nav bar recipe and design-only screens (2026-10-28)
+
+New tasks n1, p1 and u1 on the `app` project, forced ×3 and desc ×1 each, plus f1 and f2 forced ×2 as a regression check: 16 runs per version, Sonnet 5.5, run 4 at a time. The branch adds the `presentation/widget/` and `logic/helpers/` placement rules, the app nav bar recipe and the design-only screen rule.
+
+| | master | branch |
+|---|---|---|
+| Rule breaks (16 runs) | 26 | 10 |
+| n1 runs not following the nav bar recipe's files | 4/4 | 0/4 |
+| p1 runs importing the shared row from another screen's `ui/widgets/` | 4/4 | 0/4 |
+| u1 runs putting the design's sample content in the translation files | 4/4 | 0/4 |
+| Mean skill files read | 7.7 | 7.2 |
+| Mean tokens | 123.8k | 122.1k |
+
+Permutation test p = 0.01. Every branch n1 run built `app_nav_bar` with the recipe's eight files, an `IndexedStack` and one `MultiBlocProvider` route; master runs named it `main_nav` or `main`, and one used no `IndexedStack`. Every branch p1 run moved `TripItem` to `trips/presentation/widget/`. No u1 run on either version built a fake data layer, because the task says there is no API; the difference is that master put the four rows' text in `en.json`/`ar.json` while the branch kept it as literals in the widgets. f1 and f2 broke no new rule. Hand edits of `locale_keys.g.dart` (1 vs 6) are within the earlier rounds' rate and unrelated to the change. `n1_recipe_files_missing` measures sameness to the recipe, so master cannot pass it without the recipe.
+
+Grader fixes from reading these runs: the nav bar's `ChangeTabSuccessState(tab)` and its listener-free shell screen are sanctioned, and translation groups for features the run created are allowed.
+
+Round 2 tightened the four rules behind the branch's remaining breaks: never hand-edit `locale_keys.g.dart`, no number literal (`0` included) in spacing, translation groups per feature folder, and `AppTextField.textInputAction` required (added to the wrapper when missing). It also made the design-only rule cover requested or supplied sample data, and added task u2: the u1 screen with "use the mockup's sample notifications as mock data" and no mention of an API. The grader gained `text_field_without_textInputAction`, `text_input_action_not_required` and `u1_sample_data_file`. Forced ×2 on n1, p1, u1, u2, f1, f2 for the new version (branch2) and u2 ×2 for master:
+
+| | master | branch | branch2 |
+|---|---|---|---|
+| Rule breaks per run, on the cells each pair shares | 2.13 (15 runs) | 0.85 (13 runs) | 0.00 (12 runs) |
+| u2 runs building a fake data layer or sample-data objects | 2/2 | - | 0/2 |
+| f2 runs leaving `textInputAction` optional or unpassed | 2/2 | 1/2 | 0/2 |
+| Runs hand-editing `locale_keys.g.dart` | - | 5/13 | 0/10 |
+| Mean tokens | 124.0k | 123.8k | 125.5k |
+
+master vs branch2 p < 0.001; branch vs branch2 p = 0.002. Both master u2 runs reproduced the failure: one built `NotificationModel`, a mock data source, a repository and a cubit; the other filled sample records into cubit lists. Every branch2 u2 run wrote the four rows as literals in `NotificationsBody`, with no cubit or DI.
+
+Regression check on the tasks these rounds did not touch (d1, d2, h1, t1, g1, o1, forced ×2 per version, 4 agents at a time): master broke 5 rules in 12 runs (one d1 run skipped the schema bump and migration; both h1 runs hand-edited `locale_keys.g.dart`), branch2 broke none in 12. Every branch2 d1 run still built the drift table, DAO, local data source and repository, so the design-only rule did not leak into local-only features. Mean tokens 140.6k vs 148.7k, mostly from longer g1 runs. Grader fixes from reading these runs: the hybrid check accepts `GlobalResponse<T>(...)`, and a Hive box call inside a private helper counts as guarded when the helper's call is wrapped in `handleLocalFailure`. Across every cell the two versions share, master breaks 1.37 rules per run (27 runs) and branch2 0.00 (24 runs).
+
 ### Description discovery: scoped Codex comparison
 
 The pre-change working-tree catalog and shortened catalog were tested on the
@@ -189,6 +220,10 @@ former unconditional Mockito check are not directly comparable with this rule.
 | m1 | skin | A staggered entrance for the trips list, a press that shrinks each card and springs back, and a slowly pulsing dot on upcoming trips |
 | m2 | app | The same as m1, on a project with no `AppMotion` yet |
 | o1 | older | f1 on a project that predates `context.tokens` |
+| n1 | app | A bottom nav bar as the main screen, with the trips list and a new profile screen as tabs |
+| p1 | app | A trip summary screen that reuses the trips list's row and totals the trips |
+| u1 | app | A notifications screen from a design with no API yet |
+| u2 | app | u1 with "use the sample notifications as mock data" and no mention of an API |
 
 f1 and f2 cover what the first six tasks never reach: `EndPoints` methods that take an id, `registerFactoryParam` with `param1`, a bottom sheet given the cubit through `BlocProvider.value`, controllers and the form key on the cubit, prefilling through the initializer list, `dispose` in `close()`, and the shared validators. t1 checks `flutter-testing`; g1 checks `html-to-widget` and its source-extraction reference. The grader also accepts the former design skill/playbook for historical master baselines, so removing the old entry point does not penalize historical runs.
 

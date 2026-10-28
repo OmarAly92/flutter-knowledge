@@ -28,6 +28,7 @@ them as the source of truth over legacy patterns in the codebase.
 @./plugins/flutter-knowledge/skills/flutter-init/references/configuration.md
 @./plugins/flutter-knowledge/skills/flutter-init/references/package-adaptation.md
 @./plugins/flutter-knowledge/skills/flutter-state-management/references/cubit.md
+@./plugins/flutter-knowledge/skills/flutter-routing-di/references/app-nav-bar.md
 @./plugins/flutter-knowledge/skills/golden-tests/references/capture.md
 
 @./plugins/flutter-knowledge/skills/flutter-accessibility-rtl/SKILL.md

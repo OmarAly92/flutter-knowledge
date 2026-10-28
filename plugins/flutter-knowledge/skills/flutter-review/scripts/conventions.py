@@ -6,6 +6,25 @@ from checks import finding
 from dart_source import scan_dart
 
 
+def placement_findings(relative, code):
+    parts = relative.split('/')
+    if len(parts) < 6 or parts[:2] != ['lib', 'feature'] or parts[3] != 'presentation':
+        return []
+    top = parts[4]
+    if not (top.endswith('_screen') or top == 'widget'):
+        return [finding('file_placement', 'review', 'presentation/ holds only <screen>_screen/ dirs and widget/ for widgets shared by screens of this feature; cross-feature widgets go in lib/core/widgets/<role>/.', relative)]
+    if 'logic' not in parts:
+        return []
+    rest = parts[parts.index('logic') + 1:]
+    if len(rest) == 1 and not rest[0].endswith(('_cubit.dart', '_state.dart')):
+        return [finding('file_placement', 'review', 'logic/ holds only the cubit, its state and helpers/; move builders, formatters and constants to logic/helpers/ and data classes to data/model/.', relative)]
+    if rest and rest[0] == 'helpers' and re.search(r'\bclass\s+\w+', code):
+        match = re.search(r'^[ \t]+final\s+[\w<>?,. \t]+\s+\w+\s*;', code, re.MULTILINE)
+        if match:
+            return [finding('file_placement', 'review', 'A class with fields is an XModel in data/model/ or an XParams in data/model/params/, not a logic helper.', relative, code.count('\n', 0, match.start()) + 1)]
+    return []
+
+
 def source_findings(project, scope):
     hits = []
     for relative in scope:
@@ -13,6 +32,7 @@ def source_findings(project, scope):
             continue
         text = (project / relative).read_text(encoding='utf-8')
         code, strings = scan_dart(text)
+        hits.extend(placement_findings(relative, code))
         if relative.endswith('_state.dart'):
             for getter in re.finditer(r'\bget\s+(?:props|hashCode)\s*(?:=>[^;]+;|\{[^}]*\})', code):
                 for match in re.finditer(r'\bidentityHashCode\s*\(\s*this\s*\)', getter.group()):
@@ -31,6 +51,8 @@ def source_findings(project, scope):
         for rule, pattern, message in patterns:
             for match in re.finditer(pattern, code):
                 if rule == 'screen_provider' and not re.search(r'\bclass\s+\w+Screen\b', code):
+                    continue
+                if rule == 'success_payload' and re.match(r'class\s+ChangeTabSuccessState\b', match.group()):
                     continue
                 hits.append(finding(rule, 'review', message, relative, code.count('\n', 0, match.start()) + 1))
         for match in re.finditer(r'\bclass\s+(\w+)\s+extends\s+(Cubit|Bloc|Notifier|AutoDisposeNotifier|ChangeNotifier)\b', code):

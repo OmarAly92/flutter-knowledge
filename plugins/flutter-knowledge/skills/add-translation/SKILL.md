@@ -16,7 +16,7 @@ Argument: `$ARGUMENTS` = key + value, free-form. Examples:
 
 Detect the layout from the existing `en.json` and mirror it:
 
-- **Grouped (new projects, files with any group object):** each feature owns a top-level object named by the camelCase of its folder (`lib/feature/order_details/` → `"orderDetails"`). Strings used by more than one feature (Save, Cancel, generic errors, validation messages) live in `"common"`. Keys inside a group are camelCase. In a mixed file, leave existing top-level strings where they are; new keys still go into groups.
+- **Grouped (new projects, files with any group object):** each feature owns a top-level object named by the camelCase of its folder (`lib/feature/order_details/` → `"orderDetails"`). The group is the feature folder, never the screen: every screen, sheet and dialog under `lib/feature/trips/` — `trip_details_screen`, `edit_trip_screen` — adds its keys to `"trips"` (`trips.deleteConfirmTitle`), not to a new `"tripDetails"` group. Strings used by more than one feature (Save, Cancel, generic errors, validation messages) live in `"common"`. Keys inside a group are camelCase. In a mixed file, leave existing top-level strings where they are; new keys still go into groups.
 - **Flat (existing file with only top-level strings and plural/gender maps):** keep adding flat camelCase keys. Do not nest, regroup or migrate it.
 
 ```json
@@ -54,7 +54,7 @@ The steps and generator command below are the easy_localization implementation. 
 
    `-O` is the folder that already holds `locale_keys.g.dart` — `lib/core/l10n` in the standard layout. It rewrites only that file, from the JSON; code that uses the new keys then passes `flutter analyze`.
 
-   If you cannot run commands, or the project forbids it, give the user that command, and say that the code using the new keys compiles once it has run.
+   If you cannot run commands, or the project forbids it, give the user that command, and say that the code using the new keys compiles once it has run. Leave `locale_keys.g.dart` exactly as it is in that case: never write, patch or append constants to it by hand, even though the new `LocaleKeys` references will not compile until the generator runs.
 
 6. **Show usage.** Print a one-liner showing how to use the new key in code, e.g.:
 
@@ -67,6 +67,7 @@ The steps and generator command below are the easy_localization implementation. 
 - Do not stop to ask the user for the Arabic, and do not leave English placeholders in `ar.json` — translate it yourself.
 - Do not reference a `LocaleKeys.xxx` entry in code without adding its key to both JSON files in the same change.
 - Do not leave a user-facing string out — a placeholder, a hint, an empty-state line — because its key does not exist yet. Add the key.
-- Do not edit `lib/core/l10n/locale_keys.g.dart` by hand — it is generated.
+- Do not edit `lib/core/l10n/locale_keys.g.dart` by hand — it is generated. This holds when you cannot run the generator too: leave the file untouched and give the user the command.
+- Do not create a group per screen (`tripDetails`, `editTrip`). A screen's keys go in its feature folder's group (`trips`).
 - Do not add keys to only one of the two JSON files.
 - Do not reorder or reformat unrelated entries in the JSON files, and do not convert a flat file to groups.

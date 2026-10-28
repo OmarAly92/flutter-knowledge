@@ -34,6 +34,14 @@ SCREEN_TASKS = {'d1', 'd2', 'd3', 'h1', 'h2'}   # a new feature with its own scr
 TRIP_SCREEN_TASKS = {'f1', 'f2', 'o1'}          # a new screen inside the existing trips feature
 DETAILS_TASKS = {'f1', 'o1'}                    # o1 is f1 on the older-project fixture
 TASK_SKILL = {'t1': 'flutter-testing', 'g1': 'html-to-widget'}
+U1_SAMPLES = ['Trip confirmed', 'Your trip to Cairo is confirmed', '2h ago', 'Price drop', 'Dubai trip is now', '5h ago',
+              'Reminder', 'Pack for your Rome trip tomorrow', 'Yesterday', 'Trip completed', 'Rate your trip to Paris', '3 days ago']
+U1_COPY = ['Notifications', 'Today', 'Earlier']
+NAV_SCREEN = 'lib/feature/app_nav_bar/presentation/app_nav_bar_screen/'
+NAV_RECIPE = [NAV_SCREEN + 'logic/app_nav_bar_cubit.dart', NAV_SCREEN + 'logic/app_nav_bar_state.dart',
+              NAV_SCREEN + 'logic/helpers/app_nav_tab.dart', NAV_SCREEN + 'ui/app_nav_bar_screen.dart',
+              NAV_SCREEN + 'ui/widgets/app_nav_bar_body.dart', NAV_SCREEN + 'ui/widgets/app_bottom_nav_bar.dart',
+              NAV_SCREEN + 'ui/widgets/app_nav_bar_item.dart', 'lib/feature/app_nav_bar/app_nav_bar_injection.dart']
 THEME_DIR = 'lib/core/theme/'
 SKIN_DIR = THEME_DIR + 'skin/'
 SKIN_GOLD = {'light_skin.dart': 'C8A24A', 'dark_skin.dart': 'E3C77A'}   # task s2
@@ -229,7 +237,7 @@ def grade(run_dir, fixture_dir, task):
         v['blocbuilder_without_buildWhen'] += max(0, bb - bw)
         v['hardcoded_ui_string'] += sum(
             1 for line in t.splitlines()
-            if 'LocaleKeys' not in line and re.search(
+            if 'LocaleKeys' not in line and not (task in ('u1', 'u2') and any(s in line for s in U1_SAMPLES)) and re.search(
                 r"(?:AppText|Text)\(\s*'\s*[A-Za-z]|(?:titleText|hintText|text|labelText|message|title|label|tooltip):\s*'\s*[A-Za-z]", line))
         # a closure that only delegates to the shared AppFormValidations is fine
         v['inline_validator'] += sum(1 for m in re.finditer(r'validator:\s*\(', t)
@@ -280,7 +288,9 @@ def grade(run_dir, fixture_dir, task):
     screens = [r for r in new if r.endswith('_screen.dart') and '/ui/' in r]
     for r in screens:
         t = new[r]
-        if 'BlocListener' not in t or 'AppScaffold' not in t or not re.search(r'\w+Body\(', t):
+        has_owner = any(c.startswith(r.split('/ui/')[0] + '/logic/') and c.endswith('_cubit.dart') for c in new)
+        is_nav_shell = 'nav' in r.split('/')[-1]   # the nav bar recipe's shell has no effects to listen for
+        if (has_owner and not is_nav_shell and 'BlocListener' not in t) or 'AppScaffold' not in t or not re.search(r'\w+Body\(', t):
             v['screen_body_split'] += 1
     for r, t in new.items():
         if r.endswith('_body.dart') and re.search(r'AppScaffold|Scaffold\(|GlobalAppbar|BlocListener', t):
@@ -303,7 +313,7 @@ def grade(run_dir, fixture_dir, task):
         for name in re.findall(r'class\s+(\w+)\s+extends', t):
             if not name.endswith('State'):
                 v['state_naming'] += 1
-        for m in re.finditer(r'class\s+\w+SuccessState\b[^{]*\{(.*?)\n\}', t, re.S):
+        for m in re.finditer(r'class\s+(?!ChangeTabSuccessState\b)\w+SuccessState\b[^{]*\{(.*?)\n\}', t, re.S):   # the nav bar recipe's sanctioned tab payload
             if re.search(r'\bfinal\s+\w', m.group(1)):
                 v['data_in_success_state'] += 1
     for r, t in states.items():
@@ -398,6 +408,8 @@ def grade(run_dir, fixture_dir, task):
     new_keys = [k for k in ar if k not in fx_en]
     if any('.' in k for k in fx_en):
         groups = {'common', camel(TASKS[task]['feature'])} if TASKS[task].get('feature') else {'common'}
+        fixture_groups = {k.split('.')[0] for k in fx_en if '.' in k}
+        groups |= {camel(r.split('/')[2]) for r in new if r.startswith('lib/feature/')} - fixture_groups   # features the run created
         v['translation_key_outside_feature_group'] += sum(
             1 for k in new_keys if '.' not in k or k.split('.')[0] not in groups)
     else:
@@ -448,7 +460,14 @@ def grade(run_dir, fixture_dir, task):
             if 'local' not in r:
                 continue
             lines = t.splitlines()
+            guarded_helpers = set(re.findall(r'\b(_\w+)\([^;]*?\)\s*\.handleLocalFailure\(', t, re.S))   # a private helper whose call is guarded
+            enclosing = None
             for i, line in enumerate(lines):
+                head = re.match(r'\s*(?:Future<[^>]*>|Future|void)\s+(_?\w+)\s*\(', line)
+                if head:
+                    enclosing = head.group(1)
+                if enclosing in guarded_helpers:
+                    continue
                 if re.search(r'[bB]ox\.(?:put|putAll|delete|deleteAll|clear|add|addAll)\(', line):
                     # the whole statement, up to its closing ';' (a multi-line putAll({...}) spans several lines)
                     j = i
@@ -469,7 +488,7 @@ def grade(run_dir, fixture_dir, task):
             v['hybrid_no_network_check'] += 1
         if not re.search(r'_\w*[lL]ocal\w*\.(?:cache|save|insert|replace|upsert|put|store)\w*\(', repos):
             v['hybrid_no_cache_on_success'] += 1
-        if 'GlobalResponse(' not in repos:
+        if not re.search(r'GlobalResponse(?:<[^;]*?>)?\(', repos):
             v['hybrid_offline_not_GlobalResponse'] += 1
     if task == 'd1':
         if re.search(r'NetworkStatus|GlobalResponse', repos):
@@ -494,6 +513,8 @@ def grade(run_dir, fixture_dir, task):
                 and 'description' not in budget_file('add_budget_params.dart'):
             v['d4_description_not_written'] += 1
     new_task_checks(v, task, run_dir, new, touched, full, code, dart, ui, cubits, di_add)
+    placement_checks(v, new)
+    focused_checks(v, task, run_dir, new, touched, full, dart)
     if TASKS[task].get('fixture') == 'skin':
         skin_checks(v, task, new, touched, full, code, dart, ui)
     if TASKS[task].get('fixture') == 'skin' or task == 'm2':
@@ -643,6 +664,86 @@ def new_task_checks(v, task, run_dir, new, touched, full, code, dart, ui, cubits
             if r.startswith(WIDGETS) and r.endswith('.dart'):
                 v['design_raw_value_in_widget'] += count(
                     r'Color\(0x|\bColors\.(?!transparent)|Duration\(|Cubic\(|\bCurves\.|(?<![\w.])TextStyle\(', code[r])
+
+
+def placement_checks(v, new):
+    for r, t in new.items():
+        parts = r.split('/')
+        if len(parts) < 6 or parts[:2] != ['lib', 'feature'] or parts[3] != 'presentation' or not r.endswith('.dart'):
+            continue
+        if not (parts[4].endswith('_screen') or parts[4] == 'widget'):
+            v['presentation_extra_dir'] += 1
+            continue
+        if 'logic' not in parts:
+            continue
+        rest = parts[parts.index('logic') + 1:]
+        if len(rest) == 1 and not rest[0].endswith(('_cubit.dart', '_state.dart')):
+            v['logic_loose_file'] += 1
+        if not rest[-1].endswith(('_cubit.dart', '_state.dart')) and re.search(r'\bclass\s+\w+', t) \
+                and re.search(r'^[ \t]+final\s+[\w<>?,. \t]+\s+\w+\s*;', t, re.M):
+            v['data_class_in_logic'] += 1
+
+
+def focused_checks(v, task, run_dir, new, touched, full, dart):
+    """n1 nav bar recipe, p1 placement of a shared row and derived data, u1 design-only screen."""
+    router = touched.get(ROUTER, '')
+    if task == 'n1':
+        v['n1_recipe_files_missing'] += sum(1 for f in NAV_RECIPE if f not in new)
+        nav = {r: t for r, t in new.items() if 'nav' in r.lower() and r.endswith('.dart')}
+        nav_all = '\n'.join(nav.values())
+        if not nav:
+            v['n1_no_nav_bar_feature'] += 1
+        if 'IndexedStack' not in nav_all:
+            v['n1_tabs_not_indexed_stack'] += 1
+        v['n1_tabs_via_pageview_or_navigator'] += count(r'\bPageView\b|\bTabBarView\b|\bNavigator\(|\bsetState\(', nav_all)
+        if not ('MultiBlocProvider' in router and 'TripsCubit' in router and re.search(r'Profile\w*Cubit', router)):
+            v['n1_route_not_multiblocprovider_with_tab_cubits'] += 1
+        for r, t in new.items():
+            if r.endswith('_injection.dart') and 'nav' in r.lower() and re.search(r'TripsCubit|Profile\w*Cubit', t):
+                v['n1_tab_cubit_registered_in_nav_injection'] += 1
+        start = read(os.path.join(run_dir, ROUTER)) + read(os.path.join(run_dir, 'lib/my_app.dart'))
+        if not re.search(r'initialRoute[^;]*?(?:=>|:|return)\s*RoutesStrings\.\w*[Nn]av', start, re.S):
+            v['n1_app_not_opening_on_nav_bar'] += 1
+    if task == 'p1':
+        trip_rows = [r for r, t in full.items() if r.startswith('lib/feature/trips/presentation/') and re.search(r'class\s+TripItem\b', t)]
+        if not any(r.startswith('lib/feature/trips/presentation/widget/') for r in trip_rows):
+            v['p1_shared_row_not_in_feature_widget_dir'] += 1
+        for r, t in dart.items():
+            if r.startswith('lib/feature/trips/presentation/') and '/ui/' in r:
+                screen = r.split('/')[3:5]
+                for imp in re.findall(r"import\s+'package:app/feature/trips/presentation/(\w+)/ui/widgets/", t):
+                    if imp != screen[1]:
+                        v['p1_widget_imported_across_screens'] += 1
+    if task in ('u1', 'u2'):
+        feature = {r: t for r, t in new.items() if r.startswith('lib/feature/notifications/') and r.endswith('.dart')}
+        if any('/data/' in r or r.endswith('_repository.dart') or 'data_source' in r for r in feature) or \
+                any(re.search(r'\bclass\s+\w*(?:Repository|DataSource)\w*\b', t) for t in feature.values()):
+            v['u1_fake_data_layer'] += 1
+        sample_objects = 0
+        for r, t in feature.items():
+            for m in re.finditer(r'^\s*(?:sealed\s+|abstract\s+|final\s+)*class\s+(\w+)([^{]*)\{', t, re.M):
+                name, head = m.groups()
+                if not re.search(r'extends\s+(?:StatelessWidget|StatefulWidget|State<|Cubit<|Equatable|\w+State)\b', head) \
+                        and not name.endswith('State'):
+                    sample_objects += 1
+            sample_objects += count(r'(?:const|final|var)\s+(?:List|Map)\b|(?:const|final|var)\s+\w+\s*=\s*(?:const\s*)?(?:<[^>]*>\s*)?[\[{]', t)
+            sample_objects += count(r'\bListView\.builder\b|\bitemBuilder\b|\.map\(\s*\(', t)
+        v['u1_sample_data_object'] += sample_objects
+        ui_text = '\n'.join(t for r, t in feature.items() if '/ui/' in r)
+        literals = set(re.findall(r"'((?:[^'\\]|\\.)*)'", ui_text))
+        v['u1_sample_content_not_literal_in_widgets'] += sum(1 for s in U1_SAMPLES if not any(s in l for l in literals))
+        en = read(os.path.join(run_dir, 'assets/translations/en.json'))
+        v['u1_sample_content_in_translations'] += sum(1 for s in U1_SAMPLES if s in en)
+        v['u1_ui_copy_not_localized'] += sum(1 for s in U1_COPY if f"'{s}'" in ui_text)
+        if any(r.endswith('_cubit.dart') for r in feature):
+            v['u1_cubit_without_interaction'] += 1
+        v['u1_sample_data_file'] += sum(1 for r in new if r.startswith('assets/') and not r.startswith('assets/translations/'))
+    if task == 'f2':
+        fields = '\n'.join(t for r, t in dart.items() if r.startswith('lib/feature/'))
+        v['text_field_without_textInputAction'] += max(0, count(r'\bAppTextField\(', fields) - count(r'\btextInputAction\s*:', fields))
+        wrapper = full.get('lib/core/widgets/inputs/app_text_field.dart', '')
+        if not re.search(r'required\s+this\.textInputAction', wrapper):
+            v['text_input_action_not_required'] += 1
 
 
 def skin_checks(v, task, new, touched, full, code, dart, ui):

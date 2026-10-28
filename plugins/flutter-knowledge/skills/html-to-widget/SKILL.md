@@ -105,7 +105,7 @@ Run it on the screen's root, then on each sheet, dialog and state. Do not reimpl
 
 **Skip the mockup chrome.** A fake status bar, notch, home indicator or device frame is not part of the screen; `AppScaffold` and `SafeArea` handle the real ones.
 
-**Text is never a literal.** Content goes through `LocaleKeys` (missing keys via `add-translation`), style through `tokens.text`.
+**Text is never a literal.** Content goes through `LocaleKeys` (missing keys via `add-translation`), style through `tokens.text`. The one exception is a design with no API yet: its sample content (names, prices, dates, list rows) is a literal in the widget that shows it, with no fake model, data source or sample-data list — follow [design-only screens](../flutter-screen-ui/SKILL.md#design-only-screens-no-api-yet).
 
 ## Example
 

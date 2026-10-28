@@ -77,6 +77,65 @@ class BenchmarkPackageTests(unittest.TestCase):
             self.assertEqual(result.returncode, 0, result.stderr)
             return json.loads((out / 'grades.json').read_text())['branch-forced-t1-r1']
 
+    def grade_files(self, task, files):
+        with tempfile.TemporaryDirectory() as directory:
+            out = Path(directory)
+            fixture = out / 'fixture-app'
+            run = out / 'runs' / f'branch-forced-{task}-r1'
+            for root in (fixture, run):
+                translations = root / 'assets/translations'
+                translations.mkdir(parents=True)
+                for locale in ['en', 'ar']:
+                    (translations / f'{locale}.json').write_text('{}')
+                (root / 'pubspec.yaml').write_text('name: app\n')
+            (run / 'SKILLS_READ.txt').write_text('flutter-knowledge/SKILL.md\n')
+            for rel, source in files.items():
+                path = run / rel
+                path.parent.mkdir(parents=True, exist_ok=True)
+                path.write_text(source)
+            result = subprocess.run([sys.executable, str(ROOT / 'benchmark/grade.py'), str(out)],
+                                    capture_output=True, text=True)
+            self.assertEqual(result.returncode, 0, result.stderr)
+            return json.loads((out / 'grades.json').read_text())[f'branch-forced-{task}-r1']['violations']
+
+    def test_presentation_placement_rules(self):
+        violations = self.grade_files('f1', {
+            'lib/feature/trips/presentation/widgets/trip_avatar.dart': 'class TripAvatar extends StatelessWidget {}\n',
+            'lib/feature/trips/presentation/widget/trip_row.dart': 'class TripRow extends StatelessWidget {}\n',
+            'lib/feature/trips/presentation/x_screen/logic/x_board.dart': 'class XBoard {\n  final String name;\n}\n',
+            'lib/feature/trips/presentation/x_screen/logic/helpers/x_inputs.dart': 'class XInputs {\n  final String name;\n}\n',
+            'lib/feature/trips/presentation/x_screen/logic/helpers/x_tab.dart': "enum XTab {\n  a('a');\n\n  const XTab(this.label);\n\n  final String label;\n}\n",
+        })
+        self.assertEqual(violations.get('presentation_extra_dir'), 1)
+        self.assertEqual(violations.get('logic_loose_file'), 1)
+        self.assertEqual(violations.get('data_class_in_logic'), 2)
+
+    def test_design_only_screen_keeps_samples_in_widgets(self):
+        base = 'lib/feature/notifications/presentation/notifications_screen/'
+        rows = ''.join(f"      NotificationRow(title: '{t}', message: '{m}', time: '{h}'),\n" for t, m, h in [
+            ('Trip confirmed', 'Your trip to Cairo is confirmed', '2h ago'),
+            ('Price drop', 'Dubai trip is now \\$420', '5h ago'),
+            ('Reminder', 'Pack for your Rome trip tomorrow', 'Yesterday'),
+            ('Trip completed', 'Rate your trip to Paris', '3 days ago')])
+        clean = {
+            base + 'ui/notifications_screen.dart':
+                'class NotificationsScreen extends StatelessWidget {\n  Widget build(BuildContext context) => '
+                'AppScaffold(appBar: GlobalAppbar(titleText: LocaleKeys.notifications.tr()), body: const NotificationsBody());\n}\n',
+            base + 'ui/widgets/notifications_body.dart':
+                'class NotificationsBody extends StatelessWidget {\n  Widget build(BuildContext context) => Column(children: [\n'
+                + rows + '    ]);\n}\n',
+        }
+        violations = self.grade_files('u1', clean)
+        self.assertFalse({k for k in violations if k.startswith('u1_') or k in ('hardcoded_ui_string', 'screen_body_split')})
+        faked = dict(clean)
+        faked['lib/feature/notifications/data/model/notification_model.dart'] = 'class NotificationModel {\n  final String? title;\n}\n'
+        faked[base + 'ui/widgets/notifications_list.dart'] = (
+            'class NotificationsList extends StatelessWidget {\n  static const List<String> items = [];\n'
+            '  Widget build(BuildContext context) => ListView.builder(itemBuilder: (_, i) => AppText(items[i]));\n}\n')
+        violations = self.grade_files('u1', faked)
+        self.assertEqual(violations.get('u1_fake_data_layer'), 1)
+        self.assertGreaterEqual(violations.get('u1_sample_data_object', 0), 2)
+
     def test_nested_translation_keys_resolve_through_generated_accessors(self):
         fixture = {'common': {'save': 'Save'}, 'trips': {'title': 'Trips'}}
         grade = self.grade_translations(

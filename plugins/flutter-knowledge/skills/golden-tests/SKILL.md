@@ -191,5 +191,5 @@ In review, changed golden PNGs are changed code. Local baseline approval does no
 
 - A `MaterialApp` with an ad-hoc theme in each test. The golden then tests the wrapper, not the app's theme.
 - `pumpAndSettle` on a screen with a spinner: it times out. The harness pumps a fixed time.
-- Mocking the cubit and stubbing every getter. Feed the real cubit through its repository.
+- Mocking the cubit and stubbing every getter. Feed the real cubit through its repository. A design-only screen has no repository: pump it as built, with its static sample content and its UI-only cubit if it has one; never add a fake data source for the capture.
 - Generating goldens on one OS and checking them on another.

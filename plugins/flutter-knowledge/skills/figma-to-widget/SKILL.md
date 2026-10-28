@@ -61,7 +61,7 @@ Check whether a connected Figma tool is available. If it is, pull the frame and 
 
 **Variants are parameters.** A component with Default, Pressed, Disabled and Loading variants becomes one widget with parameters — `PrimaryButton(isLoading: …, onPressed: null)` — not four widgets.
 
-**Text is never a literal.** Content goes through `LocaleKeys` (missing keys via `add-translation`), style through `tokens.text`.
+**Text is never a literal.** Content goes through `LocaleKeys` (missing keys via `add-translation`), style through `tokens.text`. The one exception is a design with no API yet: its sample content (names, prices, dates, list rows) is a literal in the widget that shows it, with no fake model, data source or sample-data list — follow [design-only screens](../flutter-screen-ui/SKILL.md#design-only-screens-no-api-yet).
 
 Apply the [early design decision](../flutter-app-theme/SKILL.md#early-design-decision) before committing to unmatched mappings.
 

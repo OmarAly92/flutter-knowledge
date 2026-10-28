@@ -50,7 +50,7 @@ never give a sheet/dialog its own dir.
 3. Layout tree (top → bottom) with exact paddings/sizes, the capture boundary and visible app-shell/overlay composition outside the screen subtree.
 4. Per-element specs: colors as `tokens.skin` getters, text styles as `tokens.text` getters,
    radii/spacing as `tokens.radius`/`tokens.space` steps, every state (selected/disabled/done/out-of-range/today...). Record original measurements separately from implementation token mappings; when no step fits, follow `flutter-app-theme` nearest-step/add-token policy, never authorize feature literals.
-5. Dummy content VERBATIM (strings, times, names) so screens match the PNGs.
+5. Sample content VERBATIM (strings, times, names) so screens match the PNGs. Without an API it is written as literals in the widgets that show it, never as a fake model, data source or sample-data list ([design-only screens](../../flutter-screen-ui/SKILL.md#design-only-screens-no-api-yet)).
 6. Motion: which entrance/loop/press each element uses, with token names.
 7. Behavior: interactions, gestures (verified ones marked as such), navigation.
 8. Flutter mapping: feature dir, which core widgets, which parts are custom feature widgets.
@@ -68,7 +68,7 @@ opened from many screens.
 Written so an agent with ZERO conversation context implements the screen AND all its
 sheets/dialogs exactly:
 
-1. `# TASK:` one-liner + phase scope ("UI-only — dummy data, no backend").
+1. `# TASK:` one-liner + phase scope ("UI-only — sample content static in the widgets, no data layer, no backend").
 2. **Do this FIRST, before any Dart** (state it as a hard requirement): (a) read
    `docs/design/README.md` — the screen→feature map, repo inventory, and global conventions;
    (b) invoke the `flutter-knowledge` skill, then the mini skills it maps —
@@ -86,7 +86,7 @@ sheets/dialogs exactly:
    widget under the same screen), plus router/DI wiring, golden harness/test paths and verification artifacts at the integration locations from (3).
 6. **Key implementation points** — numbered; only the critical and easy-to-miss details
    (gesture semantics, RTL mirroring, state persistence keys, animation pairings, defaults).
-7. **Dummy data** — or a pointer to the verbatim strings in Part A.
+7. **Sample content** — a pointer to the verbatim strings in Part A, written as literals in the widgets that show them; no fake model, data source, repository or sample-data list.
 8. **Localization** — all strings via the project's key system, languages required.
 9. **Definition of done** — analyzer clean; RTL correct; files placed in the correct feature from (3); listed interactions, including every sheet/dialog, work. Invoke `visual-verification` and satisfy its [per-screen completion contract](../../visual-verification/SKILL.md#required-completion-contract) for every reference-backed coverage row, including both themes when both references exist. Link the verification report with Flutter/reference/diff artifacts, measured overall and worst-region percentages and honest statuses. A missing reference or unresolved difference remains explicit; updating a golden alone is not verification.
 

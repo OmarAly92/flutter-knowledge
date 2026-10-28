@@ -93,6 +93,8 @@ create: (context) => sl<XCubit>(param1: settings.arguments as ParamType),
 
 For screens needing multiple cubits, use `MultiBlocProvider` (mirror an existing multi-cubit route in `app_router.dart`).
 
+**Bottom nav bar / tab shell**: always build it with the [app nav bar recipe](references/app-nav-bar.md) — an `app_nav_bar` feature with `AppNavBarCubit`, an `IndexedStack` body, and one `MultiBlocProvider` route on top of `AppNavBarScreen` providing `AppNavBarCubit` plus every tab screen's cubit. Read it before writing any nav bar file.
+
 To share one cubit across two navigated screens, pass the existing instance via route arguments and wrap the second screen's route in `BlocProvider.value(value: cubit, …)` — never create a second instance.
 
 The default `Navigation` part implements `Future<dynamic> pushNamed(String routeName, {Object? arguments})`, `Future<dynamic> pushReplacementNamed(String routeName, {Object? arguments})`, `Future<dynamic> pushNamedAndRemoveUntil(String routeName, RoutePredicate predicate, {Object? arguments})`, `void pop<T>([T? result])`, `void popUntil(RoutePredicate predicate)`, and `void popToRoot()`. Pushes, `popUntil` and `popToRoot` use `Navigator.of(this, rootNavigator: true)`; `pop<T>` uses `Navigator.pop(this, result)` so local pops retain their behavior. Forward arguments/predicates and return the push futures. Preserve additional working caller APIs where needed. Exercise nested/root routing, arguments and returned results with actual Navigators.
