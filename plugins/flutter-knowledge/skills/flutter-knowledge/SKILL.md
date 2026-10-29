@@ -32,6 +32,7 @@ Users describe outcomes; they do not need to know skill names or slash commands.
 - **`AppTextField.textInputAction` is required** — every field passes it; if the project's wrapper lacks it, add it as a required parameter and update its callers in the same change.
 - **No `flutter_screenutil` in feature code** — no `.h`/`.w`/`.r`/`.sp`, no import; spacing and radii come from `context.tokens.space` / `context.tokens.radius`.
 - **Static-only classes are `sealed class X`** — never a private `X._()` constructor.
+- **Errors stop at the repository** — it checks the payload the owner needs and turns every exception into a `Failure`; state owners only call `result.when`, with no `try`/`catch`, `throw` or direct `apiStatus`/`statusCode` comparison (branch on named `Failure` getters). See `flutter-data-layer`.
 - **Sensitive persisted values use `SecureCacheHelper` and `SecureCacheKeys`; non-sensitive preferences use `CacheHelper` and `CacheKeys`.** Follow the [cache contract](../flutter-core/references/core-contracts.md#cache-storage); never fall back to plaintext when secure storage fails. Reading this contract does not invoke core bootstrap.
 - Do not add `freezed`, `json_serializable`, or `build_runner` unless they are already in `pubspec.yaml`.
 - Do not create model classes the user did not ask for.

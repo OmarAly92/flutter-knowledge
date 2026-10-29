@@ -55,6 +55,16 @@ def source_findings(project, scope):
                 if rule == 'success_payload' and re.match(r'class\s+ChangeTabSuccessState\b', match.group()):
                     continue
                 hits.append(finding(rule, 'review', message, relative, code.count('\n', 0, match.start()) + 1))
+        if '/presentation/' in relative:
+            severity = 'blocking' if '/logic/' in relative else 'review'
+            for match in re.finditer(r'\bcatch\s*\(|\bthrow\b', code):
+                hits.append(finding('error_boundary', severity,
+                                    'Presentation code does not catch or throw; the repository checks the payload and returns every error as a Failure through Result.',
+                                    relative, code.count('\n', 0, match.start()) + 1))
+            for match in re.finditer(r'\b(?:apiStatus|statusCode)\s*[!=]=|==\s*[\w?.!]*\b(?:apiStatus|statusCode)\b|\bswitch\s*\([^()]*\b(?:apiStatus|statusCode)\s*\)', code):
+                hits.append(finding('failure_code_branch', 'blocking',
+                                    'Branch on a named Failure getter from core/data/error_handling/failure_extensions.dart instead of comparing apiStatus or statusCode.',
+                                    relative, code.count('\n', 0, match.start()) + 1))
         for match in re.finditer(r'\bclass\s+(\w+)\s+extends\s+(Cubit|Bloc|Notifier|AutoDisposeNotifier|ChangeNotifier)\b', code):
             name, base = match.groups()
             expected_file = re.sub(r'(?<!^)(?=[A-Z])', '_', name).lower() + '.dart'

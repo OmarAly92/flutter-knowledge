@@ -22,6 +22,7 @@ Features live under `lib/feature/<feature>/` (snake_case — singular `feature`,
 data/
   data_source/<feature>_remote_data_source.dart
   data_source/<feature>_local_data_source.dart   # only for local-only / hybrid features
+  data_source/<feature>_device_data_source.dart  # only for plugin calls: permissions, camera, package info
   model/                                  # every XModel, including the ones a screen displays
   model/params/                           # every XParams: request params and screen/route inputs
   repository/<feature>_repository.dart

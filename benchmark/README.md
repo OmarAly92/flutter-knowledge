@@ -129,6 +129,24 @@ master vs branch2 p < 0.001; branch vs branch2 p = 0.002. Both master u2 runs re
 
 Regression check on the tasks these rounds did not touch (d1, d2, h1, t1, g1, o1, forced ×2 per version, 4 agents at a time): master broke 5 rules in 12 runs (one d1 run skipped the schema bump and migration; both h1 runs hand-edited `locale_keys.g.dart`), branch2 broke none in 12. Every branch2 d1 run still built the drift table, DAO, local data source and repository, so the design-only rule did not leak into local-only features. Mean tokens 140.6k vs 148.7k, mostly from longer g1 runs. Grader fixes from reading these runs: the hybrid check accepts `GlobalResponse<T>(...)`, and a Hive box call inside a private helper counts as guarded when the helper's call is wrapped in `handleLocalFailure`. Across every cell the two versions share, master breaks 1.37 rules per run (27 runs) and branch2 0.00 (24 runs).
 
+### Errors stop at the repository (2026-10-29)
+
+New task e1 on the `app` project (forced ×3, desc ×1), plus f1, f2 and t1 forced ×2 and d2, h1 forced ×1 as a regression check: 12 runs per version, Sonnet 5.5, run 4 at a time. The branch makes the repository the only error boundary (payload checks and a final catch to `MappingFailure`), maps backend codes to named `Failure` getters, puts plugin calls behind a device data source, and bans `try`/`catch`, `throw` and code comparisons in state owners and widgets.
+
+| | master | branch |
+|---|---|---|
+| Rule breaks (12 runs) | 13 | 0 |
+| e1 runs comparing the error code in a cubit or widget | 4/4 | 0/4 |
+| e1 runs checking `id`/`seatsLeft` outside the repository | 4/4 | 0/4 |
+| e1 runs whose repository catches only `Failure` | 4/4 | 0/4 |
+| e1 runs calling the version plugin's service from the cubit | 4/4 | 0/4 |
+| Mean skill files read | 9.8 | 10.5 |
+| Mean tokens | 183.5k | 190.3k |
+
+e1 alone: p = 0.03; all shared cells: p = 0.10, because f1, f2, t1, d2 and h1 broke no rule on either version. Every branch e1 run added `ApiErrorCodes`, a `FailureCodes` extension and a trips device data source; every master run compared `failure.code` in the screen or body and called a core app-info service from the cubit, and one wrapped it in `try`/`catch`. The plugin-call row was counted by reading the runs, not by the grader. Side effects to watch: both branch f1 runs also added the final catch to the existing `getTrips`, one of them failing the whole list when any trip lacks an id, and one of two branch t1 runs edited the repository during a tests-only task. `flutter-testing` now says a tests-only task tests the code as it is and reports such gaps instead; on that version (errors2, forced t1 ×2) neither run changed `lib/`, both reported the missing final catch and payload check, and neither broke a rule (mean tokens 126.8k vs 139.7k on master).
+
+Grader changes: new `throw_in_cubit`, `failure_code_compared_above_repo` and the four `e1_*` checks; `repo_test_no_offline_branch` accepts `verifyNoMoreInteractions`/`verifyZeroInteractions`.
+
 ### Description discovery: scoped Codex comparison
 
 The pre-change working-tree catalog and shortened catalog were tested on the
@@ -224,6 +242,7 @@ former unconditional Mockito check are not directly comparable with this rule.
 | p1 | app | A trip summary screen that reuses the trips list's row and totals the trips |
 | u1 | app | A notifications screen from a design with no API yet |
 | u2 | app | u1 with "use the sample notifications as mock data" and no mention of an API |
+| e1 | app | A join trip screen whose server error codes, required response fields and app version (package_info_plus) test where errors are handled |
 
 f1 and f2 cover what the first six tasks never reach: `EndPoints` methods that take an id, `registerFactoryParam` with `param1`, a bottom sheet given the cubit through `BlocProvider.value`, controllers and the form key on the cubit, prefilling through the initializer list, `dispose` in `close()`, and the shared validators. t1 checks `flutter-testing`; g1 checks `html-to-widget` and its source-extraction reference. The grader also accepts the former design skill/playbook for historical master baselines, so removing the old entry point does not penalize historical runs.
 

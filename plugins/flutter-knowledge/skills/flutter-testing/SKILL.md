@@ -26,7 +26,7 @@ test/feature/<feature>/
 
 **Data source tests**: mock `ApiConsumer`, stub its `get`/`post`/etc. call, and assert the returned model is parsed correctly and that params were passed through `.toJson()` as the request body/query.
 
-**Repository tests**: mock the abstract data source and `NetworkStatus`. Group by method (matching the cubit's per-method state naming), covering three branches: offline → `Result.failure(ServerFailure.noNetwork())` without calling the data source; data source succeeds → `Result.success(...)`; data source throws a `Failure` → `Result.failure(error)`.
+**Repository tests**: mock the abstract data source and `NetworkStatus`. Group by method (matching the cubit's per-method state naming), covering these branches: offline → `Result.failure(ServerFailure.noNetwork())` without calling the data source; data source succeeds → `Result.success(...)`; data source throws a `Failure` → `Result.failure(error)`; data source throws anything else, or a payload field the repository checks is missing → `Result.failure` with a `MappingFailure` (`LocalFailure` for a device data source) — the last two only where the repository implements them.
 
 ```dart
 class MockXRemoteDataSource extends Mock implements XRemoteDataSource {}
@@ -55,7 +55,7 @@ void main() {
 
     test('returns success when the data source call succeeds', () async {
       when(() => networkStatus.isConnected).thenAnswer((_) async => true);
-      when(() => dataSource.getX()).thenAnswer((_) async => GlobalResponse(data: XModel()));
+      when(() => dataSource.getX()).thenAnswer((_) async => GlobalResponse(data: XModel(id: '1')));
 
       final result = await repository.getX();
 
@@ -111,6 +111,7 @@ void main() {
 ## What NOT to do
 
 - Do not write unit tests unprompted. Only add them when the user explicitly asks.
+- Do not change `lib/` code in a tests-only task. Test the code as it is, and report a convention gap you find (a repository without the final catch or payload check, for example) instead of fixing it, unless the user asked for the fix too.
 - Use the configured mocking mechanism; `mocktail` is the default. If `mockito` is selected, use its verified generation/mocking workflow rather than introducing mocktail alongside it.
 - For the Bloc backend with configured `bloc_test`, use `blocTest` rather than hand-written stream subscriptions. For another backend use its verified state observation/lifecycle through the configured test runner.
 - Do not drop test files in a flat `test/` dir — mirror the `lib/feature/<feature>/...` tree under `test/`.

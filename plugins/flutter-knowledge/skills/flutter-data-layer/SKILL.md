@@ -22,7 +22,8 @@ For credential persistence or bearer-token lookup, follow the shared [cache stor
 - **One params class per method**: every data source / repository method that takes parameters gets its own dedicated `XParams` class — never share one params class across two methods, even if their fields happen to overlap. If two methods need overlapping fields, that's two separate params classes with duplicated fields, not one shared class.
 - **Model member order**: fields first, then the constructor, then `fromJson`, then `toJson` (`props` last, for the `Equatable` override). Keep this order in every model file so they all read the same way.
 - **Data source**: abstract class + `*Imp` implementation using `ApiConsumer`. Pass `params.toJson()` as `body`/`queryParameters`. Parse with `GlobalResponse.fromJson(response.data, fromJsonT: XModel.fromJson)` and return `Future<GlobalResponse<XModel>>`. For untyped responses call `GlobalResponse.fromJson(response.data)` without `fromJsonT`; for payloads not wrapped under a `data` key pass `withDataKey: false`. Do NOT catch — let `Failure` bubble to the repository.
-- **Repository**: abstract class + `*Imp` implementation returning `FutureResult<GlobalResponse<T>>`, gated on `NetworkStatus`. Check connectivity first; offline → `Result.failure(ServerFailure.noNetwork())`. Wrap the data-source call in `try`/`on Failure catch (error)` → `Result.failure(error)`; success → `Result.success(result)`. Don't unwrap models here.
+- **Repository**: abstract class + `*Imp` implementation returning `FutureResult<GlobalResponse<T>>`, gated on `NetworkStatus`. Check connectivity first; offline → `Result.failure(ServerFailure.noNetwork())`. Don't unwrap models here.
+- **The repository is the feature's only error boundary.** Everything that can fail between the request and the state owner's `onSuccess` runs inside its `try`: the data-source call, the check that each payload field the owner relies on is present and known (a required `data`, id or status value — only those, not every field), and any session/device side effect. A failed check throws `FormatException`. `on Failure catch` returns the failure unchanged; the final `catch` turns anything else into `MappingFailure` (`LocalFailure` for a device data source), using the project's existing constructors. `Result.success` therefore guarantees the owner a usable payload: it never re-checks it, catches, or throws. Local storage errors follow the matching local-database skill.
 
 ```dart
 @override
@@ -30,14 +31,24 @@ FutureResult<GlobalResponse<XModel>> getX(XParams params) async {
   if (await _network.isConnected) {
     try {
       final result = await _remoteDataSource.getX(params);
+      if (result.data?.id == null) {
+        throw const FormatException('Missing X');
+      }
       return Result.success(result);
     } on Failure catch (error) {
       return Result.failure(error);
+    } catch (error, stacktrace) {
+      return Result.failure(
+        MappingFailure(error: error, stacktrace: stacktrace),
+      );
     }
   }
   return Result.failure(ServerFailure.noNetwork());
 }
 ```
+
+- **Backend error codes are mapped once, in the data layer.** Each code string is a constant on `sealed class ApiErrorCodes` (`lib/core/data/error_handling/api_error_codes.dart`), exposed through a named getter on `extension FailureCodes on Failure` (`lib/core/data/error_handling/failure_extensions.dart`): `bool get isAccountSuspended => apiStatus == ApiErrorCodes.accountSuspended;`. Status checks get getters the same way (`isOffline`, `isUnauthorized`, `isRateLimited`). Reuse an existing getter before adding one. State owners and widgets branch on these getters only — they never compare `apiStatus` or `statusCode` themselves.
+- **Device and plugin calls are data sources too.** Permissions, camera/image picking, package info, location and device identity go behind `XDeviceDataSource` (`data/data_source/<feature>_device_data_source.dart`, abstract + `*Imp`), exposed through the repository with the same `Result` contract and no `NetworkStatus` gate when no network is involved. A capability several features use keeps its service in `lib/core/services/`, and each feature's repository wraps it. State owners never call a plugin, gateway or service that can throw.
 
 - **Failure type**: the `Failure` hierarchy and `Result`/`FutureResult` from `lib/core/data/error_handling/`.
 - **Endpoints**: for any URL that takes a runtime parameter, add a static method on `EndPoints` (in `lib/core/data/api/end_points.dart`) returning the formatted path — `static String getTripById(String tripId) => '$passengers/trips/$tripId';` — and call it as `_apiConsumer.get(EndPoints.getTripById(tripId))`. NEVER interpolate at the call site: `'${EndPoints.trip}/$tripId'` is forbidden. For URLs with no params, keep using `static const String x = '...';`. `EndPoints` is a `sealed class` holding only static members — do NOT add a private constructor (`EndPoints._()`) to block instantiation; `sealed` already does that. The base URL is a constant on it too (`static const String baseUrl`), and any URL derived from it is a getter built on it — no env file, no `--dart-define`.
@@ -59,6 +70,8 @@ If the selection is missing or ambiguous, invoke `flutter-init` and resolve it b
 - Do not build a fake, mock, sample or in-memory data source, model or repository for a design that has no API yet, even when the request supplies sample data or asks for mock data — that screen keeps its sample content as literals in its widgets until the real contract arrives (see `flutter-screen-ui` → Design-only screens).
 - Do not reuse one params class across two data source/repository methods, and do not have a parameterized method share another method's params class. Every method gets its own `XParams`, even when the fields would overlap.
 - Do not declare model fields as non-nullable. Assume any API field can be missing or null.
+- Do not leave error handling to the state owner: no repository that catches only `Failure`, returns `Result.success` with a payload the owner must still check, or hands back a value whose consumer can throw.
+- Do not compare `apiStatus` or `statusCode` anywhere but `failure_extensions.dart`, and do not repeat a code string outside `ApiErrorCodes`.
 - Do not declare a data class in `presentation/` (`XBoard`, `XInputs`, `XArgs` in `logic/`) — it is an `XModel` or `XParams` under `data/model/`.
 - Do not mix up model member order. Fields, then constructor, then `fromJson`, then `toJson` — every model file in the same order.
 - Do not interpolate `EndPoints` constants with runtime params at the call site (no `'${EndPoints.trip}/$tripId'`). Use a static method on `EndPoints`.

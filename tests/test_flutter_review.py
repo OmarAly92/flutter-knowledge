@@ -386,6 +386,33 @@ sys.exit(int(os.environ.get('FK_TOOL_EXIT','0')))
                     self.assertEqual(findings[0]['path'], path)
         self.assertFalse(any(hit.get('path') == 'lib/example.dart' for hit in report['findings']))
 
+    def test_error_handling_above_the_repository_is_flagged(self):
+        logic = 'lib/feature/x/presentation/x_screen/logic/x_cubit.dart'
+        ui = 'lib/feature/x/presentation/x_screen/ui/x_screen.dart'
+        cases = [
+            (logic, "try { await load(); } catch (error) { emit(const GetXFailureState()); }", 'error_boundary', 'blocking'),
+            (logic, "if (response.data == null) throw const FormatException('Missing X');", 'error_boundary', 'blocking'),
+            (ui, "try { await launch(); } on PlatformException catch (_) {}", 'error_boundary', 'review'),
+            (logic, "if (error.apiStatus == 'ACCOUNT_SUSPENDED') redirect();", 'failure_code_branch', 'blocking'),
+            (logic, "status = switch (error.apiStatus) { 'AUTH_OTP_INVALID' => wrong, _ => idle };", 'failure_code_branch', 'blocking'),
+            (ui, "if (state.failure.statusCode == 401) logout();", 'failure_code_branch', 'blocking'),
+            (logic, "try { await read; } finally { done(); }", None, None),
+            (logic, "rethrowLater(); final message = 'throw catch (x) apiStatus == 1';", None, None),
+            (logic, "if (failure.isAccountSuspended) redirect();", None, None),
+            ('lib/core/data/error_handling/failure_extensions.dart', "bool get isUnauthorized => statusCode == StatusCode.unauthorized;", None, None),
+        ]
+        for path, source, rule, severity in cases:
+            with self.subTest(source=source):
+                self.write(path, source)
+                run, report = self.run_review()
+                findings = [hit for hit in report['findings']
+                            if hit['rule'] in ('error_boundary', 'failure_code_branch') and hit.get('path') == path]
+                self.assertEqual([hit['rule'] for hit in findings][:1], [rule] if rule else [])
+                if rule:
+                    self.assertEqual(findings[0]['severity'], severity)
+                    self.assertEqual(run.returncode, 1 if severity == 'blocking' else 0)
+                (self.project / path).unlink()
+
     def test_localized_accessor_and_physical_geometry_are_not_blocked(self):
         self.write('lib/feature/x/presentation/x_screen/ui/x_body.dart',
                    "class XBody extends StatelessWidget { Widget build(BuildContext context) => AppText(LocaleKeys.title.tr()); final padding = EdgeInsets.only(left: tokens.space.md); }")

@@ -31,7 +31,7 @@ if os.path.exists(os.path.join(B, 'tokens.txt')):
             TOKENS[line.split()[0]] = int(line.split()[1])
 ARABIC = re.compile(r'[؀-ۿ]')
 SCREEN_TASKS = {'d1', 'd2', 'd3', 'h1', 'h2'}   # a new feature with its own screen
-TRIP_SCREEN_TASKS = {'f1', 'f2', 'o1'}          # a new screen inside the existing trips feature
+TRIP_SCREEN_TASKS = {'f1', 'f2', 'o1', 'e1'}    # a new screen inside the existing trips feature
 DETAILS_TASKS = {'f1', 'o1'}                    # o1 is f1 on the older-project fixture
 TASK_SKILL = {'t1': 'flutter-testing', 'g1': 'html-to-widget'}
 U1_SAMPLES = ['Trip confirmed', 'Your trip to Cairo is confirmed', '2h ago', 'Price drop', 'Dubai trip is now', '5h ago',
@@ -321,6 +321,11 @@ def grade(run_dir, fixture_dir, task):
             v['state_not_part_of_cubit'] += 1
     for r, t in cubits.items():
         v['try_catch_in_cubit'] += count(r'\}\s*(?:on\s+\w+\s*)?catch\s*\(|\}\s*on\s+\w+\s*\{', t)  # try/finally alone is fine
+        v['throw_in_cubit'] += count(r'\bthrow\b', t)
+    for rl in ('cubit', 'ui'):
+        for r, t in by_role[rl].items():
+            v['failure_code_compared_above_repo'] += count(r'\b(?:apiStatus|statusCode)\s*[!=]=|switch\s*\([^)]*\b(?:apiStatus|statusCode)\s*\)', t)
+    for r, t in cubits.items():
         if re.search(r'RemoteDataSource|LocalDataSource|NetworkStatus', t):
             v['cubit_bypasses_repository'] += 1
     if task in SCREEN_TASKS | {'f1'} and cubits:
@@ -615,7 +620,7 @@ def new_task_checks(v, task, run_dir, new, touched, full, code, dart, ui, cubits
                     v['cubit_test_expects_ctor_loading_state'] += 1
         v['mocktail_any_without_fallback'] += sum(1 for t in tests.values()
                                                   if re.search(r'getTrips\(\s*any\(\)', t) and 'registerFallbackValue' not in t)
-        if of('repository') and not any(re.search(r'=>\s*false', t) and 'verifyNever' in t for t in of('repository')):
+        if of('repository') and not any(re.search(r'=>\s*false', t) and re.search(r'verifyNever|verifyNoMoreInteractions|verifyZeroInteractions', t) for t in of('repository')):
             v['repo_test_no_offline_branch'] += 1
         if of('data_source') and not any('queryParameters' in t for t in of('data_source')):
             v['ds_test_params_not_verified'] += 1
@@ -738,6 +743,16 @@ def focused_checks(v, task, run_dir, new, touched, full, dart):
         if any(r.endswith('_cubit.dart') for r in feature):
             v['u1_cubit_without_interaction'] += 1
         v['u1_sample_data_file'] += sum(1 for r in new if r.startswith('assets/') and not r.startswith('assets/translations/'))
+    if task == 'e1':
+        for r, t in dart.items():
+            if role(r) in ('cubit', 'ui'):
+                v['e1_error_code_branch_above_repo'] += count(r"'(?:TRIP_FULL|ACCOUNT_SUSPENDED)'|\.(?:code|apiStatus|errorCode|statusCode)\s*[!=]=|switch\s*\([^)]*\.(?:code|apiStatus|errorCode)\s*\)", t)
+                v['e1_plugin_called_above_repo'] += count(r'\bPackageInfo\b', t)
+        repo = '\n'.join(t for r, t in dart.items() if role(r) == 'repo')
+        if not re.search(r'\b(?:id|seatsLeft)\s*==\s*null|FormatException|MappingFailure', repo):
+            v['e1_payload_not_checked_in_repo'] += 1
+        if re.search(r'\bon\s+Failure\s+catch', repo) and not re.search(r'\}\s*catch\s*\(', repo):
+            v['e1_repo_without_catch_all'] += 1
     if task == 'f2':
         fields = '\n'.join(t for r, t in dart.items() if r.startswith('lib/feature/'))
         v['text_field_without_textInputAction'] += max(0, count(r'\bAppTextField\(', fields) - count(r'\btextInputAction\s*:', fields))
