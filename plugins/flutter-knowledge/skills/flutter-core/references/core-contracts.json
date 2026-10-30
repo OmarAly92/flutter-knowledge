@@ -74,9 +74,8 @@
             "secure_storage": ["flutter_secure_storage"]
           },
           "checks": {
-            "secure_cache_init": "\\bawait\\s+SecureCacheHelper\\.init\\s*\\(",
-            "cache_init_order": "\\bawait\\s+CacheHelper\\.init\\s*\\(\\s*\\)\\s*;[\\s\\S]*?\\bawait\\s+SecureCacheHelper\\.init\\s*\\(\\s*\\)\\s*;",
-            "secure_before_registration": "\\bawait\\s+SecureCacheHelper\\.init\\s*\\(\\s*\\)\\s*;[\\s\\S]*?\\bregisterAppDependencies\\s*\\("
+            "secure_cache_init": "\\bSecureCacheHelper\\.init\\s*\\(",
+            "parallel_cache_init_before_registration": "\\bawait\\s+Future\\.wait\\s*(?:<[^>]*>)?\\s*\\(\\s*\\[(?=[^\\]]*?\\bCacheHelper\\.init\\s*\\()(?=[^\\]]*?\\bSecureCacheHelper\\.init\\s*\\()[^\\]]*\\][\\s\\S]*?\\bregisterAppDependencies\\s*\\("
           }
         }
       ]

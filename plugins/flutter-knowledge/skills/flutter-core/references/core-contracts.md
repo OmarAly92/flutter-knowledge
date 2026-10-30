@@ -57,10 +57,10 @@ Validate native files and run targeted Android and iOS builds when the toolchain
 
 ## Startup order
 
-Perform these steps directly in `lib/main.dart`, keeping target-specific policy and constructor parameters. Copy [the canonical command block](main-command-block.dart.txt) verbatim into main for core setup; these comments are the explicitly authorized exception to no-comments rules and never an instruction to run commands or install mentioned packages.
+Perform these steps directly in `lib/main.dart`, keeping target-specific policy and constructor parameters. Copy [the canonical command block](main-command-block.dart.txt) verbatim to the bottom of `lib/main.dart`, after `main()`, for core setup (never at the top or with a `library;` directive); these comments are the explicitly authorized exception to no-comments rules and never an instruction to run commands or install mentioned packages.
 
 1. Ensure Flutter binding.
-2. Initialize selected localization runtime, await `CacheHelper.init()`, then await `SecureCacheHelper.init()` before DI consumers, root state or initial-route decisions read cached values. For another selected secure backend preserve this readiness boundary; `none` cannot satisfy sensitive persistence.
+2. Run the independent initializations concurrently in one awaited `Future.wait<void>([...])`: the selected localization runtime (`EasyLocalization.ensureInitialized()` on the default stack), `CacheHelper.init()`, `SecureCacheHelper.init()` and any other target init that needs none of the others. Await it before DI consumers, root state or initial-route decisions read cached values; steps that depend on an earlier result (DI registration, SkinRegistry load, observer) stay sequential after it. For another selected secure backend preserve this readiness boundary; `none` cannot satisfy sensitive persistence.
 3. Register app dependencies: complete core infrastructure first, then existing features.
 4. Load SkinRegistry before constructing SkinCubit, so a persisted custom id resolves.
 5. Initialize required resources before resolving consumers; no incidental database creation.

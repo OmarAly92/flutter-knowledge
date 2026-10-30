@@ -125,10 +125,15 @@ class CoreInspectionTests(unittest.TestCase):
     def test_secure_initialization_must_be_awaited_in_startup_order(self):
         self.initialize()
         for setup, expected in [
-            ('await CacheHelper.init(); SecureCacheHelper.init(); registerAppDependencies();', False),
-            ('await SecureCacheHelper.init(); await CacheHelper.init(); registerAppDependencies();', False),
-            ('await CacheHelper.init(); registerAppDependencies(); await SecureCacheHelper.init();', False),
-            ('await CacheHelper.init(); await SecureCacheHelper.init(); registerAppDependencies();', True),
+            ('await CacheHelper.init(); await SecureCacheHelper.init(); registerAppDependencies();', False),
+            ('Future.wait([CacheHelper.init(), SecureCacheHelper.init()]); registerAppDependencies();', False),
+            ('await Future.wait([CacheHelper.init()]); await SecureCacheHelper.init(); registerAppDependencies();',
+             False),
+            ('registerAppDependencies(); await Future.wait([CacheHelper.init(), SecureCacheHelper.init()]);', False),
+            ('await Future.wait([CacheHelper.init(), SecureCacheHelper.init()]); registerAppDependencies();', True),
+            ('await Future.wait<void>([EasyLocalization.ensureInitialized(), CacheHelper.init(), '
+             'SecureCacheHelper.init().catchError((Object e, StackTrace s) => AppLogger.error(e, null, s))]); '
+             'registerAppDependencies();', True),
         ]:
             with self.subTest(setup=setup):
                 self.write('lib/main.dart', 'Future<void> main() async { ' + setup + ' }')
@@ -136,7 +141,7 @@ class CoreInspectionTests(unittest.TestCase):
                 main = next(row for row in report['contracts'] if row['id'] == 'main')
                 checks = main['contract_checks']
                 self.assertEqual(all(checks[key] for key in (
-                    'secure_cache_init', 'cache_init_order', 'secure_before_registration')), expected)
+                    'secure_cache_init', 'parallel_cache_init_before_registration')), expected)
 
     def test_shared_spacing_family_reports_missing_sliver_implementation(self):
         self.initialize()
@@ -183,10 +188,16 @@ class CoreInspectionTests(unittest.TestCase):
         self.assertFalse(rows['main']['contract_checks']['root'])
         self.write('lib/my_app.dart', ALIGNED_ROOT)
         command_block = (SCRIPT.parent.parent / 'references/main-command-block.dart.txt').read_text()
-        self.write('lib/main.dart', 'Future<void> main() async { WidgetsFlutterBinding.ensureInitialized(); '
-                   'await CacheHelper.init(); await SecureCacheHelper.init(); '
-                   'registerAppDependencies(); await sl<SkinRegistry>().load(); '
-                   'runApp(const MyApp()); }\n' + command_block)
+        main_body = ('Future<void> main() async { WidgetsFlutterBinding.ensureInitialized(); '
+                     'await Future.wait([CacheHelper.init(), SecureCacheHelper.init()]); '
+                     'registerAppDependencies(); await sl<SkinRegistry>().load(); '
+                     'runApp(const MyApp()); }\n')
+        self.write('lib/main.dart', command_block + 'library;\n\n' + main_body)
+        _, report = self.run_inspector()
+        main = next(row for row in report['contracts'] if row['id'] == 'main')
+        self.assertEqual(main['status'], 'incomplete_evidence')
+        self.assertFalse(main['contract_checks']['command_block'])
+        self.write('lib/main.dart', main_body + '\n' + command_block)
         _, report = self.run_inspector()
         rows = {row['id']: row for row in report['contracts']}
         self.assertEqual(rows['app_root']['status'], 'evidence_present_requires_review')

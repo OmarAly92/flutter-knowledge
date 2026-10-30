@@ -128,7 +128,8 @@ def inspect(project):
         if role.get('command_block'):
             command_block = (Path(__file__).resolve().parents[1] /
                              'references/main-command-block.dart.txt').read_text().strip()
-            checks['command_block'] = any(command_block in sources[path]['raw'] for path in candidates)
+            checks['command_block'] = any(sources[path]['raw'].rstrip().endswith(command_block)
+                                          for path in candidates)
             checks['no_bootstrap_file'] = not (project / 'lib/app_bootstrap.dart').exists()
         default = catalog.get(category, {}).get('default')
         if category and selection == 'none':
