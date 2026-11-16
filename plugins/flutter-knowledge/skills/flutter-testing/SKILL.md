@@ -1,6 +1,6 @@
 ---
 name: flutter-testing
-description: Use when explicitly asked to write, add or update Flutter tests: unit tests for data sources, repositories or state owners, widget tests for screens, or integration tests of user flows. Visual snapshots use golden-tests.
+description: Use when explicitly asked to write, add or update Flutter unit tests for data sources, repositories or state owners, widget tests for screens, or integration tests of user flows. Visual snapshots use golden-tests.
 ---
 
 # Flutter tests

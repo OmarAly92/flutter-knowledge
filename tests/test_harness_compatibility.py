@@ -39,6 +39,17 @@ class HarnessDiscoveryTests(unittest.TestCase):
                 self.assertTrue(fields['description'].strip())
                 self.assertNotIn(fields.get('disable-model-invocation', '').strip().lower(), ('true', 'yes', 'on'))
 
+    def test_skill_frontmatter_is_valid_yaml(self):
+        try:
+            import yaml
+        except ImportError:
+            self.skipTest('PyYAML unavailable: strict frontmatter parsing skipped')
+        for path in sorted(skill_files(SKILLS)):
+            with self.subTest(skill=path.parent.name):
+                frontmatter = yaml.safe_load(path.read_text().split('---', 2)[1])
+                self.assertEqual(frontmatter['name'], path.parent.name)
+                self.assertIsInstance(frontmatter['description'], str)
+
     def test_marketplaces_and_manifests_resolve_the_shared_catalog(self):
         claude = read_json(ROOT / '.claude-plugin/marketplace.json')['plugins']
         codex = read_json(ROOT / '.agents/plugins/marketplace.json')['plugins']
