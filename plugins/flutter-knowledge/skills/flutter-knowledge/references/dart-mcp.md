@@ -16,7 +16,7 @@ App tools (`hot_reload`, `hot_restart`, `get_runtime_errors`, `widget_inspector`
 | Finding an existing widget, helper or class before writing one | `lsp` `resolveWorkspaceSymbol` | Same reuse rule as `flutter-feature-structure`: read the match and its API, then reuse or extend it. |
 | Analysis and tests during implementation | `analyze_files`; `run_tests` (disabled by default) | Same scope rules as the CLI. `flutter-review` remains the final gate and runs its own commands. |
 | Searching pub.dev | `pub_dev_search` | Finding a package never authorizes adding it; dependencies follow `flutter-init` and the task scope. |
-| Exploring a user flow in the running app | `flutter_driver_command` (tap, enter text, scroll, wait, read text, screenshot) | Needs the driver entry point from `flutter-testing` → Integration tests. A driver screenshot is not design evidence; design comparison uses `visual-verification` and goldens. |
+| Exploring a user flow in the running app | `flutter_driver_command` (tap, enter text, scroll, wait, read text, screenshot) | Needs the driver entry point from `flutter-testing`'s [integration tests](../../flutter-testing/references/integration-tests.md). A driver screenshot is not design evidence; design comparison uses `visual-verification` and goldens. |
 
 `run_tests`, `dart_format`, `dart_fix` and `create_project` need `--enable cli`; `launch_app`, `stop_app`, `list_devices`, `get_app_logs` and `list_running_apps` need `--enable flutter_app_lifecycle`. Do not run `dart_fix` across a project as a side effect; it can rewrite unrelated files.
 

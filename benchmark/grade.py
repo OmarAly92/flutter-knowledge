@@ -33,7 +33,9 @@ ARABIC = re.compile(r'[؀-ۿ]')
 SCREEN_TASKS = {'d1', 'd2', 'd3', 'h1', 'h2'}   # a new feature with its own screen
 TRIP_SCREEN_TASKS = {'f1', 'f2', 'o1', 'e1'}    # a new screen inside the existing trips feature
 DETAILS_TASKS = {'f1', 'o1'}                    # o1 is f1 on the older-project fixture
-TASK_SKILL = {'t1': 'flutter-testing', 'g1': 'html-to-widget'}
+TASK_SKILL = {'t1': 'flutter-testing', 'w1': 'flutter-testing', 'g1': 'html-to-widget'}
+TEST_TASKS = {'t1', 'w1'}
+R1_ROLES = ('traveler', 'agency')
 U1_SAMPLES = ['Trip confirmed', 'Your trip to Cairo is confirmed', '2h ago', 'Price drop', 'Dubai trip is now', '5h ago',
               'Reminder', 'Pack for your Rome trip tomorrow', 'Yesterday', 'Trip completed', 'Rate your trip to Paris', '3 days ago']
 U1_COPY = ['Notifications', 'Today', 'Earlier']
@@ -208,7 +210,7 @@ def grade(run_dir, fixture_dir, task):
     for r, t in new.items():
         if r.endswith('.dart') and role(r) == 'core':
             v['private_ctor_static_class'] += count(r'\b[A-Z]\w*\._\(\)\s*;', t)
-    if task != 't1' and any(r.startswith('test/') for r in new):
+    if task not in TEST_TASKS and any(r.startswith('test/') for r in new):
         v['tests_unprompted'] += 1
     # raw widget where the project has a wrapper (only wrappers present in the fixture count)
     # SizedBox counts only as a bare gap (no child); SizedBox(width: double.infinity, child: ...) is sizing
@@ -377,7 +379,7 @@ def grade(run_dir, fixture_dir, task):
         if role(r) == 'ds' and t and not re.search(r'abstract\s+(?:interface\s+)?class', t):
             v['ds_not_abstract_plus_imp'] += 1
     # DI (one injection file per feature, wired through app_injection.dart) and routing
-    feature_di = re.compile(r'lib/feature/\w+/\w+_injection\.dart$')
+    feature_di = re.compile(r'lib/feature/(?:\w+/)?\w+/\w+_injection\.dart$')
     di_files = {r: t for r, t in code.items() if r == CORE_DI or feature_di.match(r)}
     di_add = '\n'.join(di_files.values())
     for r, t in di_files.items():
@@ -415,6 +417,12 @@ def grade(run_dir, fixture_dir, task):
         groups = {'common', camel(TASKS[task]['feature'])} if TASKS[task].get('feature') else {'common'}
         fixture_groups = {k.split('.')[0] for k in fx_en if '.' in k}
         groups |= {camel(r.split('/')[2]) for r in new if r.startswith('lib/feature/')} - fixture_groups   # features the run created
+        nested = {r.split('/')[3] for r in new if r.startswith('lib/feature/') and len(r.split('/')) > 5}
+        if not any(r.startswith('lib/feature/global/') for r in new):   # an invented grouping folder: the group is the feature folder
+            groups |= {camel(f) for f in nested if f not in ('data', 'presentation') and not f.endswith('.dart')} - fixture_groups
+        if any(r.startswith('lib/feature/global/') for r in new):   # account-role layout: global/<f> -> f, <role>/<f> -> roleF
+            groups |= {camel(r.split('/')[3] if r.split('/')[2] == 'global' else r.split('/')[2] + '_' + r.split('/')[3])
+                       for r in new if r.startswith('lib/feature/') and len(r.split('/')) > 4}
         v['translation_key_outside_feature_group'] += sum(
             1 for k in new_keys if '.' not in k or k.split('.')[0] not in groups)
     else:
@@ -620,7 +628,7 @@ def new_task_checks(v, task, run_dir, new, touched, full, code, dart, ui, cubits
                     v['cubit_test_expects_ctor_loading_state'] += 1
         v['mocktail_any_without_fallback'] += sum(1 for t in tests.values()
                                                   if re.search(r'getTrips\(\s*any\(\)', t) and 'registerFallbackValue' not in t)
-        if of('repository') and not any(re.search(r'=>\s*false', t) and re.search(r'verifyNever|verifyNoMoreInteractions|verifyZeroInteractions', t) for t in of('repository')):
+        if of('repository') and not any(re.search(r'=>\s*false|connected:\s*false|isConnected\s*=\s*false', t) and re.search(r'verifyNever|verifyNoMoreInteractions|verifyZeroInteractions|calls(?:\.length)?,\s*(?:isEmpty|0|equals\(0\))', t) for t in of('repository')):   # mocks or hand-written fakes
             v['repo_test_no_offline_branch'] += 1
         if of('data_source') and not any('queryParameters' in t for t in of('data_source')):
             v['ds_test_params_not_verified'] += 1
@@ -753,12 +761,80 @@ def focused_checks(v, task, run_dir, new, touched, full, dart):
             v['e1_payload_not_checked_in_repo'] += 1
         if re.search(r'\bon\s+Failure\s+catch', repo) and not re.search(r'\}\s*catch\s*\(', repo):
             v['e1_repo_without_catch_all'] += 1
+    if task == 'r1':
+        r1_checks(v, new, touched, full, dart)
+    if task == 'w1':
+        w1_checks(v, new, touched, full)
     if task == 'f2':
         fields = '\n'.join(t for r, t in dart.items() if r.startswith('lib/feature/'))
         v['text_field_without_textInputAction'] += max(0, count(r'\bAppTextField\(', fields) - count(r'\btextInputAction\s*:', fields))
         wrapper = full.get('lib/core/widgets/inputs/app_text_field.dart', '')
         if not re.search(r'required\s+this\.textInputAction', wrapper):
             v['text_input_action_not_required'] += 1
+
+
+def r1_checks(v, new, touched, full, dart):
+    """r1: account-role layout, role prefix, AppRole and role-based post-login routing."""
+    features = [r for r in full if r.startswith('lib/feature/') and r.endswith('.dart')]
+    if not any(r.startswith('lib/feature/global/auth/') for r in new):
+        v['r1_auth_not_in_global'] += 1
+    if not any(r.startswith('lib/feature/traveler/trips/') for r in features) or any(r.startswith('lib/feature/trips/') for r in features):
+        v['r1_trips_not_under_traveler'] += 1
+    if not any(r.startswith('lib/feature/agency/') for r in new):
+        v['r1_agency_feature_not_under_role'] += 1
+    for top in sorted({r.split('/')[2] for r in new if r.startswith('lib/feature/') and len(r.split('/')) > 3}):
+        if top not in ('global',) + R1_ROLES:
+            v['r1_feature_outside_role_layout'] += 1
+    for r in new:
+        parts = r.split('/')
+        if len(parts) < 5 or parts[:2] != ['lib', 'feature'] or parts[2] not in R1_ROLES:
+            continue
+        prefix = parts[2] + '_'
+        names = []
+        if len(parts) == 5 and parts[4].endswith('_injection.dart'):
+            names.append(parts[4])
+        if len(parts) >= 7 and parts[4] == 'data' and parts[5] in ('data_source', 'repository'):
+            names.append(parts[6])
+        if len(parts) >= 6 and parts[4] == 'presentation' and parts[5].endswith('_screen'):
+            names.append(parts[5])
+        if any(not n.startswith(prefix) for n in names):
+            v['r1_role_prefix_missing'] += 1
+        cls = parts[2].title()
+        for m in re.finditer(r'\bclass\s+(\w+?(?:Cubit|Screen|Body|Repository|RemoteDataSource))\b', new[r]):
+            if not m.group(1).startswith(cls) and not m.group(1).startswith('_'):
+                v['r1_role_class_prefix_missing'] += 1
+    core = '\n'.join(t for r, t in full.items() if r.startswith('lib/core/'))
+    if not re.search(r'\benum\s+AppRole\b', core):
+        v['r1_no_core_app_role_enum'] += 1
+    if not re.search(r'\bhomeFor\s*\(', full.get(ROUTER, '')):
+        v['r1_no_router_home_for'] += 1
+    auth_ui = '\n'.join(t for r, t in full.items() if r.startswith('lib/feature/global/auth/') and '/ui/' in r)
+    if not re.search(r'\bhomeFor\s*\(', auth_ui):
+        v['r1_login_navigation_not_by_role'] += 1
+    start = full.get(ROUTER, '') + full.get('lib/my_app.dart', '')
+    if not re.search(r'initialRoute[^;]*?(?:=>|:|return)\s*RoutesStrings\.\w*(?:[Ll]ogin|[Aa]uth)', start, re.S):
+        v['r1_app_not_opening_on_login'] += 1
+
+
+def w1_checks(v, new, touched, full):
+    """w1: requested widget tests for the trips screen, mounted through the app theme with the real cubit."""
+    tests = {r: t for r, t in new.items() if r.startswith('test/') and r.endswith('_test.dart') and 'testWidgets' in t}
+    if not tests:
+        v['w1_no_widget_test'] += 1
+        return
+    if not any(r.startswith('test/feature/trips/presentation/trips_screen/ui/') for r in tests):
+        v['w1_test_not_mirroring_lib'] += 1
+    helpers = '\n'.join(t for r, t in new.items() if r.startswith('test/'))
+    if not re.search(r'\bAppTheme\b', helpers):
+        v['w1_not_mounted_with_app_theme'] += 1
+    v['w1_cubit_mocked_instead_of_repository'] += sum(
+        1 for t in tests.values() if re.search(r'\bMock\w*Cubit\b|implements\s+TripsCubit\b|\bMockCubit<', t))
+    if not any(re.search(r'\bTripsCubit\(', t) for t in new.values()):
+        v['w1_real_cubit_not_created'] += 1
+    v['w1_pump_and_settle_with_loader'] += sum(count(r'\bpumpAndSettle\(', t) for t in tests.values())
+    copy = {str(value) for value in leaves(json.loads(full.get('assets/translations/en.json') or '{}')).values()}
+    v['w1_literal_text_finder'] += sum(1 for t in tests.values() for s in re.findall(r"find\.text\(\s*'((?:[^'\\]|\\.)*)'", t) if s in copy)   # UI copy, not fake data
+    v['w1_changed_lib'] += sum(1 for r in {**new, **touched} if r.startswith('lib/'))
 
 
 def skin_checks(v, task, new, touched, full, code, dart, ui):

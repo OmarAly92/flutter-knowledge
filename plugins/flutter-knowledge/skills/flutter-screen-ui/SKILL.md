@@ -106,31 +106,9 @@ When the task gives a design but no API, endpoint or data contract for a screen,
 - Core widgets are grouped by role (`animation/`, `buttons/`, `inputs/`, `text/`, `layout/`, `sheets/`, `feedback/`, `errors/`, `images/`, `indicators/`, …) — check the folder for what you need (`AppAnimate`, `TapBounceEffect`, `PaginationWidget`, `BottomSheetContainer`, …) before writing a new widget. Animation timing (durations, curves, springs, stagger delays) comes from `context.tokens.motion` — invoke the `flutter-app-theme` skill before writing an animation.
 - **Fallback when a wrapper is missing**: before using a wrapper, check that it exists in the project's `lib/core/widgets/`. If the project has no wrapper for what you need (or has no `lib/core/widgets/` at all), use the raw Flutter widget (`Text`, `Scaffold`, `AppBar`, `SizedBox`, ...). Do not import a wrapper that is not in the project, and do not create a new wrapper unless the user asks for one.
 
-**Design-widget imports**: Flutter 3.50 moved Material and Cupertino out of the SDK. If `pubspec.yaml` declares `material_ui`, every file imports `package:material_ui/material_ui.dart` (it re-exports `widgets.dart`); if it declares `cupertino_ui`, Cupertino code imports `package:cupertino_ui/cupertino_ui.dart`. Otherwise keep `package:flutter/material.dart` / `cupertino.dart`. Examples in these skills use the SDK import, so swap it when the project uses the packages. Never mix the two in one project: a `ThemeData`, `ColorScheme`, `TextTheme` or `MaterialLocalizations` from one is a different type from the other, so code compiles against one and fails against the other. Migrating an older project is its own task, done only when the user asks: `flutter pub add material_ui` (plus `cupertino_ui` if Cupertino is used), `dart fix --apply --code=migrate_design_widgets`, then `dart fix --apply`; migrate `test/` in the same change, add the Material localization delegates described in `flutter-core` → Startup order, and regenerate affected goldens only after inspecting them (`golden-tests`). A dependency whose public API still exposes SDK Material types blocks the migration; `MaterialUiCompatibilityBridge` in `MaterialApp.builder` only covers theme/localization lookups, not type mismatches.
+**Design-widget imports**: Flutter 3.50 moved Material and Cupertino out of the SDK. If `pubspec.yaml` declares `material_ui`, every file imports `package:material_ui/material_ui.dart` (it re-exports `widgets.dart`); if it declares `cupertino_ui`, Cupertino code imports `package:cupertino_ui/cupertino_ui.dart`. Otherwise keep `package:flutter/material.dart` / `cupertino.dart`. Examples in these skills use the SDK import, so swap it when the project uses the packages. Never mix the two in one project: a `ThemeData`, `ColorScheme`, `TextTheme` or `MaterialLocalizations` from one is a different type from the other, so code compiles against one and fails against the other. Migrating an older project is its own task, done only when the user asks: follow [the material_ui migration](references/material-ui-migration.md).
 
-**Widget previews** (Flutter Widget Previewer, `package:flutter/widget_previews.dart`) — only when the user asks. They suit presentational widgets that take everything through constructor parameters: section widgets, rows, cards and core wrappers. A Screen or Body that reads a cubit, `sl`, the cache or a native plugin does not preview (the previewer runs on the web); preview its section widgets instead. Previews live in a sibling file named after the widget, `order_summary_card_preview.dart` next to `order_summary_card.dart`, holding only top-level `@AppPreview` functions with sample values, so the widget file keeps one class and no preview code. Every preview goes through one shared annotation that applies the app theme:
-
-```dart
-final class AppPreview extends Preview {
-  const AppPreview({
-    super.group,
-    super.name,
-    super.size,
-    super.textScaleFactor,
-    super.brightness,
-  }) : super(wrapper: appPreviewWrapper);
-}
-
-Widget appPreviewWrapper(Widget child) {
-  return MaterialApp(
-    debugShowCheckedModeBanner: false,
-    theme: AppTheme.light,
-    home: Material(child: child),
-  );
-}
-```
-
-It lives in `lib/core/helpers/app_preview.dart`; mirror the project's widget-test wrapper inside `appPreviewWrapper` (its `ScreenUtilInit` and design size) so `context.tokens` resolves. `group` is the feature or core folder; add a large-text variant (`textScaleFactor: 2`) where the widget has text. A widget that reads `LocaleKeys` shows its keys unless the wrapper also initializes the configured localization. Open them with `flutter widget-preview start` or the IDE's Widget Preview panel. Previews are a development aid, not design evidence: visual fidelity is still proven by `visual-verification` and goldens.
+**Widget previews** — only when the user asks: follow [widget previews](references/widget-previews.md).
 
 **Design tokens — every color, text style, gap, radius and shadow is read through `context.tokens`** (`lib/core/theme/app_tokens.dart`). Take it once at the top of `build` (or of a `BlocBuilder` builder) and read the group you need:
 

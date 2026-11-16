@@ -103,32 +103,7 @@ The default `Navigation` part implements `Future<dynamic> pushNamed(String route
 
 ## Account roles
 
-For an app in the [account-role layout](../flutter-feature-structure/SKILL.md#account-role-layout) (`lib/feature/global/` plus one folder per role):
-
-- **The role is a core enum**, `lib/core/helpers/app_role.dart`, one value per role folder, mapped from the backend value. The auth repository caches the role with `CacheHelper` under `CacheKeys.userRole` when it saves the session (the token stays in `SecureCacheHelper`), and logout removes both.
-
-```dart
-enum AppRole {
-  client('client'),
-  owner('owner');
-
-  const AppRole(this.apiValue);
-
-  final String apiValue;
-
-  static AppRole? fromApi(String? value) {
-    for (final role in values) {
-      if (role.apiValue == value) return role;
-    }
-    return null;
-  }
-}
-```
-
-- **`AppRouter` owns where each role lands**: a public `static String homeFor(AppRole role)` switch returning each role's entry route (its nav bar shell, `RoutesStrings.clientAppNavBar`), and `initialRoute` sends a user with a session and a cached role to `homeFor(role)`, everyone else to the existing global entry (splash, onboarding or auth). A missing or unknown role goes to auth, never to a guessed role.
-- **After login**, the auth repository has already checked that the role is known (`AppRole.fromApi` returned a value) and cached it; the cubit holds the user, its success state stays payload-free, and the auth screen's listener navigates `context.pushNamedAndRemoveUntil(AppRouter.homeFor(cubit.role!), (_) => false)`. Logout navigates to auth the same way.
-- **Each role with tabs has its own shell** from the [app nav bar recipe](references/app-nav-bar.md) at `lib/feature/<role>/app_nav_bar/`, with every recipe name role-prefixed.
-- **DI and routes follow the role prefix**: `lib/feature/client/home/client_home_injection.dart` declares `registerClientHomeDependencies()`, and the route is `RoutesStrings.clientHome`. `registerAppDependencies` calls core, then the `global/` features, then each role's features, grouped by role; `test/app_injection_test.dart` has one group per role. Every role's dependencies are registered at startup; cubits are factories, so an unused role costs nothing.
+In an app with `lib/feature/global/` plus one folder per account role, the `AppRole` enum, `AppRouter.homeFor`, post-login navigation, per-role nav bar shells and DI grouping follow [the account-role layout](../flutter-feature-structure/references/account-role-layout.md).
 
 ## What NOT to do
 

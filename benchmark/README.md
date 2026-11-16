@@ -147,6 +147,20 @@ e1 alone: p = 0.03; all shared cells: p = 0.10, because f1, f2, t1, d2 and h1 br
 
 Grader changes: new `throw_in_cubit`, `failure_code_compared_above_repo` and the four `e1_*` checks; `repo_test_no_offline_branch` accepts `verifyNoMoreInteractions`/`verifyZeroInteractions`.
 
+### 2.11: Flutter 3.50, account roles, widget tests (2026-11-16)
+
+Focused round, Sonnet 5.5, 3 agents at a time: v2.7.1 against v2.11.0 on f1, f2, t1, n1, h1 and g1 forced ×2 plus the new r1 and w1 forced ×3 and desc ×1 (20 runs per version), then a candidate (v2111) that moves task-specific text into references, on f1 and t1 ×2 plus r1 and w1 forced ×3 and desc ×1 (12 runs).
+
+| | v2.7.1 | v2.11.0 | v2111 |
+|---|---|---|---|
+| Rule breaks per run, shared cells with v2.11.0 (20 runs) | 1.55 | 0.05 | - |
+| Rule breaks per run, cells v2111 ran (12 runs) | 2.58 | 0.00 | 0.00 |
+| r1 runs without `global/auth`, `AppRole` and `homeFor` | 4/4 | 0/4 | 0/4 |
+| w1 runs using `pumpAndSettle` over `AppLoader` | 2/4 | 0/4 | 0/4 |
+| Mean tokens t1 / w1 | 89.2k / 91.3k | 101.1k / 100.9k | 93.8k / 95.6k |
+
+v2.7.1 vs v2.11.0 p = 0.04; v2.7.1 vs v2111 p = 0.01; v2.11.0 vs v2111 p = 1.0. The six regression tasks broke no rule on either version, except one v2.11.0 h1 run whose model put the constructor before the fields. Every v2.11.0 and v2111 r1 run moved trips to `traveler/trips/` with `Traveler`-prefixed names, put login in `global/auth/`, added the core `AppRole` enum and `AppRouter.homeFor`, and left no import of the old path; v2.7.1 runs kept a flat or invented layout. In desc mode the v2.11 agents found the layout through `flutter-feature-structure`'s description. v2.11.0 cost 11–13% more on t1 and w1 because `flutter-testing` carried widget and integration test text every unit-test task read; v2111 moves that, the role layout, widget previews and the material_ui migration into references, which recovers most of it with no new rule breaks. Runs on both versions also followed a no-comments instruction from the user's global agent file. Grader changes: new `r1_*` and `w1_*` checks, role-layout DI files and translation groups, a literal finder counts only UI copy from `en.json`, and the offline-branch check accepts hand-written fakes.
+
 ### Description discovery: scoped Codex comparison
 
 The pre-change working-tree catalog and shortened catalog were tested on the
@@ -238,6 +252,8 @@ former unconditional Mockito check are not directly comparable with this rule.
 | m1 | skin | A staggered entrance for the trips list, a press that shrinks each card and springs back, and a slowly pulsing dot on upcoming trips |
 | m2 | app | The same as m1, on a project with no `AppMotion` yet |
 | o1 | older | f1 on a project that predates `context.tokens` |
+| r1 | app | Switch to the multi-role layout: login in `global/auth`, trips moved under `traveler/`, a new `agency/bookings` home, role-based landing |
+| w1 | app | Widget tests for the existing trips list screen: loader, success, failure and retry |
 | n1 | app | A bottom nav bar as the main screen, with the trips list and a new profile screen as tabs |
 | p1 | app | A trip summary screen that reuses the trips list's row and totals the trips |
 | u1 | app | A notifications screen from a design with no API yet |

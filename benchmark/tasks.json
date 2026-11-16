@@ -4,35 +4,191 @@
     "desc": "You are a Flutter developer working in the project at RUN={run} (no Flutter SDK; just write the Dart files, do not run anything or generate code). Your harness offers skills by description only: nothing is injected into your session up front. The available skills and their descriptions are listed in {skill_index}; read that file first. To invoke a skill, read {version}/skills/<name>/SKILL.md in full. Invoke a skill only when its description says it applies to what you are doing, or when a skill you already invoked tells you to invoke another one. Do not read any other files in that version directory, except files an invoked skill tells you to read, and nothing in any other version directory. Look at RUN's existing files (pubspec.yaml, lib/core, lib/feature) before writing. Task: {task} Write all files inside RUN (edit existing files where needed). At the end, write RUN/SKILLS_READ.txt listing the full path of every skill file you read, then reply with a 3-line summary."
   },
   "modes": {
-    "forced": {"prompt": "forced", "fixture": "", "about": "Claude Code, Codex, OpenCode, Pi: the flutter-knowledge map is injected up front."},
-    "desc": {"prompt": "desc", "fixture": "", "about": "Cursor, Kimi, install.sh: the agent only sees skill descriptions and decides what to read."},
-    "nowrap": {"prompt": "forced", "fixture": "-nowrap", "about": "Forced mode on a project missing PrimaryButton, AppTextField, AppLoader and AppErrorWidget."}
+    "forced": {
+      "prompt": "forced",
+      "fixture": "",
+      "about": "Claude Code, Codex, OpenCode, Pi: the flutter-knowledge map is injected up front."
+    },
+    "desc": {
+      "prompt": "desc",
+      "fixture": "",
+      "about": "Cursor, Kimi, install.sh: the agent only sees skill descriptions and decides what to read."
+    },
+    "nowrap": {
+      "prompt": "forced",
+      "fixture": "-nowrap",
+      "about": "Forced mode on a project missing PrimaryButton, AppTextField, AppLoader and AppErrorWidget."
+    }
   },
   "tasks": {
-    "d1": {"engine": "drift", "feature": "notes", "text": "Add a local-only \"notes\" feature (no API): notes have a title and body, stored on the device; a screen lists notes and lets the user add one. Wire it into routing and DI."},
-    "d2": {"engine": "drift", "feature": "products", "text": "Add a \"products\" feature that loads GET /products, shows name and price in a list, and keeps working offline: the last fetched products are saved on the device and shown when there is no network. Wire it into routing and DI."},
-    "d3": {"engine": "drift", "feature": "tasks", "text": "Add a \"tasks\" feature that works offline: creating a task (title) always saves it locally first, marked as pending; a sync job pushes all pending tasks to POST /tasks when the device is online (run on demand from a \"Sync now\" button and automatically when the screen opens) and marks them synced with the server id; the list screen shows all local tasks with their sync status. Wire everything into routing and DI."},
-    "d4": {"engine": "drift", "feature": "budget", "text": "The existing budget feature (already shipped to users) needs an optional description on each budget. Add it end to end on the data side: the stored column, a safe upgrade for users who already have the database, the model, the add params, and the local data source (including adding a budget with a description). Do not build UI."},
-    "h1": {"engine": "hive", "feature": "products", "text": "Add a \"products\" feature that loads GET /products, shows name and price in a list, and keeps working offline: the last fetched products are saved on the device and shown when there is no network. Wire it into routing and DI."},
-    "h2": {"engine": "hive", "feature": "tasks", "text": "Add a \"tasks\" feature that works offline: creating a task (title) always saves it locally first, marked as pending; a sync job pushes all pending tasks to POST /tasks when the device is online (run on demand from a \"Sync now\" button and automatically when the screen opens) and marks them synced with the server id; the list screen shows all local tasks with their sync status. Wire everything into routing and DI."},
-    "f1": {"engine": "drift", "feature": "trips", "fixture": "app", "text": "In the existing trips feature, tapping a trip in the list should open a new trip details screen. The details screen loads the trip with GET /trips/{id} and shows its title, destination, start date and price. It has a Delete button that opens a bottom sheet asking the user to confirm; confirming calls DELETE /trips/{id}, and on success shows a message and goes back to the list. Wire it into routing and DI."},
-    "o1": {"engine": "drift", "feature": "trips", "fixture": "older", "text": "In the existing trips feature, tapping a trip in the list should open a new trip details screen. The details screen loads the trip with GET /trips/{id} and shows its title, destination, start date and price. It has a Delete button that opens a bottom sheet asking the user to confirm; confirming calls DELETE /trips/{id}, and on success shows a message and goes back to the list. Wire it into routing and DI."},
-    "f2": {"engine": "drift", "feature": "trips", "fixture": "app", "text": "In the existing trips feature, add an Edit button to each trip in the list that opens a new edit trip screen for that trip. The screen shows a form prefilled with the trip's title, contact email and contact phone. The title is required, and the email and phone must be valid. Saving sends PUT /trips/{id} with the three fields, shows a success or error message, and on success goes back to the list. Wire it into routing and DI."},
-    "t1": {"engine": "drift", "feature": "trips", "fixture": "app", "text": "Write unit tests for the existing trips feature: its remote data source, its repository and its cubit."},
-    "g1": {"engine": "drift", "fixture": "app", "text": "The designer delivered a prototype of the app at design/prototype.html. Make the app's theme match it: take the colors, the font with its text styles, and the motion values (durations and curves) from the prototype, and restyle PrimaryButton and AppTextField to match the prototype's primary button and text field. Do not build any screens or write design docs. You may run scripts and the pre-installed headless Chromium to inspect the prototype (Playwright for Node is installed globally; run node with NODE_PATH=$(npm root -g)); the rule against running anything covers only Flutter and Dart tooling."},
-    "s1": {"engine": "drift", "feature": "trips", "fixture": "skin", "text": "In the existing trips feature, show a small status pill on each trip in the list: \"Upcoming\" when the trip's start date is in the future and \"Past\" otherwise. Upcoming pills have a soft blue background with blue text, past pills a soft grey background with grey text, and both must look right in light and dark mode. Also add an icon button to the trips screen's app bar that switches the app between light and dark mode (a moon icon while in light mode, a sun icon while in dark mode); the choice must still apply after the app restarts."},
-    "s2": {"engine": "drift", "feature": "trips", "fixture": "skin", "text": "Trips priced above 1000 are premium. Show a small \"Premium\" label on those trips in the list: its text is the brand's gold, #C8A24A in light mode and #E3C77A in dark mode, on a soft tint of that gold. The same gold will also be used later for a premium badge on the trip details screen."},
-    "m1": {"engine": "drift", "feature": "trips", "fixture": "skin", "text": "Make the trips list feel alive. When the list first appears, the trip cards fade in and slide up into place one after another. A trip card shrinks slightly while the user presses it and springs back when they let go. Trips whose start date is in the future show a small dot next to the title that pulses slowly and continuously, one full pulse every 2 seconds."},
-    "m2": {"engine": "drift", "feature": "trips", "fixture": "app", "text": "Make the trips list feel alive. When the list first appears, the trip cards fade in and slide up into place one after another. A trip card shrinks slightly while the user presses it and springs back when they let go. Trips whose start date is in the future show a small dot next to the title that pulses slowly and continuously, one full pulse every 2 seconds."},
-    "n1": {"engine": "drift", "feature": "trips", "fixture": "app", "text": "Add a bottom navigation bar as the app's main screen, with two tabs: Trips (the existing trips list) and Profile (a new screen that loads the user with GET /profile and shows their name and email). The app should open on the nav bar. Wire it into routing and DI."},
-    "p1": {"engine": "drift", "feature": "trips", "fixture": "app", "text": "In the existing trips feature, add a trip summary screen opened from a button in the trips list's app bar. It loads the trips with the existing GET /trips call and shows how many trips there are and their total price, then lists the trips below using the same trip row the trips list uses. Wire it into routing and DI."},
-    "u1": {"engine": "drift", "feature": "notifications", "fixture": "app", "text": "The designer delivered the design for a new Notifications screen, opened from a bell button in the trips list's app bar. There is no API for notifications yet, so build the UI only. The design: an app bar titled 'Notifications'; a 'Today' section header followed by two notification rows, then an 'Earlier' section header followed by two rows. Each row shows an icon, a title, a one-line message and a time on the right, and unread rows show a small primary-colored dot. The rows, in order: 'Trip confirmed' / 'Your trip to Cairo is confirmed' / '2h ago' / unread; 'Price drop' / 'Dubai trip is now $420' / '5h ago' / unread; 'Reminder' / 'Pack for your Rome trip tomorrow' / 'Yesterday' / read; 'Trip completed' / 'Rate your trip to Paris' / '3 days ago' / read. Wire it into routing."},
-    "u2": {"engine": "drift", "feature": "notifications", "fixture": "app", "text": "The designer delivered a mockup for a new Notifications screen, opened from a bell button in the trips list's app bar. Use the mockup's sample notifications as mock data for now. The mockup: an app bar titled 'Notifications'; a 'Today' section header followed by two notification rows, then an 'Earlier' section header followed by two rows. Each row shows an icon, a title, a one-line message and a time on the right, and unread rows show a small primary-colored dot. The sample notifications, in order: 'Trip confirmed' / 'Your trip to Cairo is confirmed' / '2h ago' / unread; 'Price drop' / 'Dubai trip is now $420' / '5h ago' / unread; 'Reminder' / 'Pack for your Rome trip tomorrow' / 'Yesterday' / read; 'Trip completed' / 'Rate your trip to Paris' / '3 days ago' / read. Wire it into routing and DI."},
-    "e1": {"engine": "drift", "feature": "trips", "fixture": "app", "text": "In the existing trips feature, add a Join button to each trip in the list that opens a new join trip screen for that trip. The screen shows the trip's title and a Join button. Joining sends POST /trips/{id}/join; its response data is the updated trip, and the screen cannot continue without the returned trip's id and seatsLeft. When the server rejects the request, its error body is {\"code\": \"...\", \"message\": \"...\"}: code TRIP_FULL shows the message under the button and disables it, code ACCOUNT_SUSPENDED goes back to the list with a message, and any other failure shows an error message. At the bottom, the screen shows the app version read with package_info_plus (add the dependency). Wire it into routing and DI."}
+    "d1": {
+      "engine": "drift",
+      "feature": "notes",
+      "text": "Add a local-only \"notes\" feature (no API): notes have a title and body, stored on the device; a screen lists notes and lets the user add one. Wire it into routing and DI."
+    },
+    "d2": {
+      "engine": "drift",
+      "feature": "products",
+      "text": "Add a \"products\" feature that loads GET /products, shows name and price in a list, and keeps working offline: the last fetched products are saved on the device and shown when there is no network. Wire it into routing and DI."
+    },
+    "d3": {
+      "engine": "drift",
+      "feature": "tasks",
+      "text": "Add a \"tasks\" feature that works offline: creating a task (title) always saves it locally first, marked as pending; a sync job pushes all pending tasks to POST /tasks when the device is online (run on demand from a \"Sync now\" button and automatically when the screen opens) and marks them synced with the server id; the list screen shows all local tasks with their sync status. Wire everything into routing and DI."
+    },
+    "d4": {
+      "engine": "drift",
+      "feature": "budget",
+      "text": "The existing budget feature (already shipped to users) needs an optional description on each budget. Add it end to end on the data side: the stored column, a safe upgrade for users who already have the database, the model, the add params, and the local data source (including adding a budget with a description). Do not build UI."
+    },
+    "h1": {
+      "engine": "hive",
+      "feature": "products",
+      "text": "Add a \"products\" feature that loads GET /products, shows name and price in a list, and keeps working offline: the last fetched products are saved on the device and shown when there is no network. Wire it into routing and DI."
+    },
+    "h2": {
+      "engine": "hive",
+      "feature": "tasks",
+      "text": "Add a \"tasks\" feature that works offline: creating a task (title) always saves it locally first, marked as pending; a sync job pushes all pending tasks to POST /tasks when the device is online (run on demand from a \"Sync now\" button and automatically when the screen opens) and marks them synced with the server id; the list screen shows all local tasks with their sync status. Wire everything into routing and DI."
+    },
+    "f1": {
+      "engine": "drift",
+      "feature": "trips",
+      "fixture": "app",
+      "text": "In the existing trips feature, tapping a trip in the list should open a new trip details screen. The details screen loads the trip with GET /trips/{id} and shows its title, destination, start date and price. It has a Delete button that opens a bottom sheet asking the user to confirm; confirming calls DELETE /trips/{id}, and on success shows a message and goes back to the list. Wire it into routing and DI."
+    },
+    "o1": {
+      "engine": "drift",
+      "feature": "trips",
+      "fixture": "older",
+      "text": "In the existing trips feature, tapping a trip in the list should open a new trip details screen. The details screen loads the trip with GET /trips/{id} and shows its title, destination, start date and price. It has a Delete button that opens a bottom sheet asking the user to confirm; confirming calls DELETE /trips/{id}, and on success shows a message and goes back to the list. Wire it into routing and DI."
+    },
+    "f2": {
+      "engine": "drift",
+      "feature": "trips",
+      "fixture": "app",
+      "text": "In the existing trips feature, add an Edit button to each trip in the list that opens a new edit trip screen for that trip. The screen shows a form prefilled with the trip's title, contact email and contact phone. The title is required, and the email and phone must be valid. Saving sends PUT /trips/{id} with the three fields, shows a success or error message, and on success goes back to the list. Wire it into routing and DI."
+    },
+    "t1": {
+      "engine": "drift",
+      "feature": "trips",
+      "fixture": "app",
+      "text": "Write unit tests for the existing trips feature: its remote data source, its repository and its cubit."
+    },
+    "g1": {
+      "engine": "drift",
+      "fixture": "app",
+      "text": "The designer delivered a prototype of the app at design/prototype.html. Make the app's theme match it: take the colors, the font with its text styles, and the motion values (durations and curves) from the prototype, and restyle PrimaryButton and AppTextField to match the prototype's primary button and text field. Do not build any screens or write design docs. You may run scripts and the pre-installed headless Chromium to inspect the prototype (Playwright for Node is installed globally; run node with NODE_PATH=$(npm root -g)); the rule against running anything covers only Flutter and Dart tooling."
+    },
+    "s1": {
+      "engine": "drift",
+      "feature": "trips",
+      "fixture": "skin",
+      "text": "In the existing trips feature, show a small status pill on each trip in the list: \"Upcoming\" when the trip's start date is in the future and \"Past\" otherwise. Upcoming pills have a soft blue background with blue text, past pills a soft grey background with grey text, and both must look right in light and dark mode. Also add an icon button to the trips screen's app bar that switches the app between light and dark mode (a moon icon while in light mode, a sun icon while in dark mode); the choice must still apply after the app restarts."
+    },
+    "s2": {
+      "engine": "drift",
+      "feature": "trips",
+      "fixture": "skin",
+      "text": "Trips priced above 1000 are premium. Show a small \"Premium\" label on those trips in the list: its text is the brand's gold, #C8A24A in light mode and #E3C77A in dark mode, on a soft tint of that gold. The same gold will also be used later for a premium badge on the trip details screen."
+    },
+    "m1": {
+      "engine": "drift",
+      "feature": "trips",
+      "fixture": "skin",
+      "text": "Make the trips list feel alive. When the list first appears, the trip cards fade in and slide up into place one after another. A trip card shrinks slightly while the user presses it and springs back when they let go. Trips whose start date is in the future show a small dot next to the title that pulses slowly and continuously, one full pulse every 2 seconds."
+    },
+    "m2": {
+      "engine": "drift",
+      "feature": "trips",
+      "fixture": "app",
+      "text": "Make the trips list feel alive. When the list first appears, the trip cards fade in and slide up into place one after another. A trip card shrinks slightly while the user presses it and springs back when they let go. Trips whose start date is in the future show a small dot next to the title that pulses slowly and continuously, one full pulse every 2 seconds."
+    },
+    "n1": {
+      "engine": "drift",
+      "feature": "trips",
+      "fixture": "app",
+      "text": "Add a bottom navigation bar as the app's main screen, with two tabs: Trips (the existing trips list) and Profile (a new screen that loads the user with GET /profile and shows their name and email). The app should open on the nav bar. Wire it into routing and DI."
+    },
+    "p1": {
+      "engine": "drift",
+      "feature": "trips",
+      "fixture": "app",
+      "text": "In the existing trips feature, add a trip summary screen opened from a button in the trips list's app bar. It loads the trips with the existing GET /trips call and shows how many trips there are and their total price, then lists the trips below using the same trip row the trips list uses. Wire it into routing and DI."
+    },
+    "u1": {
+      "engine": "drift",
+      "feature": "notifications",
+      "fixture": "app",
+      "text": "The designer delivered the design for a new Notifications screen, opened from a bell button in the trips list's app bar. There is no API for notifications yet, so build the UI only. The design: an app bar titled 'Notifications'; a 'Today' section header followed by two notification rows, then an 'Earlier' section header followed by two rows. Each row shows an icon, a title, a one-line message and a time on the right, and unread rows show a small primary-colored dot. The rows, in order: 'Trip confirmed' / 'Your trip to Cairo is confirmed' / '2h ago' / unread; 'Price drop' / 'Dubai trip is now $420' / '5h ago' / unread; 'Reminder' / 'Pack for your Rome trip tomorrow' / 'Yesterday' / read; 'Trip completed' / 'Rate your trip to Paris' / '3 days ago' / read. Wire it into routing."
+    },
+    "u2": {
+      "engine": "drift",
+      "feature": "notifications",
+      "fixture": "app",
+      "text": "The designer delivered a mockup for a new Notifications screen, opened from a bell button in the trips list's app bar. Use the mockup's sample notifications as mock data for now. The mockup: an app bar titled 'Notifications'; a 'Today' section header followed by two notification rows, then an 'Earlier' section header followed by two rows. Each row shows an icon, a title, a one-line message and a time on the right, and unread rows show a small primary-colored dot. The sample notifications, in order: 'Trip confirmed' / 'Your trip to Cairo is confirmed' / '2h ago' / unread; 'Price drop' / 'Dubai trip is now $420' / '5h ago' / unread; 'Reminder' / 'Pack for your Rome trip tomorrow' / 'Yesterday' / read; 'Trip completed' / 'Rate your trip to Paris' / '3 days ago' / read. Wire it into routing and DI."
+    },
+    "e1": {
+      "engine": "drift",
+      "feature": "trips",
+      "fixture": "app",
+      "text": "In the existing trips feature, add a Join button to each trip in the list that opens a new join trip screen for that trip. The screen shows the trip's title and a Join button. Joining sends POST /trips/{id}/join; its response data is the updated trip, and the screen cannot continue without the returned trip's id and seatsLeft. When the server rejects the request, its error body is {\"code\": \"...\", \"message\": \"...\"}: code TRIP_FULL shows the message under the button and disables it, code ACCOUNT_SUSPENDED goes back to the list with a message, and any other failure shows an error message. At the bottom, the screen shows the app version read with package_info_plus (add the dependency). Wire it into routing and DI."
+    },
+    "r1": {
+      "engine": "drift",
+      "feature": "auth",
+      "fixture": "app",
+      "text": "The app now serves two kinds of accounts that each get their own interface after login: travelers and agencies. The team approved switching the project to a multi-role feature layout now, and the existing trips list is the traveler's home. Add a login screen (email and password) that calls POST /auth/login, which returns { token, role } with role 'traveler' or 'agency'. After login, travelers land on the trips list and agencies land on a new bookings screen that loads GET /agency/bookings and shows each booking's traveler name, trip title and status. The app opens on the login screen; persisting the session is out of scope for now. The legacy orders and budget features are being removed next sprint: leave them where they are. Wire everything into routing and DI."
+    },
+    "w1": {
+      "engine": "drift",
+      "feature": "trips",
+      "fixture": "app",
+      "text": "Write widget tests for the existing trips list screen: it shows a loader while the trips load, shows the trips once they load, and shows the error widget when loading fails, where tapping retry loads the trips again."
+    }
   },
   "default_plan": [
-    {"mode": "forced", "tasks": ["d1", "d2", "d3", "d4", "h1", "h2", "f1", "f2", "t1", "g1", "o1"], "reps": 3},
-    {"mode": "desc", "tasks": ["d1", "d2", "d3", "d4", "h1", "h2", "f1", "f2", "t1", "g1", "o1"], "reps": 1},
-    {"mode": "nowrap", "tasks": ["d1", "h1"], "reps": 2}
+    {
+      "mode": "forced",
+      "tasks": [
+        "d1",
+        "d2",
+        "d3",
+        "d4",
+        "h1",
+        "h2",
+        "f1",
+        "f2",
+        "t1",
+        "g1",
+        "o1"
+      ],
+      "reps": 3
+    },
+    {
+      "mode": "desc",
+      "tasks": [
+        "d1",
+        "d2",
+        "d3",
+        "d4",
+        "h1",
+        "h2",
+        "f1",
+        "f2",
+        "t1",
+        "g1",
+        "o1"
+      ],
+      "reps": 1
+    },
+    {
+      "mode": "nowrap",
+      "tasks": [
+        "d1",
+        "h1"
+      ],
+      "reps": 2
+    }
   ]
 }

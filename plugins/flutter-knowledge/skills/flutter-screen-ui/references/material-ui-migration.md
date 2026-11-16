@@ -1,0 +1,3 @@
+# Migrating to material_ui and cupertino_ui
+
+Migrating an older project is its own task, done only when the user asks: `flutter pub add material_ui` (plus `cupertino_ui` if Cupertino is used), `dart fix --apply --code=migrate_design_widgets`, then `dart fix --apply`; migrate `test/` in the same change, add the Material localization delegates described in `flutter-core` → Startup order, and regenerate affected goldens only after inspecting them (`golden-tests`). A dependency whose public API still exposes SDK Material types blocks the migration; `MaterialUiCompatibilityBridge` in `MaterialApp.builder` only covers theme/localization lookups, not type mismatches.

@@ -108,41 +108,9 @@ void main() {
 }
 ```
 
-## Widget tests
+## Widget and integration tests
 
-Only when the user asks for them. One file per screen or shared widget, mirroring `lib/`: `test/feature/<feature>/presentation/<screen>_screen/ui/<screen>_screen_test.dart`.
-
-- Mount through the project's widget-test wrapper: `test/helpers/golden_harness.dart` when it exists, otherwise the themed wrapper from `flutter-app-theme` (`ScreenUtilInit` + `MaterialApp(theme: AppTheme.of(skin))` + the configured localization). A bare `MaterialApp` makes `context.tokens` throw.
-- Provide the real cubit fed by a mocked repository, the way the route provides it (`BlocProvider(create: (_) => XCubit(repository), child: const XScreen())`); stub the repository before pumping, since the constructor fetch runs on creation.
-- Find by what the user sees: the localized text (`find.text(LocaleKeys.trips_title.tr())`), the project wrapper type (`find.byType(PrimaryButton)`) or semantics. Add a `Key` to production code only when text and type are ambiguous, as a `const ValueKey('<screen>_<element>')`.
-- `pump()` after a tap; `pump(duration)` with `tokens.motion`-length steps for animations. Avoid `pumpAndSettle` on screens with `AppLoader` or another endless animation: it never settles.
-- Assert states and effects the screen owns: the success content, the `AppErrorWidget` on failure, a navigation or snackbar from the Screen listener.
-
-## Integration tests
-
-Only when the user asks for them. They run the real app on a device or emulator, so they follow the same run authorization as any app launch.
-
-```
-integration_test/<flow>_test.dart     # one user flow per file
-test_driver/integration_test.dart     # host script for flutter drive
-test_driver/app.dart                  # driver entry for flutter_driver / MCP exploration
-```
-
-- Add `integration_test` (and `flutter_driver` for the driver entry) as SDK dev dependencies only when creating these files.
-- Each test calls `IntegrationTestWidgetsFlutterBinding.ensureInitialized()`, then starts the real startup with `app.main()` so DI, localization, cache and the router are the production ones. Ask before testing against a real backend; otherwise point the app at the project's existing test environment.
-- The driver extension never goes in `lib/main.dart`. `test_driver/app.dart` enables it and calls the real entry point; run it with `flutter run -t test_driver/app.dart` to explore a flow through `flutter_driver_command` in the [Dart MCP server](../flutter-knowledge/references/dart-mcp.md), then write the steps that worked as an `integration_test/` test:
-
-```dart
-import 'package:flutter_driver/driver_extension.dart';
-import 'package:<app>/main.dart' as app;
-
-void main() {
-  enableFlutterDriverExtension();
-  app.main();
-}
-```
-
-- Finders and pumping follow the widget-test rules above; scroll lazily built lists into view with `scrollUntilVisible` before tapping.
+Only when the user asks for them. Before writing a widget test for a screen or widget, read [widget tests](references/widget-tests.md); before an end-to-end flow or a Flutter Driver entry point, read [integration tests](references/integration-tests.md).
 
 ## What NOT to do
 

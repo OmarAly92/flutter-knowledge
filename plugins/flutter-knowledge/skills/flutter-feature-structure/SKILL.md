@@ -51,31 +51,7 @@ The main screen widget lives in `ui/`; every section/child widget lives in its o
 
 ## Account-role layout
 
-Use it when the app has two or more **account roles that each get their own interface after login** (client and owner, driver and rider, student and teacher). Evidence: the design has a separate set of screens per role, the API returns a role or user type that decides where the user lands, or the request says so. Permissions inside one shared interface (an admin sees an extra button) are not separate roles; keep the flat layout. When the evidence is unclear, ask before choosing.
-
-```
-lib/feature/
-  global/            # everything before login + every feature two or more roles use
-    splash/
-    onboarding/
-    auth/
-    chat/            # used by client and owner
-  client/            # one folder per account role, snake_case, named as the business/backend names it
-    app_nav_bar/
-    home/
-    orders/
-  owner/
-    app_nav_bar/
-    home/
-    properties/
-```
-
-- Every feature, in `global/` or a role folder, uses the same feature tree above.
-- **`global/`** holds the pre-login features (splash, onboarding, auth and its sub-flows) and every feature two or more roles use. One implementation: where roles differ slightly, the screen reads the role from its cubit or route params rather than being copied per role. A role feature moves to `global/` when a second role starts using it.
-- **A role folder** holds only the features that role uses; its tab shell is its own `app_nav_bar/` (see `flutter-routing-di`).
-- **Role prefix.** Inside `lib/feature/<role>/<feature>/` the folder keeps the plain feature name, but every name derived from the feature or a screen starts with the role: `client/home/` → `client_home_injection.dart` with `registerClientHomeDependencies()`, `client_home_remote_data_source.dart`, `client_home_repository.dart`, `presentation/client_home_screen/` with `ClientHomeScreen`, `ClientHomeBody`, `ClientHomeCubit` and its state classes, route `RoutesStrings.clientHome`, translation group `clientHome`. Models, params and section widgets keep their own names; prefix one only when the same name exists in another role and both meet in one file. `global/` features are not prefixed (`AuthCubit`, group `auth`).
-- Widgets and helpers shared by features of different roles follow the usual rule: `lib/core/widgets/<purpose>/` and `lib/core/helpers/`. The account role itself is the core `AppRole` enum (see `flutter-routing-di` → Account roles).
-- **Never mix layouts.** A project with `lib/feature/global/` puts every new feature under `global/` or a role folder, never directly under `lib/feature/`. A flat project that gains a second role keeps working in its layout until the user approves moving to this one; that move is its own change.
+When the app has two or more **account roles that each get their own interface after login** (client and owner, driver and rider): the design has a separate set of screens per role, the API returns a role that decides where the user lands, or the request says so. Permissions inside one shared interface are not separate roles; keep the flat layout, and ask when the evidence is unclear. Features then live in `lib/feature/global/<feature>/` (pre-login features and every feature two or more roles use) and `lib/feature/<role>/<feature>/` (that role only), with role-prefixed names (`client/home/` → `ClientHomeCubit`, `client_home_injection.dart`). Read [the account-role layout](references/account-role-layout.md) before placing, naming, routing or wiring any file in such an app. Never mix layouts: a project with `lib/feature/global/` puts every new feature under `global/` or a role folder, and a flat project moves to this layout only when the user approves it.
 
 ## Core layout
 
