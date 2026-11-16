@@ -20,7 +20,24 @@ For credential persistence or bearer-token lookup, follow the shared [cache stor
 - **Naming suffixes**: models → `XModel` in `data/model/` (extend `Equatable`, `fromJson`/`toJson` as needed); params → `XParams` in `data/model/params/` (extend `Equatable`, implement `toJson()`). **Model fields are always nullable** (`String? name`, `int? total`, ...) — API responses can omit or null out any field, so never declare a model field as required/non-null.
 - **Screen data classes are models and params too**: a class a screen displays (a board, summary, row, slot) is an `XModel` in `data/model/`; a class passed into a cubit, route or `logic/helpers/` builder (inputs, args, filters) is an `XParams` in `data/model/params/`. Never declare them in `logic/`. A display model built in the app by a `logic/helpers/` builder has no `fromJson` and may keep non-null fields; screen-input params need `toJson()` only when sent to a data source.
 - **One params class per method**: every data source / repository method that takes parameters gets its own dedicated `XParams` class — never share one params class across two methods, even if their fields happen to overlap. If two methods need overlapping fields, that's two separate params classes with duplicated fields, not one shared class.
-- **Model member order**: fields first, then the constructor, then `fromJson`, then `toJson` (`props` last, for the `Equatable` override). Keep this order in every model file so they all read the same way.
+- **Model member order**: fields first, then the constructor, then `fromJson` (and any other factory such as `fromDB`), then `toJson` (`props` last, for the `Equatable` override). Keep this order in every model file so they all read the same way, even when an existing model in the project puts its constructor first:
+
+```dart
+class TripModel extends Equatable {
+  final String? id;
+  final String? title;
+
+  const TripModel({this.id, this.title});
+
+  factory TripModel.fromJson(Map<String, dynamic> json) =>
+      TripModel(id: json['id'] as String?, title: json['title'] as String?);
+
+  Map<String, dynamic> toJson() => {'id': id, 'title': title};
+
+  @override
+  List<Object?> get props => [id, title];
+}
+```
 - **Data source**: abstract class + `*Imp` implementation using `ApiConsumer`. Pass `params.toJson()` as `body`/`queryParameters`. Parse with `GlobalResponse.fromJson(response.data, fromJsonT: XModel.fromJson)` and return `Future<GlobalResponse<XModel>>`. For untyped responses call `GlobalResponse.fromJson(response.data)` without `fromJsonT`; for payloads not wrapped under a `data` key pass `withDataKey: false`. Do NOT catch — let `Failure` bubble to the repository.
 - **Repository**: abstract class + `*Imp` implementation returning `FutureResult<GlobalResponse<T>>`, gated on `NetworkStatus`. Check connectivity first; offline → `Result.failure(ServerFailure.noNetwork())`. Don't unwrap models here.
 - **The repository is the feature's only error boundary.** Everything that can fail between the request and the state owner's `onSuccess` runs inside its `try`: the data-source call, the check that each payload field the owner relies on is present and known (a required `data`, id or status value — only those, not every field), and any session/device side effect. A failed check throws `FormatException`. `on Failure catch` returns the failure unchanged; the final `catch` turns anything else into `MappingFailure` (`LocalFailure` for a device data source), using the project's existing constructors. `Result.success` therefore guarantees the owner a usable payload: it never re-checks it, catches, or throws. Local storage errors follow the matching local-database skill.
