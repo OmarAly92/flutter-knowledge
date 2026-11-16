@@ -138,6 +138,41 @@ def output_lines(output):
     return [line for line in clean.splitlines() if line.strip()]
 
 
+ANALYZER_ISSUE = re.compile(r'^\s*(?:error|warning|info) \u2022 (.+) \u2022 (\S+):\d+:\d+ \u2022 ([a-z0-9_]+)\s*$')
+DESIGN_REPLACEMENT = re.compile(r'package:(?:material_ui/material_ui|cupertino_ui/cupertino_ui)\.dart instead')
+DESIGN_PACKAGES = {'material_ui', 'cupertino_ui'}
+
+
+def design_deprecations(output):
+    issues = [ANALYZER_ISSUE.match(line) for line in output_lines(output)]
+    issues = [issue for issue in issues if issue]
+    if issues and all(issue.group(3) == 'deprecated_member_use' and DESIGN_REPLACEMENT.search(issue.group(1))
+                      for issue in issues):
+        return issues
+    return []
+
+
+def excuse_design_deprecations(output, pubspec, report):
+    check = report['checks'][-1]
+    if output is None or check['name'] != 'analysis' or check['status'] != 'failed' or check['exit_code'] != 1:
+        return
+    if DESIGN_PACKAGES & set(pubspec.get('dependencies') or {}):
+        return
+    issues = design_deprecations(output)
+    if not issues:
+        return
+    report['findings'] = [hit for hit in report['findings'] if not (hit['rule'] == 'analysis' and hit['severity'] == 'blocking')]
+    check['status'] = 'passed'
+    check['excused_design_deprecations'] = len(issues)
+    paths = sorted({issue.group(2) for issue in issues})
+    report['findings'].append(finding(
+        'design_widget_migration', 'review',
+        f'Analysis reported only {len(issues)} Flutter 3.50 design-library deprecation(s) in {len(paths)} file(s) '
+        '(package:flutter/material.dart, cupertino.dart or flutter_localizations delegates). The project does not declare '
+        'material_ui, so this is a migration recommendation, not a blocking finding; migrate only as a separate task '
+        '(flutter-screen-ui: Design-widget imports). Files: ' + ', '.join(paths)))
+
+
 def concise_output(output):
     lines = output_lines(output)
     failures = flutter_test_failures(lines)
@@ -202,6 +237,7 @@ def run_check(name, command, project, report):
         if check.get('log_path'):
             message += '\nFull log: ' + check['log_path']
         report['findings'].append(finding(name, 'blocking', message))
+    return output
 
 
 def check_configuration(project, report):
@@ -212,7 +248,7 @@ def check_configuration(project, report):
     return read_mapping(project / 'flutter-knowledge.yaml')
 
 
-def run_tools(project, scope, config, skip_tests, report):
+def run_tools(project, scope, config, skip_tests, report, pubspec):
     for tool in ('dart', 'flutter'):
         if shutil.which(tool) is None:
             raise ConfigError(f'Missing tool: {tool}')
@@ -220,7 +256,8 @@ def run_tools(project, scope, config, skip_tests, report):
         run_check('format', ['dart', 'format', '--output=none', '--set-exit-if-changed', *scope], project, report)
     else:
         report['checks'].append({'name': 'format', 'status': 'skipped', 'reason': 'No changed authored Dart files'})
-    run_check('analysis', ['flutter', 'analyze', '--no-pub', '--fatal-infos'], project, report)
+    output = run_check('analysis', ['flutter', 'analyze', '--no-pub', '--fatal-infos'], project, report)
+    excuse_design_deprecations(output, pubspec, report)
     tests = any(authored_dart(path) for path in (project / 'test').rglob('*.dart'))
     if skip_tests or not tests:
         report['checks'].append({'name': 'tests', 'status': 'skipped', 'reason': 'Explicit --skip-tests' if skip_tests else 'No authored test files'})
@@ -258,7 +295,7 @@ def review(project, all_files, skip_tests, design_screens=None, design_report=Pa
         report['findings'].extend(design_hits)
         report['design_results'] = results
         report['checks'].append(design_check)
-        run_tools(project, scope, config, skip_tests, report)
+        run_tools(project, scope, config, skip_tests, report, pubspec)
     except (ValueError, OSError, yaml.YAMLError, subprocess.TimeoutExpired) as error:
         report['findings'].append(finding('configuration' if not report['scope_kind'] else 'tooling', 'error', str(error)))
     errors = any(hit['severity'] == 'error' for hit in report['findings'])

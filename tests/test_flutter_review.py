@@ -43,6 +43,9 @@ with open(os.environ['FK_REVIEW_LOG'], 'a') as stream:
     stream.write(json.dumps(sys.argv) + '\\n')
 if len(sys.argv)>1 and sys.argv[1]=='format' and '--output=none' not in sys.argv:
     Path(sys.argv[-1]).write_text('MUTATED')
+if 'analyze' in sys.argv and 'FK_ANALYZE_OUTPUT' in os.environ:
+    print(os.environ['FK_ANALYZE_OUTPUT'])
+    sys.exit(int(os.environ.get('FK_ANALYZE_EXIT','1')))
 sys.exit(int(os.environ.get('FK_TOOL_EXIT','0')))
 '''
         for name in ('dart', 'flutter'):
@@ -85,6 +88,36 @@ sys.exit(int(os.environ.get('FK_TOOL_EXIT','0')))
         self.assertTrue(any('analyze' in call and '--no-pub' in call for call in calls))
         self.assertTrue(any('test' in call and '--no-pub' in call for call in calls))
         self.assertEqual(before, self.snapshot())
+
+    DESIGN_INFO = ("   info \u2022 'package:flutter/material.dart' is deprecated and shouldn't be used. Use "
+                   "package:material_ui/material_ui.dart instead. This feature was deprecated after v3.47.0-0.0.pre. "
+                   "Try replacing the use of the deprecated member with the replacement \u2022 lib/main.dart:1:1 \u2022 deprecated_member_use\n"
+                   "   info \u2022 'GlobalCupertinoLocalizations' is deprecated and shouldn't be used. Use GlobalCupertinoLocalizations "
+                   "from package:cupertino_ui/cupertino_ui.dart instead. This feature was deprecated after v3.47.0-0.0.pre. "
+                   "Try replacing the use of the deprecated member with the replacement \u2022 lib/main.dart:5:20 \u2022 deprecated_member_use\n"
+                   "2 issues found. (ran in 1.0s)")
+    OTHER_INFO = "   info \u2022 Unused import \u2022 lib/main.dart:2:8 \u2022 unused_import"
+
+    def test_sdk_design_deprecations_alone_are_a_migration_recommendation_not_a_block(self):
+        run, report = self.run_review(env={**self.env, 'FK_ANALYZE_OUTPUT': self.DESIGN_INFO})
+        self.assertEqual(run.returncode, 0, run.stderr)
+        analysis = next(check for check in report['checks'] if check['name'] == 'analysis')
+        self.assertEqual(analysis['status'], 'passed')
+        self.assertEqual(analysis['excused_design_deprecations'], 2)
+        hits = [hit for hit in report['findings'] if hit['rule'] == 'design_widget_migration']
+        self.assertEqual([hit['severity'] for hit in hits], ['review'])
+        self.assertFalse(any(hit['severity'] == 'blocking' for hit in report['findings']))
+
+    def test_design_deprecations_still_block_with_other_issues_or_declared_material_ui(self):
+        other = self.DESIGN_INFO.replace('2 issues found', self.OTHER_INFO + '\n3 issues found')
+        run, report = self.run_review(env={**self.env, 'FK_ANALYZE_OUTPUT': other})
+        self.assertEqual(run.returncode, 1)
+        self.assertTrue(any(hit['rule'] == 'analysis' and hit['severity'] == 'blocking' for hit in report['findings']))
+        self.write('pubspec.yaml', yaml.safe_dump({'name': 'sample', 'dependencies': {'flutter': {'sdk': 'flutter'}, 'material_ui': '^1.11.0'},
+                                                 'dev_dependencies': {'flutter_test': {'sdk': 'flutter'}}}))
+        run, report = self.run_review(env={**self.env, 'FK_ANALYZE_OUTPUT': self.DESIGN_INFO})
+        self.assertEqual(run.returncode, 1)
+        self.assertTrue(any(hit['rule'] == 'analysis' and hit['severity'] == 'blocking' for hit in report['findings']))
 
     def test_ignored_nested_project_falls_back_to_all_authored_files(self):
         (self.repo / '.gitignore').write_text('ignored_app/\n')

@@ -7,7 +7,7 @@ from dart_source import scan_dart
 
 
 STARTER_PACKAGES = {
-    'dependencies': {'flutter', 'cupertino_icons'},
+    'dependencies': {'flutter', 'cupertino_icons', 'material_ui', 'cupertino_ui'},
     'dev_dependencies': {'flutter_test', 'flutter_lints'},
 }
 BUILTINS = {'navigator', 'manual', 'none'}

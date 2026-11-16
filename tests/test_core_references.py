@@ -55,6 +55,30 @@ class CoreReferenceFixtureTests(unittest.TestCase):
             REFERENCES.assemble(project, ['theme'])
             self.assertNotIn('flutter', json.loads((project / 'pubspec.yaml').read_text()))
 
+    def test_design_package_assembly_swaps_sdk_design_imports_and_pins_material_ui(self):
+        manifest = json.loads(REFERENCES.MANIFEST.read_text())
+        with tempfile.TemporaryDirectory() as folder:
+            project = Path(folder)
+            REFERENCES.assemble(project, ['capture', 'theme'], design_package=True)
+            dart = [path.read_text() for path in project.rglob('*.dart')]
+            self.assertTrue(any("import 'package:material_ui/material_ui.dart';" in text for text in dart))
+            self.assertFalse(any('package:flutter/material.dart' in text for text in dart))
+            pubspec = json.loads((project / 'pubspec.yaml').read_text())
+            self.assertEqual(pubspec['dependencies']['material_ui'], manifest['design_packages']['material_ui'])
+
+    def test_sdk_design_deprecation_is_read_from_the_installed_material_library(self):
+        with tempfile.TemporaryDirectory() as folder:
+            sdk = Path(folder)
+            library = sdk / 'packages/flutter/lib/material.dart'
+            library.parent.mkdir(parents=True)
+            (sdk / 'bin').mkdir()
+            for text, expected in (("@Deprecated('Use material_ui')\nlibrary material;\n", True),
+                                   ('library material;\n', False)):
+                with self.subTest(expected=expected):
+                    library.write_text(text)
+                    with patch.object(REFERENCES.shutil, 'which', return_value=str(sdk / 'bin/flutter')):
+                        self.assertEqual(REFERENCES.sdk_design_libraries_deprecated(), expected)
+
     def test_assembly_uses_the_shipped_sources_and_resolves_all_bindings(self):
         manifest = json.loads(REFERENCES.MANIFEST.read_text())
         with tempfile.TemporaryDirectory() as folder:

@@ -11,6 +11,8 @@ import tempfile
 
 ROOT = Path(__file__).resolve().parents[1]
 MANIFEST = ROOT / 'tests/fixtures/core-references/manifest.json'
+SDK_MATERIAL_IMPORT = "import 'package:flutter/material.dart';"
+MATERIAL_UI_IMPORT = "import 'package:material_ui/material_ui.dart';"
 
 
 def fixture_plan(components=None):
@@ -22,7 +24,19 @@ def fixture_plan(components=None):
     groups = {name: manifest['components'][name] for name in selected}
     packages = sorted({name for group in groups.values() for name in group['packages']})
     return {'components': groups, 'sdk': manifest['sdk'],
-            'packages': {name: manifest['tested_packages'][name] for name in packages}}
+            'packages': {name: manifest['tested_packages'][name] for name in packages},
+            'design_packages': manifest['design_packages']}
+
+
+def sdk_design_libraries_deprecated():
+    flutter = shutil.which('flutter')
+    if not flutter:
+        return False
+    library = Path(flutter).resolve().parents[1] / 'packages/flutter/lib/material.dart'
+    if not library.is_file():
+        return False
+    header = library.read_text().split('library material;', 1)[0]
+    return '@Deprecated(' in header
 
 
 def write_fixture_file(project, target, content):
@@ -35,7 +49,7 @@ def write_fixture_file(project, target, content):
     destination.write_text(content)
 
 
-def assemble(project, components=None):
+def assemble(project, components=None, design_package=False):
     plan = fixture_plan(components)
     if project.exists() and any(project.iterdir()):
         raise ValueError('Fixture directory must be empty: ' + str(project))
@@ -44,7 +58,7 @@ def assemble(project, components=None):
     for group in plan['components'].values():
         for source, target in group.get('copies', {}).items():
             path = ROOT / source
-            write_fixture_file(project, target, path.read_text())
+            write_fixture_file(project, target, design_imports(path.read_text(), design_package))
             sources[source] = hashlib.sha256(path.read_bytes()).hexdigest()
         for template in group.get('templates', []):
             path = ROOT / template['source']
@@ -58,9 +72,10 @@ def assemble(project, components=None):
                 sources[source] = hashlib.sha256(path.read_bytes()).hexdigest()
             if re.search(r'@@[A-Z_]+@@', content):
                 raise ValueError('Unresolved fixture binding: ' + template['source'])
-            write_fixture_file(project, template['target'], content)
+            write_fixture_file(project, template['target'], design_imports(content, design_package))
     pubspec = {'name': 'core_reference_check', 'environment': {'sdk': plan['sdk']},
-               'dependencies': {'flutter': {'sdk': 'flutter'}, **plan['packages']},
+               'dependencies': {'flutter': {'sdk': 'flutter'}, **plan['packages'],
+                                **(plan['design_packages'] if design_package else {})},
                'dev_dependencies': {'flutter_test': {'sdk': 'flutter'}}}
     if any(group.get('uses_material_design') for group in plan['components'].values()):
         pubspec['flutter'] = {'uses-material-design': True}
@@ -69,6 +84,10 @@ def assemble(project, components=None):
                        'analyzer:\n  errors:\n    unused_import: error\n    unused_local_variable: error\n')
     write_fixture_file(project, 'reference-inputs.json', json.dumps(sources, indent=2) + '\n')
     return plan
+
+
+def design_imports(content, design_package):
+    return content.replace(SDK_MATERIAL_IMPORT, MATERIAL_UI_IMPORT) if design_package else content
 
 
 def test_outcome(completed):
@@ -115,9 +134,11 @@ def run_reference_tests(project):
 
 
 def verify(project, components=None, fetch=False):
-    plan = assemble(project, components)
     if not shutil.which('flutter') or not shutil.which('dart'):
         raise RuntimeError('Flutter and Dart are required; no SDK is installed by this check')
+    design_package = sdk_design_libraries_deprecated()
+    plan = assemble(project, components, design_package)
+    print('Design-widget imports: ' + ('material_ui' if design_package else 'Flutter SDK'), flush=True)
     resolve = ['flutter', 'pub', 'get'] + ([] if fetch else ['--offline'])
     files = [str(path.relative_to(project)) for path in sorted(project.rglob('*.dart'))]
     commands = [resolve, ['dart', 'format', *files],

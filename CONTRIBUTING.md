@@ -145,6 +145,9 @@ Core implementation assets and theme mapping fragments are checked with
 `python3 tests/check_core_references.py` after changes; use `--only cache`,
 `--only logger` or `--only theme` for a component. Fixture pins belong in
 `tests/fixtures/core-references/manifest.json`, not the package-default catalog.
+When the installed SDK deprecates `package:flutter/material.dart` (Flutter 3.50+), the check swaps fixture
+imports to `material_ui`, pinned under `design_packages`; shipped Dart keeps the SDK import and the skills
+tell agents to swap it in projects that declare `material_ui`.
 Python/Node CI checks fixture assembly/reporting and records required Flutter
 followup; it does not compile the Dart references.
 

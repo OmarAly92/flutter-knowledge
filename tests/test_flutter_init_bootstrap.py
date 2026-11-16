@@ -83,6 +83,18 @@ class EmptyProjectBootstrapTests(unittest.TestCase):
         self.assertEqual(before, (self.pubspec.read_bytes(), config_path.read_bytes()))
         self.assertEqual(source, (self.project / 'lib/main.dart').read_bytes())
 
+    def test_design_package_starter_is_an_empty_starter(self):
+        template = self.flutter.parent.parent / 'packages/flutter_tools/templates/app/lib/main.dart.tmpl'
+        template.write_text(TEMPLATE.replace('package:flutter/material.dart', 'package:material_ui/material_ui.dart'))
+        pubspec = yaml.safe_load(self.pubspec.read_text())
+        pubspec['dependencies']['material_ui'] = '^1.1.0'
+        self.pubspec.write_text(yaml.safe_dump(pubspec, sort_keys=False))
+        self.source("import 'package:material_ui/material_ui.dart';\nvoid main() { runApp(const MainApp()); }\n")
+        self.assertEqual(self.initialize(), 0)
+        pubspec = yaml.safe_load(self.pubspec.read_text())
+        self.assertIn('flutter_bloc', pubspec['dependencies'])
+        self.assertEqual(pubspec['dependencies']['material_ui'], '^1.1.0')
+
     def test_customized_or_non_starter_projects_keep_pubspec_unchanged(self):
         original = self.pubspec.read_text()
         for scenario in ('custom_main', 'extra_file', 'custom_dependency', 'workspace', 'assets', 'overrides'):

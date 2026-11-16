@@ -35,7 +35,7 @@ After opening the actual PNGs, use the existing runner inspection and the handof
 
 ## Writing one
 
-The data comes the way the app gets it: the real cubit, fed by a mocked repository (mocktail, as in `flutter-testing`). The cubit's constructor fetch runs against the mock.
+The data comes the way the app gets it: the real cubit, fed by a mocked repository (mocktail, as in `flutter-testing`). The cubit's constructor fetch runs against the mock. When `pubspec.yaml` declares `material_ui`, the test imports `package:material_ui/material_ui.dart` instead of `package:flutter/material.dart`.
 
 ```dart
 @Tags(['golden'])

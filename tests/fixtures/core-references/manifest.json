@@ -8,6 +8,9 @@
     "talker": "5.1.20",
     "talker_dio_logger": "5.1.20"
   },
+  "design_packages": {
+    "material_ui": "1.11.0"
+  },
   "components": {
     "cache": {
       "packages": [
