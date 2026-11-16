@@ -7,7 +7,9 @@ Use these structures for whole-app planning from either HTML or Figma. Read only
 - How the directory is organized (screen dirs: one `<screen>.md` = spec + brief, plus PNGs;
   each screen's bottom sheets/dialogs live inside that same screen dir/md; shared docs list).
 - **Screen → feature map** (dir → screen → owning feature path, e.g.
-  `lib/feature/<feature>/presentation/<screen>_screen/`). This is the SINGLE source of truth for
+  `lib/feature/<feature>/presentation/<screen>_screen/`; in a multi-role app
+  `lib/feature/<role>/<feature>/presentation/<role>_<screen>_screen/` or `lib/feature/global/...`,
+  with the roles listed first — see `flutter-feature-structure` → Account-role layout). This is the SINGLE source of truth for
   where each screen's UI is built; every screen brief cites its row. Derive it from the project's
   actual feature tree (via the `flutter-knowledge` and `flutter-feature-structure` skills) — a screen may launch from another
   feature's screen yet belong to its own feature; the map records the OWNER, not the launcher.

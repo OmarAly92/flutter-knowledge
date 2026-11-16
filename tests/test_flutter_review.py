@@ -119,6 +119,37 @@ sys.exit(int(os.environ.get('FK_TOOL_EXIT','0')))
         self.assertEqual(run.returncode, 1)
         self.assertTrue(any(hit['rule'] == 'analysis' and hit['severity'] == 'blocking' for hit in report['findings']))
 
+    def test_account_role_layout_checks_placement_and_role_prefix(self):
+        screen = 'class {0} extends StatelessWidget {{}}'
+        self.write('lib/feature/global/auth/auth_injection.dart', 'void registerAuthDependencies() {}')
+        self.write('lib/feature/global/auth/presentation/auth_screen/ui/auth_screen.dart', screen.format('AuthScreen'))
+        self.write('lib/feature/client/home/client_home_injection.dart', 'void registerClientHomeDependencies() {}')
+        self.write('lib/feature/client/home/data/repository/client_home_repository.dart', 'abstract class ClientHomeRepository {}')
+        self.write('lib/feature/client/home/presentation/client_home_screen/ui/client_home_screen.dart', screen.format('ClientHomeScreen'))
+        self.write('lib/feature/client/home/presentation/helpers/home_formatter.dart', 'sealed class HomeFormatter {}')
+        self.write('lib/feature/owner/home/home_injection.dart', 'void registerHomeDependencies() {}')
+        self.write('lib/feature/owner/home/data/data_source/home_remote_data_source.dart', 'abstract class HomeRemoteDataSource {}')
+        self.write('lib/feature/owner/home/presentation/home_screen/ui/home_screen.dart', screen.format('HomeScreen'))
+        self.write('lib/feature/settings/presentation/settings_screen/ui/settings_screen.dart', screen.format('SettingsScreen'))
+        run, report = self.run_review('--all')
+        self.assertIn(run.returncode, (0, 1), run.stderr)
+        prefix = sorted(hit['path'] for hit in report['findings'] if hit['rule'] == 'role_prefix')
+        self.assertEqual(prefix, ['lib/feature/owner/home/data/data_source/home_remote_data_source.dart',
+                                  'lib/feature/owner/home/home_injection.dart',
+                                  'lib/feature/owner/home/presentation/home_screen/ui/home_screen.dart'])
+        layout = [hit['path'] for hit in report['findings'] if hit['rule'] == 'role_layout']
+        self.assertEqual(layout, ['lib/feature/settings/presentation/settings_screen/ui/settings_screen.dart'])
+        placement = [hit['path'] for hit in report['findings'] if hit['rule'] == 'file_placement']
+        self.assertEqual(placement, ['lib/feature/client/home/presentation/helpers/home_formatter.dart'])
+        self.assertTrue(all(hit['severity'] == 'review' for hit in report['findings']
+                            if hit['rule'] in ('role_prefix', 'role_layout', 'file_placement')))
+
+    def test_flat_layout_has_no_role_findings(self):
+        self.write('lib/feature/home/home_injection.dart', 'void registerHomeDependencies() {}')
+        self.write('lib/feature/home/presentation/home_screen/ui/home_screen.dart', 'class HomeScreen extends StatelessWidget {}')
+        run, report = self.run_review('--all')
+        self.assertFalse(any(hit['rule'] in ('role_prefix', 'role_layout') for hit in report['findings']))
+
     def test_ignored_nested_project_falls_back_to_all_authored_files(self):
         (self.repo / '.gitignore').write_text('ignored_app/\n')
         self.git('add', '.gitignore')

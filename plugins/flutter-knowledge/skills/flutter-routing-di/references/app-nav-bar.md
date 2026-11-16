@@ -2,7 +2,7 @@
 
 Use this recipe every time an app needs a bottom navigation bar, tab shell or main screen with tabs. Build it from scratch with exactly these files, names, states and wiring. Only the look of `AppBottomNavBar` and `AppNavBarItem` follows the design; their APIs, the cubit, the state, the body and the router stay as shown. Do not use `BottomNavigationBar`/`NavigationBar` state, a `StatefulWidget`, a `PageView`, a nested `Navigator` or a router shell route for tab switching.
 
-Invoke `flutter-feature-structure`, `flutter-state-management`, `flutter-screen-ui` and `flutter-routing-di` before writing it, as for any feature. Imports below use the project's import style; `<app>` is the package name. When `pubspec.yaml` declares `material_ui`, `package:flutter/material.dart` becomes `package:material_ui/material_ui.dart`. The tabs `home`, `search`, `profile` are placeholders for the app's tabs, in the same order everywhere.
+Invoke `flutter-feature-structure`, `flutter-state-management`, `flutter-screen-ui` and `flutter-routing-di` before writing it, as for any feature. Imports below use the project's import style; `<app>` is the package name. When `pubspec.yaml` declares `material_ui`, `package:flutter/material.dart` becomes `package:material_ui/material_ui.dart`. In the account-role layout each role with tabs gets its own copy at `lib/feature/<role>/app_nav_bar/`, and every name below takes the role prefix: `client_app_nav_bar_injection.dart`, `client_app_nav_bar_screen/`, `ClientAppNavBarCubit`, `ClientAppNavBarScreen`, `ClientAppNavTab`, `RoutesStrings.clientAppNavBar`, translation group `clientAppNavBar`. The tabs `home`, `search`, `profile` are placeholders for the app's tabs, in the same order everywhere.
 
 ## Files
 

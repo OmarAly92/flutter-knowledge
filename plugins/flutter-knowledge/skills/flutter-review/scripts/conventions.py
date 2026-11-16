@@ -6,8 +6,42 @@ from checks import finding
 from dart_source import scan_dart
 
 
-def placement_findings(relative, code):
+FEATURE_ROOT_ENTRIES = ('data', 'presentation')
+
+
+def role_findings(parts, relative):
+    if len(parts) < 4 or parts[:2] != ['lib', 'feature']:
+        return [], None
+    if parts[3] in FEATURE_ROOT_ENTRIES or parts[3].endswith('_injection.dart'):
+        return [finding('role_layout', 'review', 'This app uses the account-role layout: features live in lib/feature/global/<feature>/ or lib/feature/<role>/<feature>/, never directly under lib/feature/.', relative)], None
+    role, feature = parts[2], parts[3]
+    if role == 'global' or len(parts) < 5:
+        return [], parts[:4]
+    prefix = role + '_'
+    names = []
+    if len(parts) == 5 and parts[4].endswith('_injection.dart'):
+        names.append(parts[4])
+    if len(parts) >= 7 and parts[4] == 'data' and parts[5] in ('data_source', 'repository'):
+        names.append(parts[6])
+    if len(parts) >= 6 and parts[4] == 'presentation' and parts[5].endswith('_screen'):
+        names.append(parts[5])
+    if any(not name.startswith(prefix) for name in names):
+        return [finding('role_prefix', 'review', f'Names derived from a role feature start with its role: lib/feature/{role}/{feature}/ uses {prefix}{feature}_injection.dart, {prefix}{feature}_repository.dart and {prefix}<screen>_screen/ with {role.title().replace("_", "")}-prefixed classes.', relative)], parts[:4]
+    return [], parts[:4]
+
+
+def placement_findings(relative, code, role_layout=False):
     parts = relative.split('/')
+    hits = []
+    if role_layout:
+        hits, root = role_findings(parts, relative)
+        if root is None:
+            return hits
+        parts = ['lib', 'feature'] + parts[3:]
+    return hits + feature_placement(parts, relative, code)
+
+
+def feature_placement(parts, relative, code):
     if len(parts) < 6 or parts[:2] != ['lib', 'feature'] or parts[3] != 'presentation':
         return []
     top = parts[4]
@@ -27,12 +61,13 @@ def placement_findings(relative, code):
 
 def source_findings(project, scope):
     hits = []
+    role_layout = (project / 'lib/feature/global').is_dir()
     for relative in scope:
         if not relative.startswith('lib/'):
             continue
         text = (project / relative).read_text(encoding='utf-8')
         code, strings = scan_dart(text)
-        hits.extend(placement_findings(relative, code))
+        hits.extend(placement_findings(relative, code, role_layout))
         if relative.endswith('_state.dart'):
             for getter in re.finditer(r'\bget\s+(?:props|hashCode)\s*(?:=>[^;]+;|\{[^}]*\})', code):
                 for match in re.finditer(r'\bidentityHashCode\s*\(\s*this\s*\)', getter.group()):

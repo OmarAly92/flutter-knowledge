@@ -1,6 +1,6 @@
 ---
 name: flutter-feature-structure
-description: Use before creating Flutter features, screens or files, or deciding folder placement and naming under lib/feature/ and lib/core/.
+description: Use before creating Flutter features, screens or files, or deciding folder placement and naming under lib/feature/ and lib/core/, including multi-role apps with global/ and per-role feature folders.
 ---
 
 # Flutter feature structure
@@ -49,6 +49,34 @@ Omit `data/` entirely for UI-only features with no models or params. A local-onl
 
 The main screen widget lives in `ui/`; every section/child widget lives in its own file under `ui/widgets/` or one of the shared widget dirs above and gets imported (see `flutter-screen-ui`).
 
+## Account-role layout
+
+Use it when the app has two or more **account roles that each get their own interface after login** (client and owner, driver and rider, student and teacher). Evidence: the design has a separate set of screens per role, the API returns a role or user type that decides where the user lands, or the request says so. Permissions inside one shared interface (an admin sees an extra button) are not separate roles; keep the flat layout. When the evidence is unclear, ask before choosing.
+
+```
+lib/feature/
+  global/            # everything before login + every feature two or more roles use
+    splash/
+    onboarding/
+    auth/
+    chat/            # used by client and owner
+  client/            # one folder per account role, snake_case, named as the business/backend names it
+    app_nav_bar/
+    home/
+    orders/
+  owner/
+    app_nav_bar/
+    home/
+    properties/
+```
+
+- Every feature, in `global/` or a role folder, uses the same feature tree above.
+- **`global/`** holds the pre-login features (splash, onboarding, auth and its sub-flows) and every feature two or more roles use. One implementation: where roles differ slightly, the screen reads the role from its cubit or route params rather than being copied per role. A role feature moves to `global/` when a second role starts using it.
+- **A role folder** holds only the features that role uses; its tab shell is its own `app_nav_bar/` (see `flutter-routing-di`).
+- **Role prefix.** Inside `lib/feature/<role>/<feature>/` the folder keeps the plain feature name, but every name derived from the feature or a screen starts with the role: `client/home/` → `client_home_injection.dart` with `registerClientHomeDependencies()`, `client_home_remote_data_source.dart`, `client_home_repository.dart`, `presentation/client_home_screen/` with `ClientHomeScreen`, `ClientHomeBody`, `ClientHomeCubit` and its state classes, route `RoutesStrings.clientHome`, translation group `clientHome`. Models, params and section widgets keep their own names; prefix one only when the same name exists in another role and both meet in one file. `global/` features are not prefixed (`AuthCubit`, group `auth`).
+- Widgets and helpers shared by features of different roles follow the usual rule: `lib/core/widgets/<purpose>/` and `lib/core/helpers/`. The account role itself is the core `AppRole` enum (see `flutter-routing-di` → Account roles).
+- **Never mix layouts.** A project with `lib/feature/global/` puts every new feature under `global/` or a role folder, never directly under `lib/feature/`. A flat project that gains a second role keeps working in its layout until the user approves moving to this one; that move is its own change.
+
 ## Core layout
 
 `lib/core/` holds what features share, in these top-level folders:
@@ -80,6 +108,7 @@ Where the existing file contradicts the conventions in `flutter-data-layer`, `fl
 ## What NOT to do
 
 - Do not name the features directory `features` — it is `lib/feature/`.
+- In the account-role layout, do not put a feature directly under `lib/feature/`, copy a shared feature into each role, or drop the role prefix from a role feature's names.
 - Do not drop the `_screen` suffix from the presentation screen directory.
 - Do not create `presentation/widgets/` or any other dir in `presentation/` besides `<screen>_screen/` and `widget/`; do not import one screen's `ui/widgets/` file from another screen.
 - Do not declare a class with fields in `logic/` or `logic/helpers/` (`XBoard`, `XInputs`, `XArgs`, `XSlot`) — it is an `XModel` in `data/model/` or an `XParams` in `data/model/params/`.
