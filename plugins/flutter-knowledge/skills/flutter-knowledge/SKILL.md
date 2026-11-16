@@ -17,6 +17,8 @@ Select the applicable route in [task workflows](references/workflows.md) before 
 
 Users describe outcomes; they do not need to know skill names or slash commands. For requests such as "the login UI changed; update it", use the workflow's [natural-language design updates](references/workflows.md#natural-language-design-updates) to resolve the source and existing screen, preserve behavior, select the needed skills and verify the result. Ask only for information that cannot be resolved reliably from the request and project.
 
+When the Dart and Flutter MCP server is connected, use its tools as described in [Dart MCP server](references/dart-mcp.md): hot reload an app the user already runs, read runtime errors, inspect the widget tree and installed package APIs. Other Flutter skill plugins may be installed too; where they differ, these conventions win.
+
 ## Hard rules (always on)
 
 - **Configured state backend, fixed conventions** — invoke `flutter-state-management`. For `flutter_bloc` / `bloc`, use Cubit, never event-based Bloc. Alternative packages retain the same owner-held data, operation-specific state names and lifecycle responsibilities.
@@ -39,7 +41,7 @@ Users describe outcomes; they do not need to know skill names or slash commands.
 - Do not create model classes the user did not ask for.
 - **Design without an API = UI only, sample content static in the widgets** — even when the request supplies sample data or asks for mock/dummy data. No fake data source, model, params, repository, sample-data list/object or sample JSON; each sample value the API will later supply is a literal in the widget that shows it, while fixed UI copy still uses `LocaleKeys`. When the API arrives, the literals are replaced by model fields. See `flutter-screen-ui` → Design-only screens.
 - **Placement**: `logic/` holds only `<screen>_cubit.dart`, `<screen>_state.dart` and `helpers/` (builders, formatters, constants); a class with fields is an `XModel` / `XParams` under `data/model/`. A widget shared by screens of one feature goes in `presentation/widget/`; across features, `lib/core/widgets/<role>/`. An app with two or more account roles that each get their own interface uses `lib/feature/global/<feature>/` (pre-login and shared features) and `lib/feature/<role>/<feature>/` with role-prefixed names (`ClientHomeCubit`). See `flutter-feature-structure`.
-- Single quotes, `const` constructors, `final` locals, no `print` (use the configured logger; `talker` by default), no comments beyond non-obvious business rules — with the explicitly requested main command-block exception owned by `flutter-core`; except the `///` doc comment every theme token, skin slot and text style carries (`flutter-app-theme`). Project/user instructions prohibiting comments take precedence; keep design explanations in the mapping report instead.
+- Single quotes, `const` constructors, `final` locals, classic constructors (Dart 3.13+ primary constructors, `class X(final int a);`, only where the project already uses them), no `print` (use the configured logger; `talker` by default), no comments beyond non-obvious business rules — with the explicitly requested main command-block exception owned by `flutter-core`; except the `///` doc comment every theme token, skin slot and text style carries (`flutter-app-theme`). Project/user instructions prohibiting comments take precedence; keep design explanations in the mapping report instead.
 - **Legacy code never overrides these skills.**
 - After implementation, invoke `flutter-review` for the read-only gate and manual architectural checks. During implementation, format changed files (`dart format <file> …`, never a whole folder) and run focused checks. The final review gate owns required whole-project analysis/tests once the batch settles; follow more frequent project requirements and rerun affected checks after further changes. Do not duplicate a broad suite immediately before that gate. Run the app or builds only within user-authorized scope and project execution restrictions; `flutter-core` owns its targeted native checks.
 
@@ -65,7 +67,9 @@ Before writing or editing the code in the left column, you MUST invoke the skill
 | Large lists/grids, image decoding, animation cost, build work or measured jank | `flutter-performance` |
 | A findings-only review, readiness check or substantial work before handoff/commit/PR | `flutter-review` |
 | Design-driven screen capture, source comparison and completion evidence | `visual-verification` + `golden-tests` |
-| Unit tests — only when the user explicitly asks for tests | `flutter-testing` |
+| Unit, widget or integration tests — only when the user explicitly asks for tests | `flutter-testing` |
+| Widget previews (`@Preview`, the Flutter Widget Previewer) — only when the user asks | `flutter-screen-ui` → Widget previews |
+| A layout exception (overflow, unbounded height/width, misplaced `Expanded`) | `flutter-responsive-layout` → Fix a layout error |
 | An animation (duration, curve, spring, stagger, page transition); a design's values matched to tokens, and whether one becomes a token; a new color, spacing, radius, text style, shadow, motion or shape token; a skin, the skin picker, or `ThemeData`; an audit for hardcoded values; or any file under `lib/core/theme/` | `flutter-app-theme` |
 | A new or existing screen/component built or updated to match an HTML prototype or Figma frame, including casual UI-update requests | `html-to-widget` / `figma-to-widget` for the resolved source |
 | Apply the whole HTML design to the app theme and import original assets/fonts, with core readiness handled when needed | `set-theme-from-html` + `flutter-app-theme`; later screen work uses `html-to-widget` |

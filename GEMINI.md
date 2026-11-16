@@ -46,6 +46,7 @@ them as the source of truth over legacy patterns in the codebase.
 
 @./plugins/flutter-knowledge/skills/flutter-knowledge/references/workflows.md
 @./plugins/flutter-knowledge/skills/flutter-knowledge/references/design-briefs.md
+@./plugins/flutter-knowledge/skills/flutter-knowledge/references/dart-mcp.md
 @./plugins/flutter-knowledge/skills/html-to-widget/references/source-extraction.md
 
 @./plugins/flutter-knowledge/skills/visual-verification/references/design-cache.md
