@@ -21,6 +21,7 @@ SUITES = {
         'flutter_init_bootstrap', 'flutter_core', 'flutter_review', 'token_audit',
         'compare', 'design_cache', 'verification_runner', 'stage_usage',
         'golden_handoff', 'html_to_theme', 'layout_tree', 'benchmark_grade', 'core_references',
+        'stop_hook',
     )
 }
 SUITES['calibration'] = SKILLS + 'visual-verification/tests/test_calibration.py'
@@ -104,6 +105,8 @@ def select(paths):
                                   'bump-version.sh', 'version.json',
                               }:
             selected.add('harness_compatibility')
+            if path.startswith(('plugins/flutter-knowledge/hooks/', 'plugins/flutter-knowledge/.codex-plugin/')):
+                selected.add('stop_hook')
         elif path in {'benchmark/skill_selection.py', 'benchmark/selection_cases.json'}:
             selected.add('skill_selection')
         elif path.startswith('tests/fixtures/layout-tree/'):
@@ -182,6 +185,10 @@ def event_files():
 
 
 def require_runtimes(plan):
+    if 'stop_hook' in plan['suites']:
+        for tool in ('node', 'git'):
+            if not shutil.which(tool):
+                raise RuntimeError(f'Required {tool} runtime is unavailable')
     if 'harness_compatibility' in plan['suites']:
         if not shutil.which('bash'):
             raise RuntimeError('Required bash runtime is unavailable')

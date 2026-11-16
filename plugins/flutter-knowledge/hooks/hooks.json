@@ -1,5 +1,5 @@
 {
-  "description": "Force-load Flutter/Dart conventions at session start when the project has a pubspec.yaml",
+  "description": "Force-load Flutter/Dart conventions at session start, and format and analyze changed Dart files when a turn ends, in projects with a pubspec.yaml",
   "hooks": {
     "SessionStart": [
       {
@@ -9,6 +9,17 @@
             "type": "command",
             "command": "node \"${CLAUDE_PLUGIN_ROOT}/hooks/force-flutter-knowledge.mjs\"",
             "timeout": 10
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"${CLAUDE_PLUGIN_ROOT}/hooks/dart-stop-check.mjs\"",
+            "timeout": 120
           }
         ]
       }

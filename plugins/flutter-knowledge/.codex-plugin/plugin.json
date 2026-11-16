@@ -30,6 +30,18 @@
           }
         ]
       }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"${PLUGIN_ROOT}/hooks/dart-stop-check.mjs\"",
+            "statusMessage": "Formatting and analyzing changed Dart files",
+            "timeout": 120
+          }
+        ]
+      }
     ]
   }
 }

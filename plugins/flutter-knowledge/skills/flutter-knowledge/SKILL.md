@@ -17,7 +17,7 @@ Select the applicable route in [task workflows](references/workflows.md) before 
 
 Users describe outcomes; they do not need to know skill names or slash commands. For requests such as "the login UI changed; update it", use the workflow's [natural-language design updates](references/workflows.md#natural-language-design-updates) to resolve the source and existing screen, preserve behavior, select the needed skills and verify the result. Ask only for information that cannot be resolved reliably from the request and project.
 
-When the Dart and Flutter MCP server is connected, use its tools as described in [Dart MCP server](references/dart-mcp.md): hot reload an app the user already runs, read runtime errors, inspect the widget tree and installed package APIs. Other Flutter skill plugins may be installed too; where they differ, these conventions win.
+When the Dart and Flutter MCP server is connected, use its tools as described in [Dart MCP server](references/dart-mcp.md). Without being asked, once a change under `lib/` is complete (the whole batch of edits, not each file), hot reload the app the user already runs, then read its runtime errors and fix them; never launch an app yourself. Also use it to inspect the widget tree and installed package APIs. Other Flutter skill plugins may be installed too; where they differ, these conventions win.
 
 ## Hard rules (always on)
 

@@ -116,6 +116,12 @@ shaped differently — but all three read the live
 `plugins/flutter-knowledge/skills/flutter-knowledge/SKILL.md` at runtime, so there's nothing to keep in
 sync by hand when the skill content changes.
 
+`plugins/flutter-knowledge/hooks/dart-stop-check.mjs` is the Claude Code + Codex `Stop`
+hook: it formats and analyzes the changed authored Dart files and returns
+`{"decision": "block"}` only for errors/warnings and never when `stop_hook_active`
+is set. OpenCode and Pi have no equivalent yet. After changing it, run
+`python3 tests/test_stop_hook.py`.
+
 After changing harness manifests, discovery hooks, the installer or Gemini
 includes, run `python3 tests/test_harness_compatibility.py`. These tests execute
 local hook contracts, not live host clients; report runtime skips explicitly.

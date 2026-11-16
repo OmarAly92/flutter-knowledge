@@ -31,6 +31,14 @@ Gemini's `GEMINI.md` includes all 22 skills and shared references, so its contex
 loading differs from the on-demand hosts. These loading paths alone establish
 neither prompt-cache behavior nor measured token savings.
 
+In Claude Code and Codex a `Stop` hook also runs when the agent finishes a turn in a
+Flutter project: it runs `dart format` on the Dart files changed under `lib/`, `test/`,
+`integration_test/` and `test_driver/` (from `git`, generated files excluded), then
+`dart analyze` on them, and sends errors and warnings back so the agent fixes them
+before stopping. Infos never block, it blocks at most once per stop, and it stays
+silent outside git repositories or before `pub get`. Set
+`FLUTTER_KNOWLEDGE_STOP_HOOK=0` to turn it off.
+
 ## Use ordinary requests
 
 Describe the result you want; skill names and slash commands are optional:

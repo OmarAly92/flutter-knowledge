@@ -50,10 +50,18 @@ class FocusedCheckSelectionTests(unittest.TestCase):
             'plugins/flutter-knowledge/hooks/force-flutter-knowledge.mjs',
             'gemini-extension.json', 'GEMINI.md', 'install.sh', 'bump-version.sh',
         ]
-        for path in paths:
+        hook_paths = {
+            'plugins/flutter-knowledge/.codex-plugin/plugin.json',
+            'plugins/flutter-knowledge/hooks/hooks.json',
+            'plugins/flutter-knowledge/hooks/force-flutter-knowledge.mjs',
+            'plugins/flutter-knowledge/hooks/dart-stop-check.mjs',
+        }
+        for path in [*paths, 'plugins/flutter-knowledge/hooks/dart-stop-check.mjs']:
             with self.subTest(path=path):
-                self.assertEqual(CHECKS.select([path])['suites'], ['harness_compatibility'])
+                expected = ['harness_compatibility', 'stop_hook'] if path in hook_paths else ['harness_compatibility']
+                self.assertEqual(CHECKS.select([path])['suites'], expected)
         self.assertIn('harness_compatibility', CHECKS.select(['package.json'])['suites'])
+        self.assertEqual(CHECKS.select(['tests/test_stop_hook.py'])['suites'], ['stop_hook'])
 
     def test_ci_dependency_and_unknown_helper_changes_fail_closed_to_all_suites(self):
         paths = [

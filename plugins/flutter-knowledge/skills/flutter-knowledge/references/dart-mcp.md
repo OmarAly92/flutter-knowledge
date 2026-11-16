@@ -10,7 +10,7 @@ App tools (`hot_reload`, `hot_restart`, `get_runtime_errors`, `widget_inspector`
 
 | Task | Tool | Rule |
 | --- | --- | --- |
-| After editing `lib/` with the user's app running | `hot_reload`; `hot_restart` when `main()`, `initState`, static/global state or DI registrations changed | Then `get_runtime_errors`. Skip for comment-only edits and for files outside `lib/`. A reload is not a test or a review. |
+| A change under `lib/` is complete and the user's app is running | `hot_reload`; `hot_restart` when `main()`, `initState`, static/global state or DI registrations changed | Do it without being asked, once per finished batch of edits, never between the files of one change. Then `get_runtime_errors`: fix what the change caused, reload again, and repeat until clean; report errors that predate the change instead of fixing them unasked. Skip comment-only edits and files outside `lib/`. No running app means no reload: never call `launch_app` to get one. A reload is not a test or a review. |
 | Runtime exception, red screen, layout error | `get_runtime_errors`, then `widget_inspector` `get_widget_tree` | Fix the first real error in the stack, reload, and read the errors again. See `flutter-responsive-layout` → Fix a layout error. |
 | Checking an installed package API before using it | `read_package_uris` (`package:dio/dio.dart`), `rip_grep_packages` | Preferred over memory whenever a skill says to verify the installed API. |
 | Finding an existing widget, helper or class before writing one | `lsp` `resolveWorkspaceSymbol` | Same reuse rule as `flutter-feature-structure`: read the match and its API, then reuse or extend it. |
